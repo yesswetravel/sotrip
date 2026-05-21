@@ -5,6 +5,7 @@ import { useSubscriptionStore } from "../../features/subscription/store";
 import { PAID_PRICE_MONTHLY } from "../../features/subscription/constants";
 import { colors } from "../../theme/colors";
 import { spacing } from "../../theme/spacing";
+import { APP_NAME } from "../../theme/brand";
 
 const FEATURES = [
   { icon: "✦", title: "unlimited trips", desc: "plan every journey, big or small" },
@@ -44,7 +45,7 @@ export default function PaywallScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
-        <Text variant="eyebrow">sotrip</Text>
+        <Text variant="eyebrow">{APP_NAME}</Text>
         <Text variant="display" style={styles.headline}>
           unlock everything
         </Text>
