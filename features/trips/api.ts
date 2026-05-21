@@ -116,7 +116,12 @@ export async function createItem(
       subtitle: input.subtitle ?? null,
       time: input.time ?? null,
       location_name: input.location_name ?? null,
+      location_lat: input.location_lat ?? null,
+      location_lng: input.location_lng ?? null,
+      category: input.category ?? null,
       notes: input.notes ?? null,
+      link: input.link ?? null,
+      photo_uri: input.photo_uri ?? null,
     })
     .select()
     .single();

@@ -389,6 +389,8 @@ export default function ProfileScreen() {
             const next = devTaps + 1;
             if (next >= 5) {
               handleDevToggle();
+            } else if (next >= 3) {
+              setDevTaps(next);
             } else {
               setDevTaps(next);
             }
@@ -397,6 +399,17 @@ export default function ProfileScreen() {
         >
           <Text style={styles.version}>sotrip v1.0.0</Text>
         </TouchableOpacity>
+
+        {devTaps >= 3 && (
+          <TouchableOpacity
+            style={styles.seedLink}
+            onPress={() => router.push("/dev/seed")}
+            activeOpacity={0.8}
+          >
+            <Feather name="zap" size={12} color={colors.coral} />
+            <Text style={styles.seedLinkText}>seed demo trip</Text>
+          </TouchableOpacity>
+        )}
 
         <View style={{ height: spacing.xxl }} />
       </ScrollView>
@@ -593,5 +606,17 @@ const styles = StyleSheet.create({
     color: colors.sand,
     marginTop: spacing.md,
     fontFamily: "Inter_400Regular",
+  },
+  seedLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: spacing.sm,
+  },
+  seedLinkText: {
+    fontSize: 11,
+    color: colors.coral,
+    fontFamily: "Inter_500Medium",
   },
 });
