@@ -15,7 +15,7 @@ import { supabase } from "../../lib/supabase";
 import { useSession } from "../../lib/use-session";
 import { useSubscription } from "../../features/subscription/hooks";
 import { useSubscriptionStore } from "../../features/subscription/store";
-import { PAID_PRICE_MONTHLY } from "../../features/subscription/constants";
+import { PAID_PRICE } from "../../features/subscription/constants";
 import { colors } from "../../theme/colors";
 import { spacing } from "../../theme/spacing";
 
@@ -194,7 +194,7 @@ export default function ProfileScreen() {
               </View>
               {isPaid ? (
                 <Text variant="caption">
-                  ${PAID_PRICE_MONTHLY}/month
+                  unlocked forever
                 </Text>
               ) : (
                 <Text variant="caption">
@@ -210,7 +210,7 @@ export default function ProfileScreen() {
                 activeOpacity={0.85}
               >
                 <Text variant="body" style={styles.upgradeBtnText}>
-                  upgrade — ${PAID_PRICE_MONTHLY}/mo
+                  upgrade — ${PAID_PRICE} once
                 </Text>
               </TouchableOpacity>
             )}
@@ -218,7 +218,7 @@ export default function ProfileScreen() {
             {isPaid && (
               <TouchableOpacity style={styles.manageLink} activeOpacity={0.8}>
                 <Text variant="caption" style={styles.manageLinkText}>
-                  manage subscription
+                  manage purchase
                 </Text>
               </TouchableOpacity>
             )}

@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { Text } from "../design-system";
 import { colors } from "../../theme/colors";
 import { spacing } from "../../theme/spacing";
-import { PAID_PRICE_MONTHLY } from "./constants";
+import { PAID_PRICE } from "./constants";
 
 interface UpgradeModalProps {
   visible: boolean;
@@ -55,7 +55,7 @@ export default function UpgradeModal({
           </View>
 
           <Text variant="caption" style={styles.price}>
-            just ${PAID_PRICE_MONTHLY}/month — less than a coffee
+            just ${PAID_PRICE} one-time — unlock forever
           </Text>
 
           <TouchableOpacity

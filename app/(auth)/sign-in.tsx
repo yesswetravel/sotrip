@@ -1,8 +1,8 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
-  FlatList,
+  Easing,
   Platform,
   StyleSheet,
   TextInput,
@@ -19,44 +19,32 @@ import { colors } from "../../theme/colors";
 import { spacing } from "../../theme/spacing";
 import { APP_NAME } from "../../theme/brand";
 
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
+const { width: SCREEN_W } = Dimensions.get("window");
+const AUTO_ADVANCE_MS = 4000;
 
-const ONBOARDING_SLIDES = [
+const SLIDES = [
   {
     icon: "map" as const,
-    iconColor: colors.coral,
-    iconBg: colors.coral + "14",
+    accent: colors.coral,
     title: "plan beautifully",
-    subtitle: "day-by-day itineraries that feel\nlike flipping through a magazine",
+    subtitle: "day-by-day itineraries\nthat feel like a magazine",
+    decorChar: "✦",
   },
   {
     icon: "camera" as const,
-    iconColor: colors.gold,
-    iconBg: colors.gold + "14",
+    accent: colors.gold,
     title: "capture moments",
-    subtitle: "save photos, notes, and memories\nthat turn into a keepsake book",
+    subtitle: "photos & notes that become\na keepsake memory book",
+    decorChar: "◈",
   },
   {
     icon: "users" as const,
-    iconColor: colors.teal,
-    iconBg: colors.teal + "14",
+    accent: colors.teal,
     title: "travel together",
-    subtitle: "invite friends to plan and share\nyour adventures in real-time",
+    subtitle: "invite companions and\nplan adventures as one",
+    decorChar: "❋",
   },
 ];
-
-function DotIndicator({ count, activeIndex }: { count: number; activeIndex: number }) {
-  return (
-    <View style={styles.dots}>
-      {Array.from({ length: count }).map((_, i) => (
-        <View
-          key={i}
-          style={[styles.dot, i === activeIndex && styles.dotActive]}
-        />
-      ))}
-    </View>
-  );
-}
 
 export default function SignInScreen() {
   const [step, setStep] = useState<"welcome" | "email">("welcome");
@@ -64,26 +52,97 @@ export default function SignInScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
-  const [slideIndex, setSlideIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
   const { show } = useToast();
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const emailFade = useRef(new Animated.Value(0)).current;
+  const brandFade = useRef(new Animated.Value(0)).current;
+  const brandSlide = useRef(new Animated.Value(20)).current;
+  const btnsFade = useRef(new Animated.Value(0)).current;
+
+  const slideOpacities = useRef(SLIDES.map((_, i) => new Animated.Value(i === 0 ? 1 : 0))).current;
+  const slideScales = useRef(SLIDES.map((_, i) => new Animated.Value(i === 0 ? 1 : 0.9))).current;
+  const iconFloats = useRef(SLIDES.map(() => new Animated.Value(0))).current;
+  const dotWidths = useRef(SLIDES.map((_, i) => new Animated.Value(i === 0 ? 24 : 6))).current;
+
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Entrance animation
+  useEffect(() => {
+    Animated.stagger(200, [
+      Animated.parallel([
+        Animated.timing(brandFade, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(brandSlide, { toValue: 0, duration: 800, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      ]),
+      Animated.timing(btnsFade, { toValue: 1, duration: 600, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  // Floating icon animation
+  useEffect(() => {
+    iconFloats.forEach((anim) => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(anim, { toValue: -8, duration: 2000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 8, duration: 2000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        ]),
+      ).start();
+    });
+  }, []);
+
+  // Auto-advance carousel
+  useEffect(() => {
+    timerRef.current = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % SLIDES.length);
+    }, AUTO_ADVANCE_MS);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+
+  // Crossfade when activeIndex changes
+  useEffect(() => {
+    const anims = SLIDES.map((_, i) => {
+      const isActive = i === activeIndex;
+      return Animated.parallel([
+        Animated.timing(slideOpacities[i], {
+          toValue: isActive ? 1 : 0,
+          duration: 600,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideScales[i], {
+          toValue: isActive ? 1 : 0.9,
+          duration: 600,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(dotWidths[i], {
+          toValue: isActive ? 24 : 6,
+          duration: 400,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: false,
+        }),
+      ]);
+    });
+    Animated.parallel(anims).start();
+  }, [activeIndex]);
+
+  function goToSlide(idx: number) {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setActiveIndex(idx);
+    timerRef.current = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % SLIDES.length);
+    }, AUTO_ADVANCE_MS);
+  }
 
   function showEmailForm() {
     setStep("email");
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    Animated.timing(emailFade, { toValue: 1, duration: 300, useNativeDriver: true }).start();
   }
 
   function goBackToWelcome() {
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => setStep("welcome"));
+    Animated.timing(emailFade, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => setStep("welcome"));
   }
 
   async function handleSubmit() {
@@ -91,45 +150,26 @@ export default function SignInScreen() {
     setLoading(true);
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password: password.trim(),
-        });
+        const { error } = await supabase.auth.signUp({ email: email.trim(), password: password.trim() });
         if (error) throw error;
         show("check your email to confirm your account");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password: password.trim(),
-        });
+        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: password.trim() });
         if (error) throw error;
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "something went wrong";
-      show(message);
+      show(err instanceof Error ? err.message : "something went wrong");
     } finally {
       setLoading(false);
     }
-  }
-
-  async function handleGoogleAuth() {
-    show("google sign-in coming soon");
-  }
-
-  async function handleAppleAuth() {
-    show("apple sign-in coming soon");
   }
 
   const canSubmit = email.trim().length > 0 && password.trim().length > 0;
 
   if (step === "email") {
     return (
-      <KeyboardAvoidingView
-        style={styles.root}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <Animated.View style={[styles.emailScreen, { opacity: fadeAnim }]}>
-          {/* Back */}
+      <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <Animated.View style={[styles.emailScreen, { opacity: emailFade }]}>
           <TouchableOpacity style={styles.backBtn} onPress={goBackToWelcome} activeOpacity={0.7}>
             <Feather name="arrow-left" size={20} color={colors.ink} />
           </TouchableOpacity>
@@ -138,8 +178,8 @@ export default function SignInScreen() {
             <Text variant="display" style={styles.emailTitle}>
               {isSignUp ? "create account" : "welcome back"}
             </Text>
-            <Text variant="caption" style={styles.emailSubtitle}>
-              {isSignUp ? "start planning your next adventure" : "sign in to continue"}
+            <Text variant="subtitle" style={styles.emailSubtitle}>
+              {isSignUp ? "start planning your next adventure" : "sign in to continue your journey"}
             </Text>
 
             <View style={styles.inputGroup}>
@@ -157,7 +197,6 @@ export default function SignInScreen() {
                   editable={!loading}
                 />
               </View>
-
               <View style={styles.inputWrap}>
                 <Feather name="lock" size={16} color={colors.stone} />
                 <TextInput
@@ -182,21 +221,13 @@ export default function SignInScreen() {
               {loading ? (
                 <ActivityIndicator color={colors.pearl} size="small" />
               ) : (
-                <Text style={styles.submitBtnText}>
-                  {isSignUp ? "create account" : "sign in"}
-                </Text>
+                <Text style={styles.submitBtnText}>{isSignUp ? "create account" : "sign in"}</Text>
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={() => setIsSignUp(!isSignUp)}
-              activeOpacity={0.7}
-              style={styles.toggleBtn}
-            >
+            <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)} activeOpacity={0.7} style={styles.toggleBtn}>
               <Text style={styles.toggleText}>
-                {isSignUp
-                  ? "already have an account? sign in"
-                  : "new here? create account"}
+                {isSignUp ? "already have an account? sign in" : "new here? create account"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -207,82 +238,92 @@ export default function SignInScreen() {
 
   return (
     <View style={styles.root}>
-      {/* Top: onboarding carousel */}
-      <View style={styles.carouselArea}>
-        <FlatList
-          data={ONBOARDING_SLIDES}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(_, i) => String(i)}
-          onMomentumScrollEnd={(e) => {
-            const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
-            setSlideIndex(idx);
-          }}
-          renderItem={({ item }) => (
-            <View style={styles.slide}>
-              <View style={[styles.slideIcon, { backgroundColor: item.iconBg }]}>
-                <Feather name={item.icon} size={32} color={item.iconColor} />
-              </View>
-              <Text variant="display" style={styles.slideTitle}>
-                {item.title}
-              </Text>
-              <Text style={styles.slideSubtitle}>
-                {item.subtitle}
-              </Text>
-            </View>
-          )}
-        />
-        <DotIndicator count={ONBOARDING_SLIDES.length} activeIndex={slideIndex} />
+      {/* Decorative corner accents */}
+      <View style={styles.cornerTL}>
+        <Text style={styles.cornerChar}>✦</Text>
+      </View>
+      <View style={styles.cornerBR}>
+        <Text style={styles.cornerChar}>✦</Text>
       </View>
 
-      {/* Bottom: auth section */}
-      <View style={styles.authArea}>
+      {/* Hero carousel area — crossfade, not swipe */}
+      <View style={styles.heroArea}>
+        {SLIDES.map((slide, i) => (
+          <Animated.View
+            key={slide.title}
+            style={[
+              styles.slideAbsolute,
+              { opacity: slideOpacities[i], transform: [{ scale: slideScales[i] }] },
+            ]}
+            pointerEvents={i === activeIndex ? "auto" : "none"}
+          >
+            {/* Decorative character behind icon */}
+            <Text style={[styles.decorChar, { color: slide.accent + "18" }]}>{slide.decorChar}</Text>
+
+            {/* Floating icon */}
+            <Animated.View
+              style={[
+                styles.iconCircle,
+                { backgroundColor: slide.accent + "14", transform: [{ translateY: iconFloats[i] }] },
+              ]}
+            >
+              <Feather name={slide.icon} size={34} color={slide.accent} />
+            </Animated.View>
+
+            <Text variant="display" style={styles.slideTitle}>{slide.title}</Text>
+            <Text variant="subtitle" style={styles.slideSubtitle}>{slide.subtitle}</Text>
+          </Animated.View>
+        ))}
+
+        {/* Tap to advance dots */}
+        <View style={styles.dots}>
+          {SLIDES.map((slide, i) => (
+            <TouchableOpacity key={i} onPress={() => goToSlide(i)} activeOpacity={0.7} hitSlop={8}>
+              <Animated.View
+                style={[
+                  styles.dot,
+                  { width: dotWidths[i], backgroundColor: i === activeIndex ? slide.accent : colors.sand },
+                ]}
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Auth area */}
+      <Animated.View style={[styles.authArea, { opacity: brandFade, transform: [{ translateY: brandSlide }] }]}>
         {/* Brand */}
         <Text style={styles.brandName}>{APP_NAME}</Text>
-        <View style={styles.brandLine} />
+        <View style={styles.brandDot} />
 
-        {/* Social buttons */}
-        <TouchableOpacity
-          style={styles.socialBtn}
-          onPress={handleAppleAuth}
-          activeOpacity={0.85}
-        >
-          <Feather name="smartphone" size={18} color={colors.pearl} />
-          <Text style={styles.socialBtnText}>continue with apple</Text>
-        </TouchableOpacity>
+        {/* Buttons */}
+        <Animated.View style={[styles.btnsWrap, { opacity: btnsFade }]}>
+          <TouchableOpacity style={styles.appleBtn} onPress={() => show("apple sign-in coming soon")} activeOpacity={0.85}>
+            <Feather name="smartphone" size={17} color={colors.pearl} />
+            <Text style={styles.appleBtnText}>continue with apple</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.socialBtn, styles.googleBtn]}
-          onPress={handleGoogleAuth}
-          activeOpacity={0.85}
-        >
-          <Feather name="globe" size={18} color={colors.ink} />
-          <Text style={[styles.socialBtnText, styles.googleBtnText]}>continue with google</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.googleBtn} onPress={() => show("google sign-in coming soon")} activeOpacity={0.85}>
+            <Feather name="globe" size={17} color={colors.ink} />
+            <Text style={styles.googleBtnText}>continue with google</Text>
+          </TouchableOpacity>
 
-        {/* Divider */}
-        <View style={styles.orRow}>
-          <View style={styles.orLine} />
-          <Text style={styles.orText}>or</Text>
-          <View style={styles.orLine} />
-        </View>
+          <View style={styles.orRow}>
+            <View style={styles.orLine} />
+            <Text style={styles.orText}>or</Text>
+            <View style={styles.orLine} />
+          </View>
 
-        {/* Email button */}
-        <TouchableOpacity
-          style={styles.emailBtn}
-          onPress={showEmailForm}
-          activeOpacity={0.7}
-        >
-          <Feather name="mail" size={16} color={colors.stone} />
-          <Text style={styles.emailBtnText}>sign in with email</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.emailBtn} onPress={showEmailForm} activeOpacity={0.7}>
+            <Feather name="mail" size={15} color={colors.stone} />
+            <Text style={styles.emailBtnText}>sign in with email</Text>
+          </TouchableOpacity>
+        </Animated.View>
 
-        {/* Terms */}
         <Text style={styles.terms}>
-          by continuing, you agree to our terms of service{"\n"}and privacy policy
+          by continuing, you agree to our terms{"\n"}of service and privacy policy
         </Text>
-      </View>
+      </Animated.View>
     </View>
   );
 }
@@ -293,79 +334,109 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ivory,
   },
 
-  /* Carousel */
-  carouselArea: {
+  /* Decorative corners */
+  cornerTL: {
+    position: "absolute",
+    top: Platform.OS === "ios" ? 60 : 40,
+    left: 24,
+    zIndex: 10,
+  },
+  cornerBR: {
+    position: "absolute",
+    bottom: Platform.OS === "ios" ? 48 : 28,
+    right: 24,
+    zIndex: 10,
+    transform: [{ rotate: "180deg" }],
+  },
+  cornerChar: {
+    fontSize: 14,
+    color: colors.mist,
+  },
+
+  /* Hero carousel */
+  heroArea: {
     flex: 1,
     justifyContent: "center",
-    paddingBottom: spacing.lg,
-  },
-  slide: {
-    width: SCREEN_W,
     alignItems: "center",
+    overflow: "hidden",
+  },
+  slideAbsolute: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: spacing.xl,
   },
-  slideIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  decorChar: {
+    fontSize: 100,
+    position: "absolute",
+    top: "28%",
+    fontWeight: "200",
+    alignSelf: "center",
+  },
+  iconCircle: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: spacing.lg,
+    marginBottom: 24,
   },
   slideTitle: {
-    fontSize: 28,
+    fontSize: 30,
     textAlign: "center",
-    marginBottom: spacing.sm,
+    marginBottom: 10,
+    color: colors.ink,
   },
   slideSubtitle: {
-    fontFamily: "CormorantGaramond_500Medium_Italic",
-    fontSize: 17,
-    color: colors.stone,
     textAlign: "center",
+    color: colors.stone,
     lineHeight: 24,
   },
   dots: {
     flexDirection: "row",
     justifyContent: "center",
+    alignItems: "center",
     gap: 8,
-    marginTop: spacing.md,
+    position: "absolute",
+    bottom: 16,
   },
   dot: {
-    width: 6,
     height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.sand,
-  },
-  dotActive: {
-    backgroundColor: colors.ink,
-    width: 20,
     borderRadius: 3,
   },
 
   /* Auth area */
   authArea: {
     paddingHorizontal: spacing.xl,
-    paddingBottom: Platform.OS === "ios" ? 50 : 32,
+    paddingBottom: Platform.OS === "ios" ? 44 : 28,
     alignItems: "center",
   },
   brandName: {
     fontFamily: "CormorantGaramond_500Medium",
-    fontSize: 20,
+    fontSize: 22,
     color: colors.ink,
-    letterSpacing: 6,
+    letterSpacing: 8,
     textTransform: "uppercase",
-    marginBottom: 8,
+    marginBottom: 6,
   },
-  brandLine: {
-    width: 32,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.taupe,
-    marginBottom: spacing.lg,
+  brandDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.coral,
+    marginBottom: 20,
+  },
+  btnsWrap: {
+    width: "100%",
+    alignItems: "center",
   },
 
   /* Social buttons */
-  socialBtn: {
+  appleBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -376,17 +447,27 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     marginBottom: 10,
   },
-  socialBtnText: {
+  appleBtnText: {
     fontFamily: "Inter_500Medium",
     fontSize: 14,
     color: colors.pearl,
   },
   googleBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    width: "100%",
     backgroundColor: colors.pearl,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.mist,
+    borderRadius: 999,
+    paddingVertical: 15,
+    marginBottom: 0,
   },
   googleBtnText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 14,
     color: colors.ink,
   },
 
@@ -422,7 +503,7 @@ const styles = StyleSheet.create({
     borderColor: colors.sand,
     borderRadius: 999,
     paddingVertical: 14,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   emailBtnText: {
     fontFamily: "Inter_500Medium",
@@ -437,6 +518,7 @@ const styles = StyleSheet.create({
     color: colors.sand,
     textAlign: "center",
     lineHeight: 16,
+    marginTop: 4,
   },
 
   /* Email form screen */
@@ -460,8 +542,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   emailSubtitle: {
-    fontFamily: "CormorantGaramond_500Medium_Italic",
-    fontSize: 16,
     color: colors.stone,
     marginBottom: spacing.xl,
   },

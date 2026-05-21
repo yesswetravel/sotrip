@@ -2,7 +2,7 @@ import { StyleSheet, TouchableOpacity, View, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { Text } from "../../features/design-system";
 import { useSubscriptionStore } from "../../features/subscription/store";
-import { PAID_PRICE_MONTHLY } from "../../features/subscription/constants";
+import { PAID_PRICE } from "../../features/subscription/constants";
 import { colors } from "../../theme/colors";
 import { spacing } from "../../theme/spacing";
 import { APP_NAME } from "../../theme/brand";
@@ -13,7 +13,6 @@ const FEATURES = [
   { icon: "❋", title: "memories forever", desc: "every past trip archived & searchable" },
   { icon: "◎", title: "invite everyone", desc: "plan together with unlimited companions" },
   { icon: "▣", title: "offline access", desc: "your itinerary works without signal" },
-  { icon: "◇", title: "pdf export", desc: "share your plans beyond the app" },
 ];
 
 export default function PaywallScreen() {
@@ -70,10 +69,10 @@ export default function PaywallScreen() {
 
       <View style={styles.priceSection}>
         <Text variant="title" style={styles.priceAmount}>
-          ${PAID_PRICE_MONTHLY}
+          ${PAID_PRICE}
         </Text>
         <Text variant="caption" style={styles.priceLabel}>
-          per month — less than a coffee
+          one-time purchase — yours forever
         </Text>
       </View>
 
@@ -90,7 +89,7 @@ export default function PaywallScreen() {
         activeOpacity={0.85}
       >
         <Text variant="body" style={styles.unlockBtnText}>
-          unlock everything
+          unlock — ${PAID_PRICE} once
         </Text>
       </TouchableOpacity>
 
