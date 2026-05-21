@@ -27,8 +27,9 @@ function AuthGate() {
   const router = useRouter();
   const hasSeenPaywall = useSubscriptionStore((s) => s.hasSeenPaywall);
 
+  const BYPASS_AUTH = false;
   useEffect(() => {
-    if (loading) return;
+    if (BYPASS_AUTH || loading) return;
     const inAuth = segments[0] === "(auth)";
     if (!session && !inAuth) {
       router.replace("/(auth)/sign-in");

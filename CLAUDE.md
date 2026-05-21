@@ -95,14 +95,15 @@ Core tables and their key columns:
 ## Subscription System (features/subscription/)
 
 ### Tiers
-| Feature | Free | Paid ($1.99/mo) |
-|---------|------|-----------------|
+| Feature | Free | Pro ($4.99 one-time) |
+|---------|------|----------------------|
 | Active trips | 1 | Unlimited |
 | Items per trip | 10 | Unlimited |
 | Companions | 2 | Unlimited |
 | Photos per day | 5 | Unlimited |
 | Past trips visible | 1 | All |
-| Memory book, AI, offline, PDF | No | Yes |
+| Memory book, AI, offline | No | Yes |
+| PDF export | No | $4.99/trip add-on |
 
 ### Store (Zustand + manual AsyncStorage)
 ```

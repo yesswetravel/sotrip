@@ -21,8 +21,9 @@ export const TIER_LIMITS = {
     memoryBook: true,
     aiSuggestions: true,
     offlineAccess: true,
-    pdfExport: true,
+    pdfExport: false,
   },
 } as const;
 
-export const PAID_PRICE_MONTHLY = 1.99;
+export const PAID_PRICE = 4.99;
+export const PDF_EXPORT_PRICE = 4.99;
