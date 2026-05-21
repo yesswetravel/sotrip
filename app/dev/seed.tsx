@@ -1,15 +1,16 @@
 import { useState } from "react";
-import { StyleSheet, TouchableOpacity, View, ScrollView, Alert } from "react-native";
+import { StyleSheet, TouchableOpacity, View, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useQueryClient } from "@tanstack/react-query";
 import { Container, Text } from "../../features/design-system";
-import { supabase } from "../../lib/supabase";
-import { useSession } from "../../lib/use-session";
 import { useSubscriptionStore } from "../../features/subscription/store";
 import { colors } from "../../theme/colors";
 import { spacing } from "../../theme/spacing";
+import type { TripWithDaysAndItems, Trip } from "../../types/database";
 
+const DEMO_TRIP_ID = "demo-paris-preview";
 const TRIP_START = "2026-06-15";
 const TRIP_END = "2026-06-24";
 
@@ -38,7 +39,6 @@ type ItemSeed = {
 };
 
 const DAY_ITEMS: ItemSeed[][] = [
-  // Day 1 — Arrival
   [
     { title: "land at CDG", subtitle: "air france AF1680", time: "10:30", location_name: "Charles de Gaulle Airport", location_lat: 49.0097, location_lng: 2.5479, category: "transport", notes: "terminal 2E, grab SIM card at relay" },
     { title: "taxi to hotel", time: "11:30", location_name: "Hotel Le Marais", location_lat: 48.8566, location_lng: 2.3522, category: "transport", notes: "pre-booked via hotel, ~€55" },
@@ -48,7 +48,6 @@ const DAY_ITEMS: ItemSeed[][] = [
     { title: "sunset at trocadéro", subtitle: "eiffel tower views", time: "19:00", location_name: "Trocadéro", location_lat: 48.8622, location_lng: 2.2885, category: "sightseeing", notes: "best eiffel tower photo angle, arrive 30 min before sunset" },
     { title: "dinner at le comptoir", time: "21:00", location_name: "Le Comptoir du Panthéon", location_lat: 48.8462, location_lng: 2.3464, category: "dining", notes: "duck confit, book ahead" },
   ],
-  // Day 2 — Classic Paris
   [
     { title: "croissants at du pain et des idées", time: "08:30", location_name: "Du Pain et des Idées", location_lat: 48.8710, location_lng: 2.3614, category: "dining", notes: "famous pain des amis, arrive early — sells out" },
     { title: "eiffel tower climb", subtitle: "skip-the-line tickets", time: "10:00", location_name: "Eiffel Tower", location_lat: 48.8584, location_lng: 2.2945, category: "sightseeing", notes: "take stairs to 2nd floor, elevator to top. tickets pre-booked" },
@@ -58,7 +57,6 @@ const DAY_ITEMS: ItemSeed[][] = [
     { title: "seine river cruise", subtitle: "bateaux mouches", time: "18:30", location_name: "Bateaux Mouches", location_lat: 48.8641, location_lng: 2.3056, category: "activity", notes: "1 hour cruise, golden hour light on buildings" },
     { title: "dinner at bouillon chartier", time: "20:30", location_name: "Bouillon Chartier", location_lat: 48.8747, location_lng: 2.3440, category: "dining", notes: "historic belle époque dining hall, very affordable" },
   ],
-  // Day 3 — Art & Culture
   [
     { title: "breakfast at hôtel", time: "08:00", category: "dining", notes: "hotel breakfast included" },
     { title: "louvre museum", subtitle: "mona lisa & beyond", time: "09:30", location_name: "Musée du Louvre", location_lat: 48.8606, location_lng: 2.3376, category: "sightseeing", notes: "enter via carrousel du louvre (less queue). must-see: winged victory, venus de milo, mona lisa" },
@@ -68,7 +66,6 @@ const DAY_ITEMS: ItemSeed[][] = [
     { title: "walk through latin quarter", time: "18:00", location_name: "Quartier Latin", location_lat: 48.8500, location_lng: 2.3450, category: "sightseeing" },
     { title: "dinner at chez janou", time: "20:00", location_name: "Chez Janou", location_lat: 48.8570, location_lng: 2.3640, category: "dining", notes: "famous chocolate mousse, provençal cuisine" },
   ],
-  // Day 4 — Montmartre & Sacré-Cœur
   [
     { title: "coffee at kb café", time: "09:00", location_name: "KB CaféShop", location_lat: 48.8819, location_lng: 2.3374, category: "coffee", notes: "specialty coffee near montmartre" },
     { title: "sacré-cœur basilica", subtitle: "hilltop views of paris", time: "10:00", location_name: "Sacré-Cœur", location_lat: 48.8867, location_lng: 2.3431, category: "sightseeing", notes: "take funicular up, walk down. free entry, dome climb €7" },
@@ -79,7 +76,6 @@ const DAY_ITEMS: ItemSeed[][] = [
     { title: "sunset drinks at le perchoir", time: "18:30", location_name: "Le Perchoir", location_lat: 48.8672, location_lng: 2.3805, category: "nightlife", notes: "rooftop bar, cocktails with east paris views" },
     { title: "dinner at pink mamma", time: "20:30", location_name: "Pink Mamma", location_lat: 48.8668, location_lng: 2.3793, category: "dining", notes: "5-story italian restaurant, truffle pasta is incredible. no reservations — arrive early" },
   ],
-  // Day 5 — Versailles Day Trip
   [
     { title: "early train to versailles", time: "08:00", location_name: "Gare Montparnasse", location_lat: 48.8414, location_lng: 2.3209, category: "transport", notes: "RER C to Versailles Rive Gauche, ~40 min. buy navigo pass" },
     { title: "palace of versailles", subtitle: "hall of mirrors", time: "09:30", location_name: "Château de Versailles", location_lat: 48.8049, location_lng: 2.1204, category: "sightseeing", notes: "pre-book timed entry. hall of mirrors, king's apartments, chapel" },
@@ -89,7 +85,6 @@ const DAY_ITEMS: ItemSeed[][] = [
     { title: "train back to paris", time: "17:00", category: "transport" },
     { title: "light dinner at le bouillon", time: "19:30", location_name: "Le Bouillon", location_lat: 48.8566, location_lng: 2.3522, category: "dining", notes: "classic french comfort food, rest those tired feet" },
   ],
-  // Day 6 — Le Marais & Shopping
   [
     { title: "brunch at café charlot", time: "09:30", location_name: "Café Charlot", location_lat: 48.8649, location_lng: 2.3625, category: "dining", notes: "eggs benedict & fresh juice, people-watching on terrace" },
     { title: "explore le marais boutiques", subtitle: "vintage & designer shops", time: "11:00", location_name: "Le Marais", location_lat: 48.8570, location_lng: 2.3615, category: "shopping", notes: "merci concept store, free'p'star vintage, kilo shop" },
@@ -99,7 +94,6 @@ const DAY_ITEMS: ItemSeed[][] = [
     { title: "spa break at hammam", time: "17:30", location_name: "Les Bains du Marais", location_lat: 48.8621, location_lng: 2.3595, category: "wellness", notes: "turkish bath + massage, pre-book couples slot" },
     { title: "dinner at breizh café", time: "20:00", location_name: "Breizh Café", location_lat: 48.8602, location_lng: 2.3608, category: "dining", notes: "best crêpes & galettes in paris, organic buckwheat" },
   ],
-  // Day 7 — Seine & Islands
   [
     { title: "morning yoga in tuileries", time: "07:30", location_name: "Jardin des Tuileries", location_lat: 48.8634, location_lng: 2.3275, category: "wellness", notes: "free outdoor session near the pond" },
     { title: "breakfast at angelina", time: "09:00", location_name: "Angelina Paris", location_lat: 48.8651, location_lng: 2.3286, category: "dining", notes: "famous hot chocolate (chocolat l'africain) & mont blanc pastry" },
@@ -110,7 +104,6 @@ const DAY_ITEMS: ItemSeed[][] = [
     { title: "bouquinistes browsing", subtitle: "riverside booksellers", time: "16:00", location_name: "Les Bouquinistes", location_lat: 48.8530, location_lng: 2.3440, category: "shopping", notes: "UNESCO heritage green stalls along the seine. vintage prints" },
     { title: "dinner cruise on the seine", time: "20:00", location_name: "Marina de Paris", location_lat: 48.8600, location_lng: 2.3300, category: "dining", notes: "3-course dinner, 2.5 hours, paris lit up at night. pre-booked" },
   ],
-  // Day 8 — Day Trip to Giverny
   [
     { title: "train to vernon", time: "08:15", location_name: "Gare Saint-Lazare", location_lat: 48.8765, location_lng: 2.3258, category: "transport", notes: "direct train ~45 min, then shuttle bus to giverny" },
     { title: "monet's garden", subtitle: "water lilies & japanese bridge", time: "10:00", location_name: "Fondation Claude Monet", location_lat: 49.0757, location_lng: 1.5334, category: "sightseeing", notes: "arrive right at opening. water garden first (fewer crowds), then flower garden" },
@@ -121,7 +114,6 @@ const DAY_ITEMS: ItemSeed[][] = [
     { title: "relaxed evening at hotel", time: "18:30", category: "hotel", notes: "rest, pack laundry, plan last 2 days" },
     { title: "late dinner at le petit cler", time: "20:30", location_name: "Le Petit Cler", location_lat: 48.8558, location_lng: 2.3091, category: "dining", notes: "neighborhood bistro in the 7th, warm atmosphere" },
   ],
-  // Day 9 — Luxury & Champs-Élysées
   [
     { title: "pastries at cédric grolet", time: "09:00", location_name: "Cédric Grolet Opéra", location_lat: 48.8718, location_lng: 2.3310, category: "dining", notes: "world-famous fruit trompe l'oeil pastries. queue early" },
     { title: "palais garnier opera house", subtitle: "guided tour", time: "10:30", location_name: "Palais Garnier", location_lat: 48.8720, location_lng: 2.3316, category: "sightseeing", notes: "phantom of the opera inspiration, chagall ceiling, grand staircase" },
@@ -131,7 +123,6 @@ const DAY_ITEMS: ItemSeed[][] = [
     { title: "cocktails at bar hemingway", time: "18:00", location_name: "Bar Hemingway, Ritz Paris", location_lat: 48.8681, location_lng: 2.3285, category: "nightlife", notes: "legendary bar at the ritz, €25+ cocktails but iconic experience" },
     { title: "farewell dinner at le jules verne", time: "20:30", location_name: "Le Jules Verne", location_lat: 48.8584, location_lng: 2.2945, category: "dining", notes: "michelin-starred restaurant in the eiffel tower. once-in-a-lifetime. booked 3 months ago" },
   ],
-  // Day 10 — Farewell Paris
   [
     { title: "last breakfast at hôtel", time: "08:00", category: "dining", notes: "savor every last croissant" },
     { title: "morning walk through tuileries", time: "09:30", location_name: "Jardin des Tuileries", location_lat: 48.8634, location_lng: 2.3275, category: "sightseeing", notes: "one last peaceful walk, photos by the fountain" },
@@ -156,23 +147,22 @@ const DAY_NOTES: (string | null)[] = [
   "bittersweet last morning. paris, we'll be back. this city has our hearts.",
 ];
 
-const OUTFIT_DATA: { name: string; notes: string; dayNumber: number | null }[] = [
-  { name: "arrival chic", notes: "black wide-leg trousers, cream silk blouse, tan trench coat, white sneakers", dayNumber: 1 },
-  { name: "classic tourist", notes: "high-waist jeans, breton stripe top, navy blazer, white keds, red lip", dayNumber: 2 },
-  { name: "museum day", notes: "black midi skirt, tucked white tee, gold necklace, ballet flats, crossbody bag", dayNumber: 3 },
-  { name: "montmartre vibes", notes: "flowy floral dress, denim jacket, espadrilles, straw bag, beret (yes really)", dayNumber: 4 },
-  { name: "versailles grandeur", notes: "linen wide trousers, eyelet top, block heels, structured bag, pearls", dayNumber: 5 },
-  { name: "marais shopping", notes: "vintage high-waist shorts, tucked blouse, sandals, basket bag, gold hoops", dayNumber: 6 },
-  { name: "river romance", notes: "slip dress in sage green, cashmere cardigan, strappy heels, clutch, perfume", dayNumber: 7 },
-  { name: "giverny garden", notes: "linen jumpsuit in blush, white sneakers, sun hat, canvas tote, minimal jewelry", dayNumber: 8 },
-  { name: "luxury evening", notes: "little black dress, statement earrings, heeled mules, silk wrap, red clutch", dayNumber: 9 },
-  { name: "travel home", notes: "comfy joggers, oversized cashmere sweater, slip-on sneakers, baseball cap", dayNumber: 10 },
+const OUTFIT_DATA = [
+  { name: "arrival chic", notes: "black wide-leg trousers, cream silk blouse, tan trench coat, white sneakers", dayNumber: 1 as number | null },
+  { name: "classic tourist", notes: "high-waist jeans, breton stripe top, navy blazer, white keds, red lip", dayNumber: 2 as number | null },
+  { name: "museum day", notes: "black midi skirt, tucked white tee, gold necklace, ballet flats, crossbody bag", dayNumber: 3 as number | null },
+  { name: "montmartre vibes", notes: "flowy floral dress, denim jacket, espadrilles, straw bag, beret (yes really)", dayNumber: 4 as number | null },
+  { name: "versailles grandeur", notes: "linen wide trousers, eyelet top, block heels, structured bag, pearls", dayNumber: 5 as number | null },
+  { name: "marais shopping", notes: "vintage high-waist shorts, tucked blouse, sandals, basket bag, gold hoops", dayNumber: 6 as number | null },
+  { name: "river romance", notes: "slip dress in sage green, cashmere cardigan, strappy heels, clutch, perfume", dayNumber: 7 as number | null },
+  { name: "giverny garden", notes: "linen jumpsuit in blush, white sneakers, sun hat, canvas tote, minimal jewelry", dayNumber: 8 as number | null },
+  { name: "luxury evening", notes: "little black dress, statement earrings, heeled mules, silk wrap, red clutch", dayNumber: 9 as number | null },
+  { name: "travel home", notes: "comfy joggers, oversized cashmere sweater, slip-on sneakers, baseball cap", dayNumber: 10 as number | null },
   { name: "rainy day backup", notes: "black turtleneck, tailored coat, waterproof chelsea boots, umbrella, scarf", dayNumber: null },
   { name: "night out alt", notes: "leather pants, silk cami, blazer, ankle boots, bold lip", dayNumber: null },
 ];
 
-const PACKING_ITEMS: { text: string; packed: boolean; category: string }[] = [
-  // Clothes
+const PACKING_ITEMS = [
   { text: "breton stripe top", packed: true, category: "clothes" },
   { text: "cream silk blouse", packed: true, category: "clothes" },
   { text: "black wide-leg trousers (×2)", packed: true, category: "clothes" },
@@ -202,7 +192,6 @@ const PACKING_ITEMS: { text: string; packed: boolean; category: string }[] = [
   { text: "socks (10 pairs)", packed: true, category: "clothes" },
   { text: "sun hat", packed: false, category: "clothes" },
   { text: "silk scarf", packed: false, category: "clothes" },
-  // Toiletries
   { text: "sunscreen SPF 50", packed: true, category: "toiletries" },
   { text: "moisturizer", packed: true, category: "toiletries" },
   { text: "cleanser + toner", packed: true, category: "toiletries" },
@@ -215,7 +204,6 @@ const PACKING_ITEMS: { text: string; packed: boolean; category: string }[] = [
   { text: "hair ties & clips", packed: true, category: "toiletries" },
   { text: "mini first aid kit", packed: false, category: "toiletries" },
   { text: "lip balm SPF", packed: true, category: "toiletries" },
-  // Electronics
   { text: "phone + charger", packed: true, category: "electronics" },
   { text: "camera + extra battery", packed: true, category: "electronics" },
   { text: "portable power bank", packed: true, category: "electronics" },
@@ -223,7 +211,6 @@ const PACKING_ITEMS: { text: string; packed: boolean; category: string }[] = [
   { text: "kindle", packed: false, category: "electronics" },
   { text: "airpods", packed: true, category: "electronics" },
   { text: "travel hair dryer", packed: false, category: "electronics" },
-  // Documents
   { text: "passport", packed: true, category: "documents" },
   { text: "travel insurance printout", packed: true, category: "documents" },
   { text: "hotel confirmation", packed: true, category: "documents" },
@@ -231,7 +218,6 @@ const PACKING_ITEMS: { text: string; packed: boolean; category: string }[] = [
   { text: "museum pre-booked tickets", packed: false, category: "documents" },
   { text: "emergency contacts card", packed: true, category: "documents" },
   { text: "credit cards (×2) + cash €200", packed: true, category: "documents" },
-  // Other
   { text: "reusable water bottle", packed: true, category: "other" },
   { text: "tote bag for shopping", packed: true, category: "other" },
   { text: "travel umbrella", packed: false, category: "other" },
@@ -241,7 +227,7 @@ const PACKING_ITEMS: { text: string; packed: boolean; category: string }[] = [
   { text: "laundry bag", packed: true, category: "other" },
 ];
 
-const BUDGET_ENTRIES: { label: string; amount: number; category: string; paid: boolean }[] = [
+const BUDGET_ENTRIES = [
   { label: "round-trip flights", amount: 890, category: "flights", paid: true },
   { label: "hôtel du petit moulin (10 nights)", amount: 2800, category: "accommodation", paid: true },
   { label: "CDG taxi transfer", amount: 55, category: "transport", paid: false },
@@ -267,139 +253,113 @@ const BUDGET_ENTRIES: { label: string; amount: number; category: string; paid: b
   { label: "SIM card", amount: 20, category: "other", paid: false },
 ];
 
-const BUDGET_LIMIT = "6500";
-
-const NOTES_DATA: { title: string; body: string; color: string; pinned: boolean }[] = [
-  {
-    title: "restaurant reservations",
-    body: "le jules verne — jun 24, 8:30pm (conf #JV-28491)\nchez janou — jun 17, 8pm\nbouillon chartier — walk-in only\nbreizh café — jun 20, 8pm\nle relais de l'entrecôte — walk-in, arrive by 12:15",
-    color: "#F7F2E2",
-    pinned: true,
-  },
-  {
-    title: "french phrases",
-    body: "bonjour — hello\nmerci beaucoup — thank you very much\nl'addition, s'il vous plaît — the check, please\nparlez-vous anglais? — do you speak english?\nje voudrais... — i would like...\noù sont les toilettes? — where are the restrooms?\nc'est magnifique! — it's magnificent!",
-    color: "#DED7C5",
-    pinned: true,
-  },
-  {
-    title: "gift ideas",
-    body: "mom — lavender soap from a pharmacie\ndad — bottle of burgundy wine\nsis — macarons from ladurée (tin box)\nbest friend — vintage print from bouquinistes\ncoworker — fancy mustard from la grande épicerie",
-    color: "#B8956A14",
-    pinned: false,
-  },
-  {
-    title: "photography spots",
-    body: "1. trocadéro at golden hour (eiffel tower)\n2. pont alexandre III (ornate bridge)\n3. rue crémieux (colorful houses)\n4. louvre pyramid reflection at night\n5. sacré-cœur steps looking over paris\n6. café de flore terrace\n7. palais royal columns\n8. pont des arts at sunset",
-    color: "#4A6E6B14",
-    pinned: false,
-  },
-  {
-    title: "metro tips",
-    body: "line 1 & 14 are driverless (smooth ride)\navoid line 13 at rush hour\nalways validate ticket before boarding RER\nkeep bags in front on metro (pickpockets)\nuber is sometimes cheaper than taxi for 2\ncitymapper app works great for routes",
-    color: "#D8756014",
-    pinned: false,
-  },
-  {
-    title: "rainy day backup plan",
-    body: "option A: musée de l'orangerie (monet water lilies room)\noption B: covered passages — galerie vivienne, passage des panoramas\noption C: cooking class at le cordon bleu\noption D: wine tasting at ô chateau\noption E: catacombs (book ahead)",
-    color: "#F7F2E2",
-    pinned: false,
-  },
+const NOTES_DATA = [
+  { title: "restaurant reservations", body: "le jules verne — jun 24, 8:30pm (conf #JV-28491)\nchez janou — jun 17, 8pm\nbouillon chartier — walk-in only\nbreizh café — jun 20, 8pm\nle relais de l'entrecôte — walk-in, arrive by 12:15", color: "#F7F2E2", pinned: true },
+  { title: "french phrases", body: "bonjour — hello\nmerci beaucoup — thank you very much\nl'addition, s'il vous plaît — the check, please\nparlez-vous anglais? — do you speak english?\nje voudrais... — i would like...\noù sont les toilettes? — where are the restrooms?\nc'est magnifique! — it's magnificent!", color: "#DED7C5", pinned: true },
+  { title: "gift ideas", body: "mom — lavender soap from a pharmacie\ndad — bottle of burgundy wine\nsis — macarons from ladurée (tin box)\nbest friend — vintage print from bouquinistes\ncoworker — fancy mustard from la grande épicerie", color: "#B8956A14", pinned: false },
+  { title: "photography spots", body: "1. trocadéro at golden hour (eiffel tower)\n2. pont alexandre III (ornate bridge)\n3. rue crémieux (colorful houses)\n4. louvre pyramid reflection at night\n5. sacré-cœur steps looking over paris\n6. café de flore terrace\n7. palais royal columns\n8. pont des arts at sunset", color: "#4A6E6B14", pinned: false },
+  { title: "metro tips", body: "line 1 & 14 are driverless (smooth ride)\navoid line 13 at rush hour\nalways validate ticket before boarding RER\nkeep bags in front on metro (pickpockets)\nuber is sometimes cheaper than taxi for 2\ncitymapper app works great for routes", color: "#D8756014", pinned: false },
+  { title: "rainy day backup plan", body: "option A: musée de l'orangerie (monet water lilies room)\noption B: covered passages — galerie vivienne, passage des panoramas\noption C: cooking class at le cordon bleu\noption D: wine tasting at ô chateau\noption E: catacombs (book ahead)", color: "#F7F2E2", pinned: false },
 ];
 
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
+function buildMockTrip(): TripWithDaysAndItems {
+  const now = new Date().toISOString();
+  const dates: string[] = [];
+  const current = new Date(TRIP_START);
+  const last = new Date(TRIP_END);
+  while (current <= last) {
+    dates.push(current.toISOString().split("T")[0]);
+    current.setDate(current.getDate() + 1);
+  }
+
+  const trip_days = dates.map((date, i) => ({
+    id: `demo-day-${i + 1}`,
+    trip_id: DEMO_TRIP_ID,
+    day_number: i + 1,
+    date,
+    title: DAY_TITLES[i] || null,
+    notes: DAY_NOTES[i] || null,
+    trip_items: (DAY_ITEMS[i] || []).map((item, j) => ({
+      id: `demo-item-${i + 1}-${j}`,
+      trip_day_id: `demo-day-${i + 1}`,
+      sort_order: j,
+      title: item.title,
+      subtitle: item.subtitle ?? null,
+      time: item.time ?? null,
+      location_name: item.location_name ?? null,
+      location_lat: item.location_lat ?? null,
+      location_lng: item.location_lng ?? null,
+      category: item.category ?? null,
+      notes: item.notes ?? null,
+      link: null,
+      photo_uri: null,
+      assigned_to: [],
+      created_at: now,
+    })),
+  }));
+
+  return {
+    id: DEMO_TRIP_ID,
+    owner_id: "demo-user",
+    title: "paris, france",
+    destination: "Paris, France",
+    start_date: TRIP_START,
+    end_date: TRIP_END,
+    cover_photo_url: null,
+    is_archived: false,
+    created_at: now,
+    updated_at: now,
+    trip_days,
+  };
+}
+
 export default function SeedScreen() {
-  const { session } = useSession();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const setTier = useSubscriptionStore((s) => s.setTier);
   const [status, setStatus] = useState("");
   const [seeding, setSeeding] = useState(false);
   const [done, setDone] = useState(false);
 
-  async function seedDemo() {
-    if (!session) {
-      Alert.alert("sign in first", "you need to be signed in to seed demo data.");
-      return;
-    }
+  async function seedPreview() {
     setSeeding(true);
-    setStatus("switching to paid tier...");
-    setTier("paid");
 
     try {
-      // 1. Create trip
-      setStatus("creating 10-day paris trip...");
-      const { data: trip, error: tripErr } = await supabase
-        .from("trips")
-        .insert({
-          owner_id: session.user.id,
-          title: "paris, france",
-          destination: "Paris, France",
-          start_date: TRIP_START,
-          end_date: TRIP_END,
-        })
-        .select()
-        .single();
-      if (tripErr) throw tripErr;
+      setStatus("switching to paid tier...");
+      setTier("paid");
 
-      // 2. Create days
-      setStatus("creating trip days...");
-      const dates: string[] = [];
-      const current = new Date(TRIP_START);
-      const last = new Date(TRIP_END);
-      while (current <= last) {
-        dates.push(current.toISOString().split("T")[0]);
-        current.setDate(current.getDate() + 1);
-      }
+      setStatus("building mock trip data...");
+      const mockTrip = buildMockTrip();
 
-      const dayInserts = dates.map((date, i) => ({
-        trip_id: trip.id,
-        day_number: i + 1,
-        date,
-        title: DAY_TITLES[i] || null,
-        notes: DAY_NOTES[i] || null,
-      }));
+      // Inject into React Query cache (no Supabase)
+      queryClient.setQueryData(["trip", DEMO_TRIP_ID], mockTrip);
 
-      const { data: days, error: daysErr } = await supabase
-        .from("trip_days")
-        .insert(dayInserts)
-        .select();
-      if (daysErr) throw daysErr;
+      // Also inject into trips list so home screen shows it
+      const mockTripSummary: Trip = {
+        id: mockTrip.id,
+        owner_id: mockTrip.owner_id,
+        title: mockTrip.title,
+        destination: mockTrip.destination,
+        start_date: mockTrip.start_date,
+        end_date: mockTrip.end_date,
+        cover_photo_url: null,
+        is_archived: false,
+        created_at: mockTrip.created_at,
+        updated_at: mockTrip.updated_at,
+      };
+      const existingTrips = queryClient.getQueryData<Trip[]>(["trips", undefined]) || [];
+      queryClient.setQueryData(["trips", undefined], [...existingTrips, mockTripSummary]);
 
-      const sortedDays = days.sort((a: any, b: any) => a.day_number - b.day_number);
+      // Prevent React Query from refetching and overwriting our mock data
+      queryClient.setQueryDefaults(["trip", DEMO_TRIP_ID], {
+        staleTime: Infinity,
+        gcTime: Infinity,
+      });
 
-      // 3. Create items for each day
-      setStatus("adding activities (70+ places)...");
-      for (let dayIdx = 0; dayIdx < sortedDays.length; dayIdx++) {
-        const day = sortedDays[dayIdx];
-        const items = DAY_ITEMS[dayIdx] || [];
-        if (items.length === 0) continue;
-
-        const itemInserts = items.map((item, sortIdx) => ({
-          trip_day_id: day.id,
-          sort_order: sortIdx,
-          title: item.title,
-          subtitle: item.subtitle ?? null,
-          time: item.time ?? null,
-          location_name: item.location_name ?? null,
-          location_lat: item.location_lat ?? null,
-          location_lng: item.location_lng ?? null,
-          category: item.category ?? null,
-          notes: item.notes ?? null,
-          link: null,
-          photo_uri: null,
-        }));
-
-        const { error: itemsErr } = await supabase
-          .from("trip_items")
-          .insert(itemInserts);
-        if (itemsErr) throw itemsErr;
-      }
-
-      // 4. Seed AsyncStorage data
       setStatus("saving outfits...");
       const outfits = OUTFIT_DATA.map((o) => ({
         id: uid(),
@@ -409,7 +369,7 @@ export default function SeedScreen() {
         dayNumber: o.dayNumber,
         createdAt: new Date().toISOString(),
       }));
-      await AsyncStorage.setItem(`outfits_${trip.id}`, JSON.stringify(outfits));
+      await AsyncStorage.setItem(`outfits_${DEMO_TRIP_ID}`, JSON.stringify(outfits));
 
       setStatus("saving packing list...");
       const packingItems = PACKING_ITEMS.map((p) => ({
@@ -418,7 +378,7 @@ export default function SeedScreen() {
         packed: p.packed,
         category: p.category,
       }));
-      await AsyncStorage.setItem(`packing_${trip.id}`, JSON.stringify(packingItems));
+      await AsyncStorage.setItem(`packing_${DEMO_TRIP_ID}`, JSON.stringify(packingItems));
 
       setStatus("saving budget...");
       const budgetEntries = BUDGET_ENTRIES.map((b) => ({
@@ -428,8 +388,8 @@ export default function SeedScreen() {
         category: b.category,
         paid: b.paid,
       }));
-      await AsyncStorage.setItem(`budget_${trip.id}`, JSON.stringify(budgetEntries));
-      await AsyncStorage.setItem(`budget_limit_${trip.id}`, BUDGET_LIMIT);
+      await AsyncStorage.setItem(`budget_${DEMO_TRIP_ID}`, JSON.stringify(budgetEntries));
+      await AsyncStorage.setItem(`budget_limit_${DEMO_TRIP_ID}`, "6500");
 
       setStatus("saving notes...");
       const now = new Date().toISOString();
@@ -442,11 +402,11 @@ export default function SeedScreen() {
         createdAt: new Date(Date.now() - i * 3600000).toISOString(),
         updatedAt: now,
       }));
-      await AsyncStorage.setItem(`notes_${trip.id}`, JSON.stringify(notes));
+      await AsyncStorage.setItem(`notes_${DEMO_TRIP_ID}`, JSON.stringify(notes));
 
-      setStatus("done! redirecting...");
+      setStatus("done! opening trip...");
       setDone(true);
-      setTimeout(() => router.replace(`/trip/${trip.id}`), 1200);
+      setTimeout(() => router.push(`/trip/${DEMO_TRIP_ID}`), 800);
     } catch (err: any) {
       setStatus(`error: ${err.message}`);
       setSeeding(false);
@@ -462,14 +422,14 @@ export default function SeedScreen() {
 
         <View style={styles.header}>
           <Text style={styles.icon}>✦</Text>
-          <Text variant="display">demo seed</Text>
+          <Text variant="display">preview demo</Text>
           <Text variant="body" style={styles.subtitle}>
-            create a complete 10-day paris trip with 70+ activities, outfit planning, packing list, budget tracking, and travel notes
+            preview a complete 10-day paris trip with 70+ activities, outfit planning, packing list, budget tracking, and travel notes — all local, nothing saved to database
           </Text>
         </View>
 
         <View style={styles.preview}>
-          <Text variant="eyebrow" style={styles.previewLabel}>what you'll get</Text>
+          <Text variant="eyebrow" style={styles.previewLabel}>what you'll see</Text>
           <View style={styles.previewList}>
             {[
               ["map-pin", "10 days of activities with times & locations"],
@@ -495,19 +455,19 @@ export default function SeedScreen() {
 
         <TouchableOpacity
           style={[styles.seedBtn, (seeding || done) && styles.seedBtnDisabled]}
-          onPress={seedDemo}
+          onPress={seedPreview}
           activeOpacity={0.85}
           disabled={seeding || done}
         >
-          <Feather name={done ? "check" : "zap"} size={16} color={colors.ivory} />
+          <Feather name={done ? "check" : "eye"} size={16} color={colors.ivory} />
           <Text variant="body" style={styles.seedBtnText}>
-            {done ? "seeded!" : seeding ? "seeding..." : "seed paris demo"}
+            {done ? "opening..." : seeding ? "loading..." : "preview paris trip"}
           </Text>
         </TouchableOpacity>
 
         <Text variant="caption" style={styles.note}>
-          this will create a real trip in your account.{"\n"}
-          you can delete it anytime from trip settings.
+          local preview only — nothing is saved to the database.{"\n"}
+          data disappears when you refresh the app.
         </Text>
       </ScrollView>
     </Container>
