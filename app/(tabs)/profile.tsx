@@ -1,11 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import {
   StyleSheet,
   TouchableOpacity,
   View,
   ScrollView,
   Alert,
-  Linking,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -14,6 +13,9 @@ import { useFocusEffect } from "expo-router";
 import { Container, Text } from "../../features/design-system";
 import { supabase } from "../../lib/supabase";
 import { useSession } from "../../lib/use-session";
+import { useSubscription } from "../../features/subscription/hooks";
+import { useSubscriptionStore } from "../../features/subscription/store";
+import { PAID_PRICE_MONTHLY } from "../../features/subscription/constants";
 import { colors } from "../../theme/colors";
 import { spacing } from "../../theme/spacing";
 
@@ -127,6 +129,10 @@ export default function ProfileScreen() {
   const email = session?.user.email ?? "";
   const initial = email.charAt(0).toUpperCase();
 
+  const { tier, isPaid } = useSubscription();
+  const setTier = useSubscriptionStore((s) => s.setTier);
+  const [devTaps, setDevTaps] = useState(0);
+
   const [orders, setOrders] = useState<MemoryOrder[]>([]);
 
   useFocusEffect(
@@ -152,6 +158,11 @@ export default function ProfileScreen() {
     Alert.alert("coming soon", `${feature} will be available in a future update.`);
   }
 
+  function handleDevToggle() {
+    setTier(isPaid ? "free" : "paid");
+    setDevTaps(0);
+  }
+
   return (
     <Container safe>
       <ScrollView
@@ -169,6 +180,49 @@ export default function ProfileScreen() {
           <Text variant="caption" style={styles.email}>
             {email}
           </Text>
+        </View>
+
+        {/* ---- Plan section (subscription) ---- */}
+        <SectionHeader title="your plan" />
+        <View style={styles.card}>
+          <View style={styles.planInner}>
+            <View style={styles.planRow}>
+              <View style={[styles.planBadge, isPaid && styles.planBadgePaid]}>
+                <Text variant="body" style={[styles.planBadgeText, isPaid && styles.planBadgeTextPaid]}>
+                  {isPaid ? "paid" : "free"}
+                </Text>
+              </View>
+              {isPaid ? (
+                <Text variant="caption">
+                  ${PAID_PRICE_MONTHLY}/month
+                </Text>
+              ) : (
+                <Text variant="caption">
+                  1 trip · 10 activities
+                </Text>
+              )}
+            </View>
+
+            {!isPaid && (
+              <TouchableOpacity
+                style={styles.upgradeBtn}
+                onPress={() => router.push("/(auth)/paywall")}
+                activeOpacity={0.85}
+              >
+                <Text variant="body" style={styles.upgradeBtnText}>
+                  upgrade — ${PAID_PRICE_MONTHLY}/mo
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {isPaid && (
+              <TouchableOpacity style={styles.manageLink} activeOpacity={0.8}>
+                <Text variant="caption" style={styles.manageLinkText}>
+                  manage subscription
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* ---- My Books ---- */}
@@ -328,8 +382,21 @@ export default function ProfileScreen() {
           </Text>
         </TouchableOpacity>
 
-        {/* ---- Version ---- */}
-        <Text style={styles.version}>version 1.0.0</Text>
+        {/* Hidden dev toggle — tap version 5 times to switch tiers */}
+        <TouchableOpacity
+          style={styles.devTrigger}
+          onPress={() => {
+            const next = devTaps + 1;
+            if (next >= 5) {
+              handleDevToggle();
+            } else {
+              setDevTaps(next);
+            }
+          }}
+          activeOpacity={1}
+        >
+          <Text style={styles.version}>sotrip v1.0.0</Text>
+        </TouchableOpacity>
 
         <View style={{ height: spacing.xxl }} />
       </ScrollView>
@@ -362,6 +429,52 @@ const styles = StyleSheet.create({
   },
   displayName: { fontSize: 20, marginBottom: 4 },
   email: { color: colors.stone },
+
+  /* Plan section */
+  planInner: {
+    padding: spacing.md,
+    gap: 12,
+  },
+  planRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  planBadge: {
+    backgroundColor: colors.mist,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  planBadgePaid: {
+    backgroundColor: colors.ink,
+  },
+  planBadgeText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    color: colors.stone,
+  },
+  planBadgeTextPaid: {
+    color: colors.ivory,
+  },
+  upgradeBtn: {
+    backgroundColor: colors.ink,
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  upgradeBtnText: {
+    color: colors.ivory,
+    fontFamily: "Inter_500Medium",
+  },
+  manageLink: {
+    alignItems: "center",
+    paddingVertical: 4,
+  },
+  manageLinkText: {
+    color: colors.stone,
+    textDecorationLine: "underline",
+  },
 
   /* Section */
   sectionTitle: {
@@ -468,7 +581,12 @@ const styles = StyleSheet.create({
   },
   signOutText: { color: colors.stone, fontSize: 14 },
 
-  /* Version */
+  /* Dev toggle & Version */
+  devTrigger: {
+    alignItems: "center",
+    marginTop: spacing.xxl,
+    paddingVertical: spacing.sm,
+  },
   version: {
     textAlign: "center",
     fontSize: 10,

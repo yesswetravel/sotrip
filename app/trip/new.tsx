@@ -12,8 +12,9 @@ import { useRouter } from "expo-router";
 import { Calendar, type DateData } from "react-native-calendars";
 import { Container, Text } from "../../features/design-system";
 import { useToast } from "../../features/shared/toast-context";
-import { useCreateTrip } from "../../features/trips/hooks";
+import { useCreateTrip, useTrips } from "../../features/trips/hooks";
 import { useSession } from "../../lib/use-session";
+import { useCanCreateTrip } from "../../features/subscription/hooks";
 import { colors } from "../../theme/colors";
 import { spacing } from "../../theme/spacing";
 
@@ -27,6 +28,13 @@ export default function NewTripScreen() {
   const router = useRouter();
   const createTrip = useCreateTrip();
   const { show } = useToast();
+  const { data: existingTrips } = useTrips(session?.user.id);
+
+  const activeCount = (existingTrips ?? []).filter((t) => {
+    const today = new Date().toISOString().split("T")[0];
+    return !t.end_date || t.end_date >= today;
+  }).length;
+  const { canCreate } = useCanCreateTrip(activeCount);
 
   const [title, setTitle] = useState("");
   const [destination, setDestination] = useState("");
@@ -85,6 +93,11 @@ export default function NewTripScreen() {
 
   async function handleSave() {
     if (!canSave || !session) return;
+    if (!canCreate) {
+      show("upgrade to create more trips");
+      router.back();
+      return;
+    }
     try {
       const trip = await createTrip.mutateAsync({
         userId: session.user.id,

@@ -4,7 +4,6 @@ import * as SplashScreen from "expo-splash-screen";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StyleSheet } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   useFonts,
   CormorantGaramond_500Medium,
@@ -16,6 +15,7 @@ import {
 } from "@expo-google-fonts/inter";
 import { ToastProvider } from "../features/shared/toast-context";
 import { useSession } from "../lib/use-session";
+import { useSubscriptionStore } from "../features/subscription/store";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -25,29 +25,23 @@ function AuthGate() {
   const { session, loading } = useSession();
   const segments = useSegments();
   const router = useRouter();
-  const [subChecked, setSubChecked] = useState(false);
-  const [hasSubscription, setHasSubscription] = useState(false);
+  const hasSeenPaywall = useSubscriptionStore((s) => s.hasSeenPaywall);
 
   useEffect(() => {
-    AsyncStorage.getItem("@subscription_status").then((val) => {
-      setHasSubscription(!!val);
-      setSubChecked(true);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (loading || !subChecked) return;
+    if (loading) return;
     const inAuth = segments[0] === "(auth)";
     if (!session && !inAuth) {
       router.replace("/(auth)/sign-in");
-    } else if (session && inAuth) {
-      if (!hasSubscription && (segments as string[])[1] !== "paywall") {
+    } else if (session && inAuth && segments[1] !== "paywall") {
+      if (!hasSeenPaywall) {
         router.replace("/(auth)/paywall");
-      } else if (hasSubscription) {
+      } else {
         router.replace("/");
       }
+    } else if (session && !inAuth && !hasSeenPaywall) {
+      router.replace("/(auth)/paywall");
     }
-  }, [session, loading, segments, subChecked, hasSubscription]);
+  }, [session, loading, segments, hasSeenPaywall]);
 
   return <Slot />;
 }

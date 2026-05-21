@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   StyleSheet,
   View,
@@ -12,6 +12,13 @@ import { Container, Text } from "../../features/design-system";
 import { Skeleton } from "../../features/shared";
 import { useTrips } from "../../features/trips/hooks";
 import { useSession } from "../../lib/use-session";
+import {
+  useSubscription,
+  useCanCreateTrip,
+  useVisiblePastTrips,
+} from "../../features/subscription/hooks";
+import UpgradeModal from "../../features/subscription/UpgradeModal";
+import { TIER_LIMITS } from "../../features/subscription/constants";
 import { colors } from "../../theme/colors";
 import { spacing } from "../../theme/spacing";
 import type { Trip } from "../../types/database";
@@ -73,12 +80,14 @@ export default function HomeScreen() {
   const { session } = useSession();
   const router = useRouter();
   const { data: trips, isLoading, refetch, isRefetching } = useTrips(session?.user.id);
+  const { tier, isPaid } = useSubscription();
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const firstName = session?.user.user_metadata?.display_name?.split(" ")[0]
     ?? session?.user.email?.split("@")[0]
     ?? "traveller";
 
-  const { upcoming, past } = useMemo(() => {
+  const { upcoming, past: allPast } = useMemo(() => {
     if (!trips) return { upcoming: [], past: [] };
     const today = new Date().toISOString().split("T")[0];
     return {
@@ -87,7 +96,14 @@ export default function HomeScreen() {
     };
   }, [trips]);
 
+  const past = useVisiblePastTrips(allPast);
+  const { canCreate, limit } = useCanCreateTrip(upcoming.length);
+
   function handleNew() {
+    if (!canCreate) {
+      setShowUpgrade(true);
+      return;
+    }
     router.push("/trip/new");
   }
 
@@ -148,10 +164,25 @@ export default function HomeScreen() {
       )}
 
       {hasTrips && (
-        <TouchableOpacity style={styles.fab} onPress={handleNew} activeOpacity={0.85}>
-          <Text variant="body" style={styles.fabText}>+</Text>
-        </TouchableOpacity>
+        <View style={styles.fabArea}>
+          {!isPaid && (
+            <View style={styles.tierBadge}>
+              <Text variant="caption" style={styles.tierBadgeText}>
+                free · {upcoming.length}/{limit} trip{limit === 1 ? "" : "s"}
+              </Text>
+            </View>
+          )}
+          <TouchableOpacity style={styles.fab} onPress={handleNew} activeOpacity={0.85}>
+            <Text variant="body" style={styles.fabText}>+</Text>
+          </TouchableOpacity>
+        </View>
       )}
+
+      <UpgradeModal
+        visible={showUpgrade}
+        limitMessage={`the free plan allows ${limit} active trip. upgrade to plan unlimited adventures.`}
+        onClose={() => setShowUpgrade(false)}
+      />
     </Container>
   );
 }
@@ -232,10 +263,24 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: spacing.md,
   },
-  fab: {
+  fabArea: {
     position: "absolute",
     right: 24,
     bottom: 24,
+    alignItems: "center",
+    gap: 8,
+  },
+  tierBadge: {
+    backgroundColor: colors.mist,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  tierBadgeText: {
+    fontSize: 10,
+    color: colors.stone,
+  },
+  fab: {
     width: 52,
     height: 52,
     borderRadius: 26,

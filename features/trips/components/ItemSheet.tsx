@@ -15,6 +15,7 @@ import { Text } from "../../design-system";
 import { LocationPicker, TimePicker, CategoryPicker } from "../../shared";
 import { useToast } from "../../shared/toast-context";
 import { useCreateItem, useUpdateItem, useDeleteItem } from "../hooks";
+import { useCanAddItem } from "../../subscription/hooks";
 import { colors } from "../../../theme/colors";
 import { spacing } from "../../../theme/spacing";
 import type { TripItem } from "../../../types/database";
@@ -23,6 +24,7 @@ interface ItemSheetProps {
   tripId: string;
   dayId: string;
   item: TripItem | null;
+  currentItemCount?: number;
   onClose: () => void;
 }
 
@@ -43,7 +45,7 @@ function FieldLabel({ label, icon }: { label: string; icon: keyof typeof Feather
 /*  Main component                                                      */
 /* ------------------------------------------------------------------ */
 
-export default function ItemSheet({ tripId, dayId, item, onClose }: ItemSheetProps) {
+export default function ItemSheet({ tripId, dayId, item, currentItemCount = 0, onClose }: ItemSheetProps) {
   const isEditing = !!item;
   const { show } = useToast();
   const createItem = useCreateItem(tripId);
@@ -61,6 +63,7 @@ export default function ItemSheet({ tripId, dayId, item, onClose }: ItemSheetPro
   const [link, setLink] = useState(item?.link ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  const { canAdd } = useCanAddItem(currentItemCount);
   const canSave = title.trim().length > 0;
 
   function handleOpenMap() {
@@ -71,6 +74,11 @@ export default function ItemSheet({ tripId, dayId, item, onClose }: ItemSheetPro
 
   async function handleSave() {
     if (!canSave) return;
+    if (!isEditing && !canAdd) {
+      show("upgrade to add more activities");
+      onClose();
+      return;
+    }
     try {
       if (isEditing) {
         await updateItem.mutateAsync({

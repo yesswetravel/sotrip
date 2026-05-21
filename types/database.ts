@@ -4,6 +4,9 @@ export interface User {
   display_name: string | null;
   bio: string | null;
   avatar_url: string | null;
+  subscription_tier: "free" | "paid";
+  subscription_status: "active" | "cancelled" | "expired";
+  subscription_period_end: string | null;
   created_at: string;
 }
 

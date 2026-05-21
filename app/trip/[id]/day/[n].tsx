@@ -31,6 +31,8 @@ import {
   useDeleteItem,
   useUpdateDayNotes,
 } from "../../../../features/trips/hooks";
+import { useCanAddItem, useSubscription } from "../../../../features/subscription/hooks";
+import UpgradeModal from "../../../../features/subscription/UpgradeModal";
 import { colors } from "../../../../theme/colors";
 import { spacing } from "../../../../theme/spacing";
 import type { TripItem } from "../../../../types/database";
@@ -277,9 +279,9 @@ export default function DayViewScreen() {
   const [sheetVisible, setSheetVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<TripItem | null>(null);
   const [viewingItem, setViewingItem] = useState<TripItem | null>(null);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   // Outfit for this day
-  // Outfits for this specific day only (private) — refresh on focus to pick up changes from day-look page
   const [dayOutfits, setDayOutfits] = useState<{ id: string; photoUri: string; name: string }[]>([]);
   const loadOutfits = useCallback(() => {
     AsyncStorage.getItem(`outfits_${id}`).then((raw) => {
@@ -322,6 +324,14 @@ export default function DayViewScreen() {
       return a.sort_order - b.sort_order;
     });
   }, [currentDay]);
+
+  // Subscription: total items across all days in trip
+  const totalItemsInTrip = useMemo(
+    () => trip?.trip_days.reduce((sum, d) => sum + d.trip_items.length, 0) ?? 0,
+    [trip]
+  );
+  const { canAdd, limit: itemLimit } = useCanAddItem(totalItemsInTrip);
+  const { isPaid } = useSubscription();
 
   // NOW card: find current or next item if today matches this day
   const isToday = currentDay?.date === new Date().toISOString().split("T")[0];
@@ -412,6 +422,10 @@ export default function DayViewScreen() {
   }
 
   function handleAddItem() {
+    if (!canAdd) {
+      setShowUpgrade(true);
+      return;
+    }
     setEditingItem(null);
     setSheetVisible(true);
   }
@@ -685,11 +699,18 @@ export default function DayViewScreen() {
         </View>
       )}
 
-      {/* Add button */}
-      <TouchableOpacity style={styles.addButton} onPress={handleAddItem} activeOpacity={0.85}>
-        <Feather name="plus" size={16} color={colors.ivory} style={{ marginRight: 6 }} />
-        <Text variant="body" style={styles.addButtonText}>add plan</Text>
-      </TouchableOpacity>
+      {/* Add button with item counter */}
+      <View style={styles.addArea}>
+        {!isPaid && (
+          <Text variant="caption" style={styles.itemCounter}>
+            {totalItemsInTrip}/{itemLimit} places
+          </Text>
+        )}
+        <TouchableOpacity style={styles.addButton} onPress={handleAddItem} activeOpacity={0.85}>
+          <Feather name="plus" size={16} color={colors.ivory} style={{ marginRight: 6 }} />
+          <Text variant="body" style={styles.addButtonText}>add plan</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Item Detail Sheet (read-only) */}
       {viewingItem && (
@@ -706,12 +727,19 @@ export default function DayViewScreen() {
           tripId={id}
           dayId={currentDay.id}
           item={editingItem}
+          currentItemCount={totalItemsInTrip}
           onClose={() => {
             setSheetVisible(false);
             setEditingItem(null);
           }}
         />
       )}
+
+      <UpgradeModal
+        visible={showUpgrade}
+        limitMessage={`the free plan allows ${itemLimit} activities per trip. upgrade for unlimited planning.`}
+        onClose={() => setShowUpgrade(false)}
+      />
     </Container>
   );
 }
@@ -1147,17 +1175,27 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
 
-  addButton: {
+  /* Add button area with counter */
+  addArea: {
     position: "absolute",
     bottom: 24,
     left: spacing.lg,
     right: spacing.lg,
+    alignItems: "center",
+    gap: 6,
+  },
+  itemCounter: {
+    fontSize: 10,
+    color: colors.stone,
+  },
+  addButton: {
     backgroundColor: colors.ink,
     borderRadius: 10,
     paddingVertical: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    alignSelf: "stretch",
   },
   addButtonText: {
     color: colors.ivory,
