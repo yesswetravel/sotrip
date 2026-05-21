@@ -39,7 +39,11 @@ export interface TripItem {
   location_name: string | null;
   location_lat: number | null;
   location_lng: number | null;
+  category: string | null;
   notes: string | null;
+  link: string | null;
+  photo_uri: string | null;
+  assigned_to: string[];   // member IDs tagged on this activity
   created_at: string;
 }
 
@@ -68,7 +72,12 @@ export interface CreateItemInput {
   subtitle?: string;
   time?: string;
   location_name?: string;
+  location_lat?: number;
+  location_lng?: number;
+  category?: string;
   notes?: string;
+  link?: string;
+  photo_uri?: string;
 }
 
 export interface UpdateItemInput {
@@ -76,5 +85,41 @@ export interface UpdateItemInput {
   subtitle?: string | null;
   time?: string | null;
   location_name?: string | null;
+  location_lat?: number | null;
+  location_lng?: number | null;
+  category?: string | null;
   notes?: string | null;
+  link?: string | null;
+  photo_uri?: string | null;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Trip Members / Sharing                                              */
+/* ------------------------------------------------------------------ */
+
+export type InviteStatus = "pending" | "accepted" | "declined" | "expired";
+
+export type MemberRole = "owner" | "editor" | "viewer";
+
+export interface TripInvite {
+  id: string;
+  trip_id: string;
+  inviter_id: string;
+  invitee_email: string | null;
+  invitee_name: string | null;
+  invite_code: string;
+  status: InviteStatus;
+  created_at: string;
+  accepted_at: string | null;
+}
+
+export interface TripMember {
+  id: string;
+  trip_id: string;
+  user_id: string | null;
+  display_name: string;
+  avatar_color: string;
+  email: string | null;
+  role: MemberRole;
+  joined_at: string;
 }

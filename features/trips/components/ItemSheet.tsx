@@ -8,8 +8,11 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { Text } from "../../design-system";
+import { LocationPicker, TimePicker, CategoryPicker } from "../../shared";
 import { useToast } from "../../shared/toast-context";
 import { useCreateItem, useUpdateItem, useDeleteItem } from "../hooks";
 import { colors } from "../../../theme/colors";
@@ -23,6 +26,23 @@ interface ItemSheetProps {
   onClose: () => void;
 }
 
+/* ------------------------------------------------------------------ */
+/*  Field label                                                         */
+/* ------------------------------------------------------------------ */
+
+function FieldLabel({ label, icon }: { label: string; icon: keyof typeof Feather.glyphMap }) {
+  return (
+    <View style={styles.fieldLabel}>
+      <Feather name={icon} size={12} color={colors.taupe} />
+      <Text style={styles.fieldLabelText}>{label}</Text>
+    </View>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main component                                                      */
+/* ------------------------------------------------------------------ */
+
 export default function ItemSheet({ tripId, dayId, item, onClose }: ItemSheetProps) {
   const isEditing = !!item;
   const { show } = useToast();
@@ -31,13 +51,23 @@ export default function ItemSheet({ tripId, dayId, item, onClose }: ItemSheetPro
   const deleteItem = useDeleteItem(tripId);
 
   const [title, setTitle] = useState(item?.title ?? "");
-  const [subtitle, setSubtitle] = useState(item?.subtitle ?? "");
   const [time, setTime] = useState(item?.time ?? "");
+  const [category, setCategory] = useState(item?.category ?? "other");
   const [locationName, setLocationName] = useState(item?.location_name ?? "");
+  const [locationLat, setLocationLat] = useState(item?.location_lat ?? 0);
+  const [locationLng, setLocationLng] = useState(item?.location_lng ?? 0);
+  const [photoUri, setPhotoUri] = useState(item?.photo_uri ?? "");
   const [notes, setNotes] = useState(item?.notes ?? "");
+  const [link, setLink] = useState(item?.link ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const canSave = title.trim().length > 0;
+
+  function handleOpenMap() {
+    if (!locationLat || !locationLng) return;
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${locationLat},${locationLng}`;
+    Linking.openURL(url);
+  }
 
   async function handleSave() {
     if (!canSave) return;
@@ -47,25 +77,33 @@ export default function ItemSheet({ tripId, dayId, item, onClose }: ItemSheetPro
           itemId: item.id,
           patch: {
             title: title.trim(),
-            subtitle: subtitle.trim() || null,
             time: time.trim() || null,
+            category: category || null,
             location_name: locationName.trim() || null,
+            location_lat: locationLat || null,
+            location_lng: locationLng || null,
+            photo_uri: photoUri.trim() || null,
             notes: notes.trim() || null,
+            link: link.trim() || null,
           },
         });
       } else {
         await createItem.mutateAsync({
           trip_day_id: dayId,
           title: title.trim(),
-          subtitle: subtitle.trim() || undefined,
           time: time.trim() || undefined,
+          category: category || undefined,
           location_name: locationName.trim() || undefined,
+          location_lat: locationLat || undefined,
+          location_lng: locationLng || undefined,
+          photo_uri: photoUri.trim() || undefined,
           notes: notes.trim() || undefined,
+          link: link.trim() || undefined,
         });
       }
       onClose();
     } catch {
-      show("couldn't save item");
+      show("couldn't save plan");
     }
   }
 
@@ -76,7 +114,7 @@ export default function ItemSheet({ tripId, dayId, item, onClose }: ItemSheetPro
     }
     deleteItem.mutate(item!.id, {
       onSuccess: onClose,
-      onError: () => show("couldn't delete item"),
+      onError: () => show("couldn't delete plan"),
     });
   }
 
@@ -93,81 +131,134 @@ export default function ItemSheet({ tripId, dayId, item, onClose }: ItemSheetPro
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
+            {/* Header */}
             <Text variant="title" style={styles.sheetTitle}>
-              {isEditing ? "edit item" : "new item"}
+              {isEditing ? "edit plan" : "add plan"}
             </Text>
 
-            <View style={styles.fields}>
-              <TextInput
-                style={styles.input}
-                placeholder="what's happening?"
-                placeholderTextColor={colors.stone}
-                value={title}
-                onChangeText={setTitle}
-                autoFocus={!isEditing}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="subtitle (optional)"
-                placeholderTextColor={colors.stone}
-                value={subtitle}
-                onChangeText={setSubtitle}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="time — e.g. 07:00 (optional)"
-                placeholderTextColor={colors.stone}
-                value={time}
-                onChangeText={setTime}
-                keyboardType="numbers-and-punctuation"
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="location name (optional)"
-                placeholderTextColor={colors.stone}
-                value={locationName}
-                onChangeText={setLocationName}
-              />
-              <TextInput
-                style={[styles.input, styles.notesInput]}
-                placeholder="notes (optional)"
-                placeholderTextColor={colors.stone}
-                value={notes}
-                onChangeText={setNotes}
-                multiline
-              />
-            </View>
+            {/* Time */}
+            <FieldLabel label="time" icon="clock" />
+            <TimePicker
+              value={time}
+              onChange={setTime}
+              onClear={() => setTime("")}
+              placeholder="set time"
+            />
 
-            <TouchableOpacity
-              style={[styles.saveBtn, !canSave && styles.saveBtnDisabled]}
-              onPress={handleSave}
-              disabled={!canSave}
-              activeOpacity={0.8}
-            >
-              <Text variant="body" style={styles.saveBtnText}>
-                {isEditing ? "save changes" : "add item"}
-              </Text>
-            </TouchableOpacity>
+            {/* Category */}
+            <FieldLabel label="category" icon="tag" />
+            <CategoryPicker value={category} onChange={setCategory} />
 
-            <TouchableOpacity
-              style={styles.cancelBtn}
-              onPress={onClose}
-              activeOpacity={0.8}
-            >
-              <Text variant="body" style={styles.cancelText}>cancel</Text>
-            </TouchableOpacity>
+            {/* Plan (title) */}
+            <FieldLabel label="plan" icon="edit-3" />
+            <TextInput
+              style={styles.input}
+              placeholder="what's the plan?"
+              placeholderTextColor={colors.stone}
+              value={title}
+              onChangeText={setTitle}
+              autoFocus={!isEditing}
+            />
 
-            {isEditing && (
+            {/* Location */}
+            <FieldLabel label="location" icon="map-pin" />
+            <LocationPicker
+              value={locationName}
+              placeholder="search a place..."
+              onSelect={(place) => {
+                setLocationName(place.name);
+                setLocationLat(place.lat);
+                setLocationLng(place.lng);
+                if (place.photo_uri) setPhotoUri(place.photo_uri);
+              }}
+              onClear={() => {
+                setLocationName("");
+                setLocationLat(0);
+                setLocationLng(0);
+                setPhotoUri("");
+              }}
+            />
+            {locationName.trim().length > 0 && locationLat !== 0 && (
               <TouchableOpacity
-                style={styles.deleteLink}
-                onPress={handleDelete}
-                activeOpacity={0.8}
+                style={styles.mapLink}
+                onPress={handleOpenMap}
+                activeOpacity={0.7}
               >
-                <Text variant="caption" style={styles.deleteLinkText}>
-                  {confirmDelete ? "tap again to confirm delete" : "delete this item"}
-                </Text>
+                <Feather name="navigation" size={12} color={colors.teal} />
+                <Text style={styles.mapLinkText}>open in maps</Text>
               </TouchableOpacity>
             )}
+
+            {/* Note */}
+            <FieldLabel label="note" icon="file-text" />
+            <TextInput
+              style={[styles.input, styles.notesInput]}
+              placeholder="any details or reminders..."
+              placeholderTextColor={colors.stone}
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+            />
+
+            {/* Link */}
+            <FieldLabel label="link or reference" icon="link" />
+            <TextInput
+              style={styles.input}
+              placeholder="paste a URL (booking, article, etc.)"
+              placeholderTextColor={colors.stone}
+              value={link}
+              onChangeText={setLink}
+              keyboardType="url"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {link.trim().length > 0 && (
+              <TouchableOpacity
+                style={styles.mapLink}
+                onPress={() => {
+                  const url = link.startsWith("http") ? link : `https://${link}`;
+                  Linking.openURL(url).catch(() => show("couldn't open link"));
+                }}
+                activeOpacity={0.7}
+              >
+                <Feather name="external-link" size={12} color={colors.teal} />
+                <Text style={styles.mapLinkText}>open link</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Save / Cancel / Delete */}
+            <View style={styles.actions}>
+              <TouchableOpacity
+                style={[styles.saveBtn, !canSave && styles.saveBtnDisabled]}
+                onPress={handleSave}
+                disabled={!canSave}
+                activeOpacity={0.8}
+              >
+                <Text variant="body" style={styles.saveBtnText}>
+                  {isEditing ? "save changes" : "add plan"}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={onClose}
+                activeOpacity={0.8}
+              >
+                <Text variant="body" style={styles.cancelText}>cancel</Text>
+              </TouchableOpacity>
+
+              {isEditing && (
+                <TouchableOpacity
+                  style={styles.deleteLink}
+                  onPress={handleDelete}
+                  activeOpacity={0.8}
+                >
+                  <Text variant="caption" style={styles.deleteLinkText}>
+                    {confirmDelete ? "tap again to confirm delete" : "delete this plan"}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
@@ -187,7 +278,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 16,
     padding: spacing.lg,
     paddingBottom: spacing.xxl,
-    maxHeight: "85%",
+    maxHeight: "90%",
   },
   handle: {
     width: 36,
@@ -200,14 +291,28 @@ const styles = StyleSheet.create({
   sheetTitle: {
     marginBottom: spacing.lg,
   },
-  fields: {
-    gap: 12,
-    marginBottom: spacing.lg,
+
+  /* Field labels */
+  fieldLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 6,
+    marginTop: spacing.md,
   },
+  fieldLabelText: {
+    fontSize: 10,
+    textTransform: "uppercase" as const,
+    letterSpacing: 1.2,
+    color: colors.taupe,
+    fontFamily: "Inter_600SemiBold",
+  },
+
+  /* Inputs */
   input: {
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.sand,
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: spacing.md,
     paddingVertical: 14,
     fontFamily: "Inter_400Regular",
@@ -219,9 +324,28 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: "top",
   },
+
+  /* Map / link helpers */
+  mapLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 6,
+    paddingVertical: 4,
+  },
+  mapLinkText: {
+    fontSize: 12,
+    color: colors.teal,
+    fontFamily: "Inter_500Medium",
+  },
+
+  /* Actions */
+  actions: {
+    marginTop: spacing.xl,
+  },
   saveBtn: {
     backgroundColor: colors.ink,
-    borderRadius: 8,
+    borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",
     marginBottom: 12,
@@ -236,7 +360,7 @@ const styles = StyleSheet.create({
   cancelBtn: {
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.sand,
-    borderRadius: 8,
+    borderRadius: 10,
     paddingVertical: 12,
     alignItems: "center",
     marginBottom: spacing.lg,

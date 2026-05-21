@@ -7,6 +7,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 import { Container, Text } from "../../features/design-system";
 import { Skeleton } from "../../features/shared";
 import { useTrips } from "../../features/trips/hooks";
@@ -43,12 +44,17 @@ function formatDateRange(start: string | null, end: string | null): string {
 function EmptyState({ onNew }: { onNew: () => void }) {
   return (
     <View style={styles.empty}>
-      <Text variant="eyebrow">upcoming</Text>
-      <Text variant="titleItalic" style={styles.emptyText}>
-        no trips yet — let's begin
+      <View style={styles.emptyIcon}>
+        <Feather name="map" size={28} color={colors.coral} />
+      </View>
+      <Text variant="titleItalic" style={styles.emptyTitle}>
+        no trips yet
       </Text>
-      <TouchableOpacity style={styles.newButton} onPress={onNew} activeOpacity={0.8}>
-        <Text variant="body" style={styles.newButtonText}>+ new trip</Text>
+      <Text variant="caption" style={styles.emptyCaption}>
+        plan your first adventure — add places{"\n"}from pinterest, google, or just your imagination
+      </Text>
+      <TouchableOpacity style={styles.newButton} onPress={onNew} activeOpacity={0.85}>
+        <Text variant="body" style={styles.newButtonText}>+ create a trip</Text>
       </TouchableOpacity>
     </View>
   );
@@ -161,21 +167,34 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  emptyText: {
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.coral + "14",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.xs,
+  },
+  emptyTitle: {
     color: colors.stone,
-    marginTop: 4,
+  },
+  emptyCaption: {
+    color: colors.taupe,
+    textAlign: "center",
+    lineHeight: 20,
   },
   newButton: {
-    marginTop: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.taupe,
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    marginTop: spacing.sm,
+    backgroundColor: colors.coral,
+    borderRadius: 999,
+    paddingHorizontal: 24,
+    paddingVertical: 13,
   },
   newButtonText: {
-    color: colors.taupe,
+    color: colors.pearl,
     fontFamily: "Inter_500Medium",
+    fontSize: 13,
   },
   sectionHeader: {
     marginTop: spacing.lg,
