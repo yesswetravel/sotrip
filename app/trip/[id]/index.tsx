@@ -324,6 +324,9 @@ export default function TripOverviewScreen() {
         </View>
 
         <View style={styles.titleBlock}>
+          <Text variant="display" style={[styles.tripTitle, { color: colors.ink }]}>
+            {trip.title}
+          </Text>
           <Text variant="eyebrow" style={{ color: colors.stone }}>
             {formatDateRange(trip.start_date, trip.end_date)}
           </Text>
@@ -372,6 +375,10 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
     gap: 6,
+  },
+  tripTitle: {
+    fontSize: 30,
+    textAlign: "center",
   },
   countdown: {
     marginTop: 2,
