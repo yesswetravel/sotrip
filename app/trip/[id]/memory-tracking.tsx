@@ -88,10 +88,10 @@ export default function MemoryTrackingScreen() {
     <Container logo>
       {/* Header */}
       <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
-          <Feather name="chevron-left" size={20} color={colors.stone} />
+        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+          <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
-        <Text variant="eyebrow" style={{ color: colors.stone }}>order tracking</Text>
+        <Text variant="eyebrow">order tracking</Text>
         <View style={{ width: 20 }} />
       </View>
 
@@ -241,8 +241,8 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: spacing.sm,
-    marginBottom: spacing.md,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.sm,
   },
   scroll: { paddingBottom: 40 },
 

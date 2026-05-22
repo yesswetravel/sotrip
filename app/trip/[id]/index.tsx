@@ -364,8 +364,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: spacing.lg,
     paddingTop: spacing.xs,
+    paddingBottom: spacing.sm,
   },
   titleBlock: {
     alignItems: "center",
