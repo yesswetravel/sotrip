@@ -127,12 +127,11 @@ export default function DayLookScreen() {
     <Container logo>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backRow}>
-          <Feather name="chevron-left" size={20} color={colors.stone} />
-          <Text variant="body" style={[styles.backText, { color: colors.stone }]}>
-            day {String(dayNumber).padStart(2, "0")}
-          </Text>
+        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+          <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
+        <Text variant="eyebrow">day {String(dayNumber).padStart(2, "0")}</Text>
+        <View style={{ width: 20 }} />
       </View>
 
       <View style={styles.titleSection}>
@@ -301,16 +300,11 @@ export default function DayLookScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  backRow: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    gap: 4,
-  },
-  backText: {
-    fontSize: 13,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.sm,
   },
   titleSection: {
     alignItems: "center",

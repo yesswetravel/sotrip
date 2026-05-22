@@ -195,16 +195,13 @@ export default function TripSettingsScreen() {
     <Container logo>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backRow}
-          activeOpacity={0.7}
-        >
-          <Feather name="chevron-left" size={20} color={colors.stone} />
-          <Text variant="body" style={[styles.backText, { color: colors.stone }]}>
-            {trip.title}
-          </Text>
+        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+          <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
+        <Text variant="eyebrow">{trip.title}</Text>
+        <View style={{ width: 20 }} />
+      </View>
+      <View>
         <Text variant="display" style={styles.pageTitle}>
           trip settings
         </Text>
@@ -451,17 +448,11 @@ export default function TripSettingsScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  backRow: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    gap: 4,
-    marginBottom: spacing.sm,
-  },
-  backText: {
-    fontSize: 13,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.sm,
   },
   pageTitle: {
     fontSize: 28,

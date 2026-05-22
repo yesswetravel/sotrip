@@ -108,10 +108,11 @@ export default function DocumentsScreen() {
   return (
     <Container logo>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backRow}>
-          <Feather name="chevron-left" size={20} color={colors.stone} />
-          <Text variant="body" style={[styles.backLink, { color: colors.stone }]}>{trip?.title ?? "trip"}</Text>
+        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+          <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
+        <Text variant="eyebrow">{trip?.title ?? "trip"}</Text>
+        <View style={{ width: 20 }} />
       </View>
 
       <Text variant="display" style={styles.pageTitle}>documents</Text>
@@ -266,16 +267,11 @@ export default function DocumentsScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  backRow: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    gap: 4,
-  },
-  backLink: {
-    fontSize: 13,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.sm,
   },
   pageTitle: {
     textAlign: "center",

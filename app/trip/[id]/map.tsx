@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { StyleSheet, View, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 import { Text } from "../../../features/design-system";
 import MapWrapper from "../../../features/shared/MapWrapper";
 import { useTrip } from "../../../features/trips/hooks";
@@ -36,10 +37,11 @@ export default function TripMapScreen() {
     <View style={[styles.container, { backgroundColor: colors.ivory }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.ivory }]}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text variant="body" style={[styles.backText, { color: colors.stone }]}>← back</Text>
+        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+          <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
         <Text variant="eyebrow">{trip?.title ?? ""} · map</Text>
+        <View style={{ width: 20 }} />
       </View>
 
       {/* Map or empty */}
@@ -68,11 +70,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    gap: 12,
-  },
-  backText: {
-    fontSize: 13,
   },
   empty: {
     flex: 1,
