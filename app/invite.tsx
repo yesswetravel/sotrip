@@ -23,7 +23,7 @@ export default function InviteRedirectScreen() {
     <Container logo>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
-          <Feather name="arrow-left" size={20} color={colors.ink} />
+          <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
         <Text variant="eyebrow">invite friends</Text>
         <View style={{ width: 20 }} />
@@ -76,11 +76,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: spacing.md,
-    paddingBottom: 14,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.sm,
   },
   scroll: {
-    paddingTop: spacing.md,
+    paddingTop: spacing.sm,
   },
   title: {
     textAlign: "center",

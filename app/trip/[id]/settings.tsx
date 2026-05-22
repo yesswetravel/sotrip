@@ -200,7 +200,7 @@ export default function TripSettingsScreen() {
           style={styles.backRow}
           activeOpacity={0.7}
         >
-          <Feather name="chevron-left" size={16} color={colors.stone} />
+          <Feather name="chevron-left" size={20} color={colors.stone} />
           <Text variant="body" style={[styles.backText, { color: colors.stone }]}>
             {trip.title}
           </Text>

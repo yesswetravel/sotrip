@@ -219,7 +219,7 @@ export default function PackingListScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backRow}>
-          <Feather name="chevron-left" size={16} color={colors.stone} />
+          <Feather name="chevron-left" size={20} color={colors.stone} />
           <Text variant="body" style={[styles.backLink, { color: colors.stone }]}>{trip?.title ?? "trip"}</Text>
         </TouchableOpacity>
       </View>

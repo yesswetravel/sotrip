@@ -317,7 +317,7 @@ export default function TripOverviewScreen() {
         {/* ============ Header ============ */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
-            <Feather name="chevron-left" size={22} color={colors.ink} />
+            <Feather name="chevron-left" size={20} color={colors.ink} />
           </TouchableOpacity>
         </View>
 

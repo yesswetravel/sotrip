@@ -55,7 +55,7 @@ export default function FolderScreen() {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
-            <Feather name="chevron-left" size={22} color={colors.ink} />
+            <Feather name="chevron-left" size={20} color={colors.ink} />
           </TouchableOpacity>
           <Text variant="eyebrow" style={{ color: colors.stone }}>
             {trip?.title ?? "trip"}
