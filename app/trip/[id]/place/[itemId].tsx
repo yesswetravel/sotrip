@@ -6,20 +6,116 @@ import {
   TouchableOpacity,
   TextInput,
   Dimensions,
+  Linking,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../../features/design-system";
+import ItemSheet from "../../../../features/trips/components/ItemSheet";
 import { useTrip, useDeleteItem } from "../../../../features/trips/hooks";
 import { getCategoryForItem } from "../../../../theme/categories";
-import { colors } from "../../../../theme/colors";
+import { useColors } from "../../../../features/theme/ThemeProvider";
 import { spacing } from "../../../../theme/spacing";
 import type { TripItem } from "../../../../types/database";
 
 const SCREEN_W = Dimensions.get("window").width;
 const GMAP_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? "";
+
+interface LinkPreview {
+  title: string;
+  author: string;
+  thumbnailUrl?: string;
+  source: string;
+}
+
+async function scrapeOgImage(url: string): Promise<{ image?: string; title?: string }> {
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; SoTrip/1.0)" },
+    });
+    if (!res.ok) return {};
+    const html = await res.text();
+    const imgMatch = html.match(/<meta[^>]+property="og:image"[^>]+content="([^"]+)"/i)
+      || html.match(/<meta[^>]+content="([^"]+)"[^>]+property="og:image"/i);
+    const titleMatch = html.match(/<meta[^>]+property="og:title"[^>]+content="([^"]+)"/i)
+      || html.match(/<meta[^>]+content="([^"]+)"[^>]+property="og:title"/i);
+    return { image: imgMatch?.[1], title: titleMatch?.[1] };
+  } catch {}
+  return {};
+}
+
+async function fetchLinkPreview(url: string): Promise<LinkPreview | null> {
+  if (!url.trim()) return null;
+  try {
+    if (url.includes("instagram.com") || url.includes("instagr.am")) {
+      const res = await fetch(
+        `https://api.instagram.com/oembed?url=${encodeURIComponent(url)}&omitscript=true`
+      );
+      if (res.ok) {
+        const d = await res.json();
+        if (d.thumbnail_url) {
+          return {
+            title: d.title || "instagram post",
+            author: `@${d.author_name || "unknown"}`,
+            thumbnailUrl: d.thumbnail_url,
+            source: "instagram",
+          };
+        }
+      }
+      const og = await scrapeOgImage(url);
+      if (og.image) {
+        return {
+          title: og.title || "instagram post",
+          author: "instagram",
+          thumbnailUrl: og.image,
+          source: "instagram",
+        };
+      }
+    }
+    if (url.includes("pinterest.com") || url.includes("pin.it")) {
+      const res = await fetch(
+        `https://www.pinterest.com/oembed.json?url=${encodeURIComponent(url)}`
+      );
+      if (res.ok) {
+        const d = await res.json();
+        return {
+          title: d.title || "pinned place",
+          author: d.author_name || "pinterest",
+          thumbnailUrl: d.thumbnail_url,
+          source: "pinterest",
+        };
+      }
+    }
+    if (url.includes("tiktok.com")) {
+      const res = await fetch(
+        `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`
+      );
+      if (res.ok) {
+        const d = await res.json();
+        return {
+          title: d.title || "tiktok video",
+          author: `@${d.author_name || "unknown"}`,
+          thumbnailUrl: d.thumbnail_url,
+          source: "tiktok",
+        };
+      }
+    }
+    const og = await scrapeOgImage(url);
+    if (og.image) {
+      const domain = url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
+      return {
+        title: og.title || domain,
+        author: domain,
+        thumbnailUrl: og.image,
+        source: domain,
+      };
+    }
+  } catch {}
+  return null;
+}
 
 /** Fetch a photo URL for a place name via Google Places API (New) */
 async function fetchPlacePhoto(placeName: string): Promise<string | null> {
@@ -71,6 +167,7 @@ function formatTime12h(time24: string): string {
 }
 
 export default function PlaceDetailScreen() {
+  const colors = useColors();
   const { id, itemId } = useLocalSearchParams<{ id: string; itemId: string }>();
   const router = useRouter();
   const { data: trip } = useTrip(id);
@@ -89,11 +186,13 @@ export default function PlaceDetailScreen() {
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(true);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [linkPreview, setLinkPreview] = useState<LinkPreview | null>(null);
+  const [linkLoading, setLinkLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showEditSheet, setShowEditSheet] = useState(false);
 
   const deleteItem = useDeleteItem(id ?? "");
 
-  // Find the item across all days
   const { item, day } = useMemo(() => {
     if (!trip) return { item: null, day: null };
     for (const d of trip.trip_days) {
@@ -105,17 +204,27 @@ export default function PlaceDetailScreen() {
 
   const cat = item ? getCategoryForItem(item.category) : null;
 
-  // Fetch place photo from Google Places
   useEffect(() => {
     const name = item?.location_name || item?.title;
-    if (name) {
+    if (item?.link) {
+      setLinkLoading(true);
+      fetchLinkPreview(item.link).then(async (preview) => {
+        setLinkPreview(preview);
+        if (preview?.thumbnailUrl) {
+          setPhotoUrl(preview.thumbnailUrl);
+        } else if (name) {
+          const url = await fetchPlacePhoto(name);
+          if (url) setPhotoUrl(url);
+        }
+        setLinkLoading(false);
+      });
+    } else if (name) {
       fetchPlacePhoto(name).then((url) => {
         if (url) setPhotoUrl(url);
       });
     }
-  }, [item?.location_name, item?.title]);
+  }, [item?.link, item?.location_name, item?.title]);
 
-  // Load persisted metadata
   useState(() => {
     AsyncStorage.getItem(storageKey(itemId)).then((raw) => {
       if (raw) setMeta(JSON.parse(raw));
@@ -156,7 +265,7 @@ export default function PlaceDetailScreen() {
   if (!trip || !item) return null;
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { backgroundColor: colors.ivory }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -172,7 +281,6 @@ export default function PlaceDetailScreen() {
             />
           ) : null}
           <View style={styles.heroOverlay}>
-            {/* Top navigation */}
             <View style={styles.heroNav}>
               <TouchableOpacity
                 style={styles.heroNavBtn}
@@ -196,7 +304,6 @@ export default function PlaceDetailScreen() {
               </View>
             </View>
 
-            {/* Category pill + saved by — bottom row */}
             <View style={styles.heroBottomRow}>
               <View style={styles.categoryPill}>
                 <Feather name={cat?.icon ?? "map-pin"} size={10} color={colors.pearl} />
@@ -207,21 +314,21 @@ export default function PlaceDetailScreen() {
 
               <View style={styles.savedByPill}>
                 <View style={styles.avatarPair}>
-                  <View style={[styles.miniAv, { backgroundColor: colors.coral }]}>
-                    <Text style={styles.miniAvText}>P</Text>
+                  <View style={[styles.miniAv, { backgroundColor: colors.coral, borderColor: colors.pearl }]}>
+                    <Text style={[styles.miniAvText, { color: colors.pearl }]}>P</Text>
                   </View>
                   {meta.savedBy.includes("partner") && (
                     <View
                       style={[
                         styles.miniAv,
-                        { backgroundColor: colors.teal, marginLeft: -6 },
+                        { backgroundColor: colors.teal, borderColor: colors.pearl, marginLeft: -6 },
                       ]}
                     >
-                      <Text style={styles.miniAvText}>L</Text>
+                      <Text style={[styles.miniAvText, { color: colors.pearl }]}>L</Text>
                     </View>
                   )}
                 </View>
-                <Text variant="caption" style={styles.savedByText}>
+                <Text variant="caption" style={[styles.savedByText, { color: colors.ink }]}>
                   {meta.savedBy.includes("partner")
                     ? "saved by both"
                     : "saved by you"}
@@ -256,14 +363,49 @@ export default function PlaceDetailScreen() {
           )}
         </View>
 
+        {/* Link preview card — only shown when oEmbed succeeds */}
+        {linkPreview ? (
+          <TouchableOpacity
+            style={[styles.linkCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}
+            onPress={() => item.link && Linking.openURL(item.link)}
+            activeOpacity={0.8}
+          >
+            {linkPreview.thumbnailUrl ? (
+              <Image
+                source={{ uri: linkPreview.thumbnailUrl }}
+                style={styles.linkThumb}
+                contentFit="cover"
+                transition={200}
+              />
+            ) : null}
+            <View style={styles.linkInfo}>
+              <View style={[styles.sourceBadge, {
+                backgroundColor: linkPreview.source === "instagram" ? "#E1306C"
+                  : linkPreview.source === "pinterest" ? "#E60023"
+                  : linkPreview.source === "tiktok" ? "#010101"
+                  : colors.stone,
+              }]}>
+                <Text style={styles.sourceBadgeText}>{linkPreview.source}</Text>
+              </View>
+              <Text variant="body" style={[styles.linkTitle, { color: colors.ink }]} numberOfLines={2}>
+                {linkPreview.title}
+              </Text>
+              <Text variant="caption" style={{ color: colors.stone }}>
+                {linkPreview.author}
+              </Text>
+            </View>
+            <Feather name="external-link" size={14} color={colors.stone} style={{ marginRight: 14 }} />
+          </TouchableOpacity>
+        ) : null}
+
         {/* Why we saved it */}
-        <View style={styles.whySavedCard}>
-          <Text variant="eyebrow" style={styles.whySavedLabel}>
+        <View style={[styles.whySavedCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
+          <Text variant="eyebrow" style={[styles.whySavedLabel, { color: colors.coral }]}>
             why we saved it
           </Text>
           {editing ? (
             <TextInput
-              style={styles.whySavedInput}
+              style={[styles.whySavedInput, { color: colors.ink }]}
               placeholder="what drew you to this place..."
               placeholderTextColor={colors.sand}
               value={meta.whySaved}
@@ -271,10 +413,10 @@ export default function PlaceDetailScreen() {
               multiline
             />
           ) : meta.whySaved ? (
-            <Text style={styles.whySavedText}>"{meta.whySaved}"</Text>
+            <Text style={[styles.whySavedText, { color: colors.ink }]}>"{meta.whySaved}"</Text>
           ) : (
             <TouchableOpacity onPress={() => setEditing(true)} activeOpacity={0.7}>
-              <Text style={styles.whySavedPlaceholder}>
+              <Text style={[styles.whySavedPlaceholder, { color: colors.sand }]}>
                 tap to add why you saved this place
               </Text>
             </TouchableOpacity>
@@ -300,13 +442,13 @@ export default function PlaceDetailScreen() {
                   ]
                 : quickFacts
               ).map((fact) => (
-                <View key={fact.key} style={styles.factRow}>
+                <View key={fact.key} style={[styles.factRow, { borderTopColor: colors.mist }]}>
                   <Text variant="eyebrow" style={styles.factLabel}>
                     {fact.label}
                   </Text>
                   {editing ? (
                     <TextInput
-                      style={styles.factInput}
+                      style={[styles.factInput, { color: colors.ink }]}
                       placeholder={`add ${fact.label}...`}
                       placeholderTextColor={colors.sand}
                       value={fact.value}
@@ -324,7 +466,7 @@ export default function PlaceDetailScreen() {
                       }
                     />
                   ) : (
-                    <Text variant="body" style={styles.factValue}>
+                    <Text variant="body" style={[styles.factValue, { color: colors.ink }]}>
                       {fact.value}
                     </Text>
                   )}
@@ -338,7 +480,7 @@ export default function PlaceDetailScreen() {
               activeOpacity={0.7}
             >
               <Feather name="plus" size={12} color={colors.stone} />
-              <Text variant="caption" style={styles.addFactsText}>
+              <Text variant="caption" style={{ color: colors.stone }}>
                 add details like hours, admission, tips
               </Text>
             </TouchableOpacity>
@@ -349,7 +491,7 @@ export default function PlaceDetailScreen() {
         {item.notes && (
           <View style={styles.notesSection}>
             <Text variant="eyebrow" style={styles.notesLabel}>notes</Text>
-            <Text style={styles.notesText}>{item.notes}</Text>
+            <Text style={[styles.notesText, { color: colors.ink }]}>{item.notes}</Text>
           </View>
         )}
 
@@ -357,37 +499,45 @@ export default function PlaceDetailScreen() {
       </ScrollView>
 
       {/* Bottom actions */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { backgroundColor: colors.ivory, borderTopColor: colors.mist }]}>
         {editing ? (
           <TouchableOpacity
-            style={styles.primaryBtn}
+            style={[styles.primaryBtn, { backgroundColor: colors.ink }]}
             onPress={() => {
               persistMeta(meta);
               setEditing(false);
             }}
             activeOpacity={0.85}
           >
-            <Text variant="body" style={styles.primaryBtnText}>save details</Text>
+            <Text variant="body" style={[styles.primaryBtnText, { color: colors.pearl }]}>save details</Text>
           </TouchableOpacity>
         ) : (
           <>
-            <View style={styles.btnRow}>
+            <TouchableOpacity
+              style={[styles.coralBtn, { backgroundColor: colors.coral }]}
+              onPress={() => router.back()}
+              activeOpacity={0.85}
+            >
+              <Feather name="check" size={14} color={colors.pearl} />
+              <Text variant="body" style={[styles.coralBtnText, { color: colors.pearl }]}>
+                on day {String(day?.day_number ?? 1).padStart(2, "0")}
+              </Text>
+            </TouchableOpacity>
+            <View style={[styles.btnRow, { marginTop: 8 }]}>
               <TouchableOpacity
-                style={styles.coralBtn}
-                onPress={() => router.back()}
+                style={[styles.editPlanBtn, { backgroundColor: colors.ink }]}
+                onPress={() => setShowEditSheet(true)}
                 activeOpacity={0.85}
               >
-                <Feather name="check" size={14} color={colors.pearl} />
-                <Text variant="body" style={styles.coralBtnText}>
-                  on day {String(day?.day_number ?? 1).padStart(2, "0")}
-                </Text>
+                <Feather name="edit-2" size={13} color={colors.pearl} style={{ marginRight: 6 }} />
+                <Text variant="body" style={[styles.primaryBtnText, { color: colors.pearl }]}>edit plan</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.ghostBtn}
+                style={[styles.ghostBtn, { borderColor: colors.mist }]}
                 onPress={() => setEditing(true)}
                 activeOpacity={0.85}
               >
-                <Text variant="body" style={styles.ghostBtnText}>edit details</Text>
+                <Text variant="body" style={[styles.ghostBtnText, { color: colors.stone }]}>edit details</Text>
               </TouchableOpacity>
             </View>
             <TouchableOpacity
@@ -403,6 +553,15 @@ export default function PlaceDetailScreen() {
           </>
         )}
       </View>
+
+      {showEditSheet && day && (
+        <ItemSheet
+          tripId={id}
+          dayId={day.id}
+          item={item}
+          onClose={() => setShowEditSheet(false)}
+        />
+      )}
     </View>
   );
 }
@@ -410,7 +569,6 @@ export default function PlaceDetailScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.ivory,
   },
   scrollContent: {
     paddingBottom: 0,
@@ -457,7 +615,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   categoryText: {
-    color: colors.pearl,
+    color: "#F7F2E2",
     fontSize: 9,
     fontFamily: "Inter_500Medium",
     letterSpacing: 1.5,
@@ -509,51 +667,88 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     borderWidth: 1.5,
-    borderColor: colors.pearl,
     alignItems: "center",
     justifyContent: "center",
   },
   miniAvText: {
-    color: colors.pearl,
     fontSize: 8,
     fontFamily: "Inter_600SemiBold",
   },
   savedByText: {
     fontSize: 10,
-    color: colors.ink,
     fontFamily: "Inter_500Medium",
+  },
+
+  /* Link preview */
+  linkCard: {
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.sm,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    alignItems: "center",
+    overflow: "hidden",
+  },
+  linkThumb: {
+    width: 72,
+    height: 72,
+  },
+  linkInfo: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 4,
+    flexDirection: "column",
+  },
+  linkTitle: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  linkLoading: {
+    flex: 1,
+    paddingVertical: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sourceBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginBottom: 2,
+  },
+  sourceBadgeText: {
+    color: "#fff",
+    fontSize: 8,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 1,
+    textTransform: "uppercase",
   },
 
   /* Why we saved it */
   whySavedCard: {
     marginHorizontal: spacing.lg,
     marginVertical: spacing.md,
-    backgroundColor: colors.pearl,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     padding: 20,
   },
   whySavedLabel: {
-    color: colors.coral,
     marginBottom: 10,
   },
   whySavedText: {
     fontFamily: "CormorantGaramond_400Regular_Italic",
     fontSize: 19,
     lineHeight: 28,
-    color: colors.ink,
   },
   whySavedPlaceholder: {
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 17,
-    color: colors.sand,
     lineHeight: 26,
   },
   whySavedInput: {
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 17,
-    color: colors.ink,
     lineHeight: 26,
     minHeight: 60,
     textAlignVertical: "top",
@@ -572,7 +767,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingVertical: 14,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.mist,
     gap: 14,
   },
   factLabel: {
@@ -583,14 +777,12 @@ const styles = StyleSheet.create({
   factValue: {
     flex: 1,
     fontSize: 13,
-    color: colors.ink,
     lineHeight: 18,
   },
   factInput: {
     flex: 1,
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: colors.ink,
     paddingVertical: 0,
   },
   addFactsBtn: {
@@ -598,9 +790,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     paddingVertical: spacing.md,
-  },
-  addFactsText: {
-    color: colors.stone,
   },
 
   /* Notes */
@@ -615,7 +804,6 @@ const styles = StyleSheet.create({
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 16,
     lineHeight: 24,
-    color: colors.ink,
   },
 
   /* Bottom bar */
@@ -626,18 +814,14 @@ const styles = StyleSheet.create({
     right: 0,
     padding: spacing.lg,
     paddingBottom: 28,
-    backgroundColor: colors.ivory,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.mist,
   },
   primaryBtn: {
-    backgroundColor: colors.ink,
     borderRadius: 999,
     paddingVertical: 14,
     alignItems: "center",
   },
   primaryBtnText: {
-    color: colors.pearl,
     fontFamily: "Inter_500Medium",
     fontSize: 13,
   },
@@ -647,7 +831,6 @@ const styles = StyleSheet.create({
   },
   coralBtn: {
     flex: 1,
-    backgroundColor: colors.coral,
     borderRadius: 999,
     paddingVertical: 14,
     flexDirection: "row",
@@ -656,21 +839,26 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   coralBtnText: {
-    color: colors.pearl,
     fontFamily: "Inter_500Medium",
     fontSize: 13,
+  },
+  editPlanBtn: {
+    flex: 1,
+    borderRadius: 999,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   ghostBtn: {
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     alignItems: "center",
     justifyContent: "center",
   },
   ghostBtnText: {
-    color: colors.stone,
     fontFamily: "Inter_500Medium",
     fontSize: 13,
   },

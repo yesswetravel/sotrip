@@ -1,12 +1,13 @@
 import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Container, Text } from "../../features/design-system";
+import { Container, Text, Cairn } from "../../features/design-system";
 import { Skeleton } from "../../features/shared";
+import { ThemePicker } from "../../features/theme/ThemePicker";
 import { useSession } from "../../lib/use-session";
 import { useTrips } from "../../features/trips/hooks";
 import { supabase } from "../../lib/supabase";
-import { colors } from "../../theme/colors";
+import { useColors } from "../../features/theme/ThemeProvider";
 import { spacing } from "../../theme/spacing";
 
 /* ------------------------------------------------------------------ */
@@ -14,8 +15,9 @@ import { spacing } from "../../theme/spacing";
 /* ------------------------------------------------------------------ */
 
 function StatCard({ value, label }: { value: number; label: string }) {
+  const colors = useColors();
   return (
-    <View style={styles.statCard}>
+    <View style={[styles.statCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
       <Text variant="title" style={styles.statNumber}>{value}</Text>
       <Text variant="eyebrow" style={styles.statLabel}>{label}</Text>
     </View>
@@ -35,9 +37,10 @@ function SettingsItem({
   icon: keyof typeof Feather.glyphMap;
   onPress?: () => void;
 }) {
+  const colors = useColors();
   return (
     <TouchableOpacity
-      style={styles.settingsItem}
+      style={[styles.settingsItem, { backgroundColor: colors.pearl, borderColor: colors.mist }]}
       activeOpacity={0.7}
       onPress={onPress}
     >
@@ -53,6 +56,7 @@ function SettingsItem({
 /* ------------------------------------------------------------------ */
 
 export default function YouTwoScreen() {
+  const colors = useColors();
   const router = useRouter();
   const { session } = useSession();
   const { data: trips, isLoading } = useTrips(session?.user.id);
@@ -65,7 +69,7 @@ export default function YouTwoScreen() {
 
   if (isLoading) {
     return (
-      <Container>
+      <Container logo>
         <View style={styles.scroll}>
           <View style={styles.titleRow}>
             <View style={{ width: 32 }} />
@@ -87,7 +91,7 @@ export default function YouTwoScreen() {
   }
 
   return (
-    <Container>
+    <Container logo>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
@@ -97,7 +101,7 @@ export default function YouTwoScreen() {
           <View style={{ width: 32 }} />
           <Text variant="display" style={styles.title}>me</Text>
           <TouchableOpacity
-            style={styles.gearBtn}
+            style={[styles.gearBtn, { backgroundColor: colors.pearl, borderColor: colors.mist }]}
             onPress={() => router.push("/(tabs)/profile")}
             activeOpacity={0.7}
           >
@@ -121,18 +125,24 @@ export default function YouTwoScreen() {
         </View>
 
         {/* Tip card */}
-        <View style={styles.tipCard}>
-          <View style={styles.tipIcon}>
+        <View style={[styles.tipCard, { backgroundColor: colors.teal + "0D", borderColor: colors.teal + "25" }]}>
+          <View style={[styles.tipIcon, { backgroundColor: colors.teal + "18" }]}>
             <Feather name="users" size={18} color={colors.teal} />
           </View>
           <View style={styles.tipBody}>
             <Text variant="body" style={styles.tipTitle}>
               invite friends per trip
             </Text>
-            <Text variant="caption" style={styles.tipDesc}>
+            <Text variant="caption" style={[styles.tipDesc, { color: colors.stone }]}>
               open any trip and tap "travel mates" to invite friends to plan together
             </Text>
           </View>
+        </View>
+
+        {/* Theme picker */}
+        <Text variant="eyebrow" style={styles.sectionEyebrow}>theme</Text>
+        <View style={{ marginBottom: spacing.lg }}>
+          <ThemePicker size="lg" />
         </View>
 
         {/* Settings */}
@@ -146,15 +156,17 @@ export default function YouTwoScreen() {
 
         {/* Sign out */}
         <TouchableOpacity
-          style={styles.signOut}
+          style={[styles.signOut, { borderColor: colors.sand }]}
           onPress={handleSignOut}
           activeOpacity={0.8}
         >
-          <Text variant="body" style={styles.signOutText}>sign out</Text>
+          <Text variant="body" style={[styles.signOutText, { color: colors.stone }]}>sign out</Text>
         </TouchableOpacity>
 
         {/* Colophon */}
-        <Text style={styles.colophon}>the slow ones, kept.</Text>
+        <View style={styles.colophonWrap}>
+          <Cairn size="sm" layout="vertical" tagline animate={false} />
+        </View>
       </ScrollView>
     </Container>
   );
@@ -185,9 +197,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.pearl,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -221,9 +231,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: colors.pearl,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     borderRadius: 10,
     paddingVertical: spacing.md,
     alignItems: "center",
@@ -241,9 +249,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
-    backgroundColor: colors.teal + "0D",
     borderWidth: 1,
-    borderColor: colors.teal + "25",
     borderRadius: 14,
     padding: spacing.md,
     marginTop: spacing.lg,
@@ -252,7 +258,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.teal + "18",
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -267,7 +272,6 @@ const styles = StyleSheet.create({
   },
   tipDesc: {
     fontSize: 12,
-    color: colors.stone,
     lineHeight: 17,
   },
 
@@ -283,9 +287,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: colors.pearl,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     borderRadius: 10,
     paddingVertical: 14,
     paddingHorizontal: spacing.md,
@@ -295,21 +297,16 @@ const styles = StyleSheet.create({
   signOut: {
     marginTop: spacing.xl,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.sand,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",
   },
-  signOutText: {
-    color: colors.stone,
-  },
+  signOutText: {},
 
   /* Colophon */
-  colophon: {
-    fontFamily: "CormorantGaramond_500Medium_Italic",
-    fontSize: 15,
-    color: colors.stone,
-    textAlign: "center",
+  colophonWrap: {
+    alignItems: "center",
     marginTop: spacing.xxl,
+    paddingBottom: spacing.lg,
   },
 });

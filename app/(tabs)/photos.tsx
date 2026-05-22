@@ -11,7 +11,7 @@ import { Container, Text } from "../../features/design-system";
 import { useSession } from "../../lib/use-session";
 import { useTrips } from "../../features/trips/hooks";
 import { usePhotosByTrip } from "../../features/photos/hooks";
-import { colors } from "../../theme/colors";
+import { useColors } from "../../features/theme/ThemeProvider";
 import { spacing } from "../../theme/spacing";
 import type { Photo } from "../../types/photos";
 import type { Trip } from "../../types/database";
@@ -31,15 +31,16 @@ function PhotoTile({ photo, size }: { photo: Photo; size: number }) {
 }
 
 function EmptyState() {
+  const colors = useColors();
   return (
     <View style={styles.emptyWrap}>
-      <View style={styles.emptyIconCircle}>
+      <View style={[styles.emptyIconCircle, { backgroundColor: colors.gold + "14" }]}>
         <Feather name="camera" size={28} color={colors.gold} />
       </View>
-      <Text variant="titleItalic" style={styles.emptyTitle}>
+      <Text variant="titleItalic" style={[styles.emptyTitle, { color: colors.stone }]}>
         capture the moments
       </Text>
-      <Text variant="caption" style={styles.emptyCaption}>
+      <Text variant="caption" style={[styles.emptyCaption, { color: colors.taupe }]}>
         photos from your trips will appear here
       </Text>
     </View>
@@ -88,7 +89,7 @@ export default function PhotosScreen() {
   const tripList = trips ?? [];
 
   return (
-    <Container>
+    <Container logo>
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
         <Text variant="display" style={styles.title}>
           photos
@@ -133,16 +134,12 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: colors.gold + "14",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: spacing.sm,
   },
-  emptyTitle: {
-    color: colors.stone,
-  },
+  emptyTitle: {},
   emptyCaption: {
-    color: colors.taupe,
     textAlign: "center",
     lineHeight: 20,
   },

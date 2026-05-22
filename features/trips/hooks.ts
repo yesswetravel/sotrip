@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "../../lib/supabase";
 import {
   fetchTrips,
   fetchTrip,
@@ -10,6 +12,7 @@ import {
   deleteItem,
   reorderItems,
   updateDayNotes,
+  DEMO_MODE,
 } from "./api";
 import type {
   Trip,
@@ -40,7 +43,13 @@ export function useCreateTrip() {
   return useMutation({
     mutationFn: ({ userId, input }: { userId: string; input: CreateTripInput }) =>
       createTrip(userId, input),
-    onSuccess: () => {
+    onSuccess: async (newTrip, { userId }) => {
+      if (DEMO_MODE) {
+        qc.setQueryData<Trip[]>(["trips", userId], (old) => [...(old || []), newTrip]);
+        const detail = await fetchTrip(newTrip.id);
+        qc.setQueryData(["trip", newTrip.id], detail);
+        return;
+      }
       qc.invalidateQueries({ queryKey: ["trips"] });
     },
   });
@@ -51,8 +60,17 @@ export function useUpdateTrip() {
   return useMutation({
     mutationFn: ({ tripId, patch }: { tripId: string; patch: Partial<Trip> }) =>
       updateTrip(tripId, patch),
-    onSuccess: (_data, variables) => {
-      qc.invalidateQueries({ queryKey: ["trip", variables.tripId] });
+    onSuccess: (updatedTrip, { tripId }) => {
+      if (DEMO_MODE) {
+        qc.setQueriesData<Trip[]>({ queryKey: ["trips"] }, (old) =>
+          old?.map((t) => (t.id === tripId ? { ...t, ...updatedTrip } : t)) || []
+        );
+        qc.setQueryData<TripWithDaysAndItems>(["trip", tripId], (old) =>
+          old ? { ...old, ...updatedTrip } : undefined
+        );
+        return;
+      }
+      qc.invalidateQueries({ queryKey: ["trip", tripId] });
       qc.invalidateQueries({ queryKey: ["trips"] });
     },
   });
@@ -62,7 +80,14 @@ export function useDeleteTrip() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (tripId: string) => deleteTrip(tripId),
-    onSuccess: () => {
+    onSuccess: (_data, tripId) => {
+      if (DEMO_MODE) {
+        qc.setQueriesData<Trip[]>({ queryKey: ["trips"] }, (old) =>
+          old?.filter((t) => t.id !== tripId) || []
+        );
+        qc.removeQueries({ queryKey: ["trip", tripId] });
+        return;
+      }
       qc.invalidateQueries({ queryKey: ["trips"] });
     },
   });
@@ -113,7 +138,7 @@ export function useCreateItem(tripId: string) {
       if (context?.prev) qc.setQueryData(["trip", tripId], context.prev);
     },
     onSettled: () => {
-      qc.invalidateQueries({ queryKey: ["trip", tripId] });
+      if (!DEMO_MODE) qc.invalidateQueries({ queryKey: ["trip", tripId] });
     },
   });
 }
@@ -144,7 +169,7 @@ export function useUpdateItem(tripId: string) {
       if (context?.prev) qc.setQueryData(["trip", tripId], context.prev);
     },
     onSettled: () => {
-      qc.invalidateQueries({ queryKey: ["trip", tripId] });
+      if (!DEMO_MODE) qc.invalidateQueries({ queryKey: ["trip", tripId] });
     },
   });
 }
@@ -172,7 +197,7 @@ export function useDeleteItem(tripId: string) {
       if (context?.prev) qc.setQueryData(["trip", tripId], context.prev);
     },
     onSettled: () => {
-      qc.invalidateQueries({ queryKey: ["trip", tripId] });
+      if (!DEMO_MODE) qc.invalidateQueries({ queryKey: ["trip", tripId] });
     },
   });
 }
@@ -210,7 +235,7 @@ export function useReorderItems(tripId: string) {
       if (context?.prev) qc.setQueryData(["trip", tripId], context.prev);
     },
     onSettled: () => {
-      qc.invalidateQueries({ queryKey: ["trip", tripId] });
+      if (!DEMO_MODE) qc.invalidateQueries({ queryKey: ["trip", tripId] });
     },
   });
 }
@@ -238,7 +263,36 @@ export function useUpdateDayNotes(tripId: string) {
       if (context?.prev) qc.setQueryData(["trip", tripId], context.prev);
     },
     onSettled: () => {
-      qc.invalidateQueries({ queryKey: ["trip", tripId] });
+      if (!DEMO_MODE) qc.invalidateQueries({ queryKey: ["trip", tripId] });
     },
   });
+}
+
+export function useTripRealtime(tripId: string | undefined) {
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    if (DEMO_MODE || !tripId) return;
+
+    const channel = supabase
+      .channel(`trip-${tripId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "trip_days", filter: `trip_id=eq.${tripId}` },
+        () => qc.invalidateQueries({ queryKey: ["trip", tripId] })
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "trips", filter: `id=eq.${tripId}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ["trip", tripId] });
+          qc.invalidateQueries({ queryKey: ["trips"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tripId, qc]);
 }

@@ -13,6 +13,7 @@ import {
   Dimensions,
   Linking,
   Platform,
+  RefreshControl,
 } from "react-native";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -30,10 +31,11 @@ import {
   useTrip,
   useDeleteItem,
   useUpdateDayNotes,
+  useTripRealtime,
 } from "../../../../features/trips/hooks";
 import { useCanAddItem, useSubscription } from "../../../../features/subscription/hooks";
 import UpgradeModal from "../../../../features/subscription/UpgradeModal";
-import { colors } from "../../../../theme/colors";
+import { useColors } from "../../../../features/theme/ThemeProvider";
 import { spacing } from "../../../../theme/spacing";
 import type { TripItem } from "../../../../types/database";
 import type { Photo, PhotoUploadJob } from "../../../../types/photos";
@@ -67,6 +69,7 @@ function TimelineItem({
 }) {
   const [showDelete, setShowDelete] = useState(false);
   const [mapError, setMapError] = useState(false);
+  const colors = useColors();
   const cat = getCategoryForItem(item.category);
   const hasLocation = !!(item.location_name && GMAP_KEY);
 
@@ -81,40 +84,41 @@ function TimelineItem({
       {/* Left: time column */}
       <View style={styles.timeColumn}>
         {item.time ? (
-          <Text variant="caption" style={styles.timeText}>
+          <Text variant="caption" style={[styles.timeText, { color: colors.taupe }]}>
             {formatTime12h(item.time)}
           </Text>
         ) : (
-          <Text variant="caption" style={styles.timeText}>—</Text>
+          <Text variant="caption" style={[styles.timeText, { color: colors.taupe }]}>—</Text>
         )}
       </View>
 
       {/* Center: dot + line */}
       <View style={styles.dotColumn}>
         <View style={[styles.dot, { backgroundColor: cat.color }]} />
-        {!isLast && <View style={styles.line} />}
+        {!isLast && <View style={[styles.line, { backgroundColor: colors.sand }]} />}
       </View>
 
       {/* Right: content + map */}
       <View style={styles.contentColumn}>
         <View style={styles.contentRow}>
           <View style={styles.contentText}>
-            <Text variant="body" style={styles.itemTitle} numberOfLines={1}>
+            <Text variant="body" style={[styles.itemTitle, { color: colors.ink }]} numberOfLines={1}>
               {item.title}
             </Text>
             {item.subtitle && (
-              <Text variant="caption" numberOfLines={1} style={styles.itemSubtitle}>
+              <Text variant="caption" numberOfLines={1} style={[styles.itemSubtitle, { color: colors.stone }]}>
                 {item.subtitle}
               </Text>
             )}
             {item.location_name && (
               <View style={styles.locationRow}>
                 <Feather name="map-pin" size={10} color={colors.stone} />
-                <Text variant="caption" style={styles.itemLocation}>
+                <Text variant="caption" style={[styles.itemLocation, { color: colors.stone }]}>
                   {item.location_name}
                 </Text>
               </View>
             )}
+            {null}
           </View>
 
           {/* Mini map thumbnail — tap to open Google Maps */}
@@ -129,7 +133,7 @@ function TimelineItem({
             >
               <Image
                 source={{ uri: getStaticMapUrl(item.location_name!) }}
-                style={styles.mapThumb}
+                style={[styles.mapThumb, { backgroundColor: colors.mist }]}
                 contentFit="cover"
                 transition={300}
                 onError={() => setMapError(true)}
@@ -173,6 +177,7 @@ function DateRoller({
   const flatRef = useRef<FlatList>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
   const didMount = useRef(false);
+  const colors = useColors();
 
   useEffect(() => {
     if (flatRef.current && selectedIndex >= 0) {
@@ -227,8 +232,8 @@ function DateRoller({
             { transform: [{ scale }], opacity },
           ]}
         >
-          <Text style={styles.rollerDateNum}>{dateNum}</Text>
-          <Text style={styles.rollerWeekday}>{weekday}</Text>
+          <Text style={[styles.rollerDateNum, { color: colors.ink }]}>{dateNum}</Text>
+          <Text style={[styles.rollerWeekday, { color: colors.stone }]}>{weekday}</Text>
         </Animated.View>
       </TouchableOpacity>
     );
@@ -267,12 +272,21 @@ export default function DayViewScreen() {
   const { id, n } = useLocalSearchParams<{ id: string; n: string }>();
   const router = useRouter();
   const { show } = useToast();
+  const colors = useColors();
   const initialDay = parseInt(n, 10);
   const [dayNumber, setDayNumber] = useState(initialDay);
 
-  const { data: trip } = useTrip(id);
+  const { data: trip, refetch: refetchTrip } = useTrip(id);
+  useTripRealtime(id);
   const deleteItemMutation = useDeleteItem(id);
   const updateNotesMutation = useUpdateDayNotes(id);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetchTrip();
+    setRefreshing(false);
+  }, [refetchTrip]);
 
   const [uploadJobs, setUploadJobs] = useState<PhotoUploadJob[]>([]);
 
@@ -339,14 +353,13 @@ export default function DayViewScreen() {
     if (!isToday || items.length === 0) return null;
     const now = new Date();
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
-    // Find item happening now or next
     for (const item of items) {
       if (!item.time) continue;
       const [h, m] = item.time.split(":").map(Number);
       const itemMinutes = h * 60 + m;
-      if (itemMinutes >= nowMinutes - 60) return item; // within last hour or upcoming
+      if (itemMinutes >= nowMinutes - 60) return item;
     }
-    return items[0]; // fallback to first item
+    return items[0];
   }, [isToday, items]);
 
   // Shared notes thread (stored locally)
@@ -355,12 +368,12 @@ export default function DayViewScreen() {
   >([]);
   const [newNoteText, setNewNoteText] = useState("");
 
-  useState(() => {
+  useEffect(() => {
     if (!currentDay) return;
     AsyncStorage.getItem(`thread_${id}_${dayNumber}`).then((raw) => {
       if (raw) setNoteThread(JSON.parse(raw));
     });
-  });
+  }, [id, dayNumber, currentDay]);
 
   function addThreadNote() {
     if (!newNoteText.trim()) return;
@@ -422,10 +435,11 @@ export default function DayViewScreen() {
   }
 
   function handleAddItem() {
-    if (!canAdd) {
-      setShowUpgrade(true);
-      return;
-    }
+    // TODO: re-enable limit check when Supabase is live
+    // if (!canAdd) {
+    //   setShowUpgrade(true);
+    //   return;
+    // }
     setEditingItem(null);
     setSheetVisible(true);
   }
@@ -441,12 +455,12 @@ export default function DayViewScreen() {
   if (!trip || !currentDay) return null;
 
   return (
-    <Container>
+    <Container logo>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backRow}>
           <Feather name="chevron-left" size={16} color={colors.stone} />
-          <Text variant="body" style={styles.backLink}>{trip.title}</Text>
+          <Text variant="body" style={[styles.backLink, { color: colors.stone }]}>{trip.title}</Text>
         </TouchableOpacity>
       </View>
 
@@ -465,7 +479,7 @@ export default function DayViewScreen() {
         <Text variant="eyebrow" style={styles.dayDate}>
           {formatDayDate(currentDay.date)}
         </Text>
-        <Text style={styles.dayItemCount}>
+        <Text style={[styles.dayItemCount, { color: colors.stone }]}>
           {items.length} {items.length === 1 ? "activity" : "activities"}
         </Text>
       </View>
@@ -474,18 +488,26 @@ export default function DayViewScreen() {
         style={styles.body}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.stone}
+            colors={[colors.coral]}
+          />
+        }
       >
         {/* NOW card */}
         {nowItem && isToday && (
           <TouchableOpacity
-            style={styles.nowCard}
+            style={[styles.nowCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}
             onPress={() => router.push(`/trip/${id}/place/${nowItem.id}`)}
             activeOpacity={0.85}
           >
             <View style={[styles.nowHero, { backgroundColor: getCategoryForItem(nowItem.category).color }]}>
-              <View style={styles.nowChip}>
-                <Animated.View style={styles.nowDot} />
-                <Text style={styles.nowChipText}>now</Text>
+              <View style={[styles.nowChip, { backgroundColor: colors.coral }]}>
+                <Animated.View style={[styles.nowDot, { backgroundColor: colors.pearl }]} />
+                <Text style={[styles.nowChipText, { color: colors.pearl }]}>now</Text>
               </View>
             </View>
             <View style={styles.nowBody}>
@@ -495,16 +517,16 @@ export default function DayViewScreen() {
               {nowItem.subtitle && (
                 <Text variant="caption" style={styles.nowSubtitle}>{nowItem.subtitle}</Text>
               )}
-              <View style={styles.nowMeta}>
+              <View style={[styles.nowMeta, { borderTopColor: colors.mist }]}>
                 <View style={styles.nowAvatars}>
-                  <View style={[styles.nowMiniAv, { backgroundColor: colors.coral }]}>
-                    <Text style={styles.nowMiniAvText}>P</Text>
+                  <View style={[styles.nowMiniAv, { backgroundColor: colors.coral, borderColor: colors.pearl }]}>
+                    <Text style={[styles.nowMiniAvText, { color: colors.pearl }]}>P</Text>
                   </View>
-                  <View style={[styles.nowMiniAv, { backgroundColor: colors.teal, marginLeft: -6 }]}>
-                    <Text style={styles.nowMiniAvText}>L</Text>
+                  <View style={[styles.nowMiniAv, { backgroundColor: colors.teal, borderColor: colors.pearl, marginLeft: -6 }]}>
+                    <Text style={[styles.nowMiniAvText, { color: colors.pearl }]}>L</Text>
                   </View>
                 </View>
-                <Text variant="caption" style={styles.nowMetaText}>
+                <Text variant="caption" style={[styles.nowMetaText, { color: colors.stone }]}>
                   {nowItem.location_name
                     ? `${nowItem.location_name} · `
                     : ""}
@@ -518,22 +540,22 @@ export default function DayViewScreen() {
         {/* Items */}
         {items.length === 0 ? (
           <View style={styles.emptyItems}>
-            <View style={styles.emptyIcon}>
+            <View style={[styles.emptyIcon, { backgroundColor: colors.teal + "14" }]}>
               <Feather name="compass" size={24} color={colors.teal} />
             </View>
-            <Text variant="titleItalic" style={styles.emptyText}>
+            <Text variant="titleItalic" style={[styles.emptyText, { color: colors.stone }]}>
               nothing planned yet
             </Text>
-            <Text variant="caption" style={styles.emptyHint}>
+            <Text variant="caption" style={[styles.emptyHint, { color: colors.taupe }]}>
               add places from search, links, or manually
             </Text>
             <TouchableOpacity
-              style={styles.emptyAddBtn}
-              onPress={() => router.push(`/trip/${id}/add-place`)}
+              style={[styles.emptyAddBtn, { backgroundColor: colors.teal }]}
+              onPress={handleAddItem}
               activeOpacity={0.85}
             >
               <Feather name="plus" size={14} color={colors.pearl} />
-              <Text style={styles.emptyAddText}>add a place</Text>
+              <Text style={[styles.emptyAddText, { color: colors.pearl }]}>add a plan</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -551,19 +573,19 @@ export default function DayViewScreen() {
         {/* Day outfits — private to you */}
         <View style={styles.outfitSection}>
           <Pressable
-            style={({ pressed }) => [styles.outfitHeader, pressed && styles.outfitHeaderPressed]}
+            style={({ pressed }) => [styles.outfitHeader, pressed && { opacity: 0.5, backgroundColor: colors.mist }]}
             onPress={() => router.push(`/trip/${id}/day-look/${dayNumber}`)}
           >
             <View style={styles.outfitHeaderLeft}>
               <Feather name="camera" size={12} color={colors.taupe} />
-              <Text variant="eyebrow" style={styles.outfitLabel}>
+              <Text variant="eyebrow" style={[styles.outfitLabel, { color: colors.taupe }]}>
                 day {String(dayNumber).padStart(2, "0")} look
               </Text>
             </View>
             <View style={styles.outfitHeaderRight}>
               <View style={styles.outfitPrivacy}>
-                <View style={styles.outfitPrivacyDot} />
-                <Text variant="caption" style={styles.outfitPrivacyText}>only you</Text>
+                <View style={[styles.outfitPrivacyDot, { backgroundColor: colors.coral }]} />
+                <Text variant="caption" style={[styles.outfitPrivacyText, { color: colors.stone }]}>only you</Text>
               </View>
               <Feather name="chevron-right" size={14} color={colors.sand} />
             </View>
@@ -578,7 +600,7 @@ export default function DayViewScreen() {
               {dayOutfits.map((outfit) => (
                 <TouchableOpacity
                   key={outfit.id}
-                  style={styles.outfitCard}
+                  style={[styles.outfitCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}
                   onPress={() => router.push(`/trip/${id}/day-look/${dayNumber}`)}
                   activeOpacity={0.85}
                 >
@@ -589,7 +611,7 @@ export default function DayViewScreen() {
                     transition={200}
                   />
                   {outfit.name ? (
-                    <Text variant="caption" style={styles.outfitName} numberOfLines={1}>
+                    <Text variant="caption" style={[styles.outfitName, { color: colors.ink }]} numberOfLines={1}>
                       {outfit.name}
                     </Text>
                   ) : null}
@@ -603,7 +625,7 @@ export default function DayViewScreen() {
         <View style={styles.notesSection}>
           <Text variant="eyebrow" style={styles.notesLabel}>notes</Text>
           <TextInput
-            style={styles.notesInput}
+            style={[styles.notesInput, { backgroundColor: colors.pearl, borderColor: colors.mist, color: colors.ink }]}
             placeholder="notes for the day…"
             placeholderTextColor={colors.stone}
             value={notesValue}
@@ -621,13 +643,13 @@ export default function DayViewScreen() {
         />
         <View style={styles.memoryHint}>
           <Feather name="book-open" size={10} color={colors.sand} />
-          <Text variant="caption" style={styles.memoryHintText}>
+          <Text variant="caption" style={[styles.memoryHintText, { color: colors.sand }]}>
             included in your memory book
           </Text>
         </View>
 
         {/* Shared notes thread */}
-        <View style={styles.threadSection}>
+        <View style={[styles.threadSection, { borderTopColor: colors.mist }]}>
           <View style={styles.threadHeader}>
             <Text variant="eyebrow">notes from today</Text>
             <View style={styles.threadPrivacy}>
@@ -639,7 +661,7 @@ export default function DayViewScreen() {
           </View>
           <View style={styles.memoryHint}>
             <Feather name="book-open" size={10} color={colors.sand} />
-            <Text variant="caption" style={styles.memoryHintText}>
+            <Text variant="caption" style={[styles.memoryHintText, { color: colors.sand }]}>
               these notes may appear in your memory book
             </Text>
           </View>
@@ -655,12 +677,12 @@ export default function DayViewScreen() {
                   },
                 ]}
               >
-                <Text style={styles.threadAvatarText}>
+                <Text style={[styles.threadAvatarText, { color: colors.pearl }]}>
                   {note.author === "self" ? "P" : "L"}
                 </Text>
               </View>
               <View style={styles.threadContent}>
-                <Text style={styles.threadText}>{note.text}</Text>
+                <Text style={[styles.threadText, { color: colors.ink }]}>{note.text}</Text>
                 <Text variant="caption" style={styles.threadTime}>
                   {note.author === "self" ? "piggie" : "leo"} ·{" "}
                   {new Date(note.time).toLocaleTimeString("en-US", {
@@ -673,12 +695,12 @@ export default function DayViewScreen() {
           ))}
 
           {/* Compose */}
-          <View style={styles.threadCompose}>
+          <View style={[styles.threadCompose, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
             <View style={[styles.threadAvatar, { backgroundColor: colors.coral }]}>
-              <Text style={styles.threadAvatarText}>P</Text>
+              <Text style={[styles.threadAvatarText, { color: colors.pearl }]}>P</Text>
             </View>
             <TextInput
-              style={styles.threadInput}
+              style={[styles.threadInput, { color: colors.ink }]}
               placeholder="something small worth remembering…"
               placeholderTextColor={colors.sand}
               value={newNoteText}
@@ -686,6 +708,11 @@ export default function DayViewScreen() {
               onSubmitEditing={addThreadNote}
               returnKeyType="send"
             />
+            {newNoteText.trim().length > 0 && (
+              <TouchableOpacity onPress={addThreadNote} activeOpacity={0.7} hitSlop={8}>
+                <Feather name="send" size={14} color={colors.coral} />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -699,16 +726,11 @@ export default function DayViewScreen() {
         </View>
       )}
 
-      {/* Add button with item counter */}
+      {/* Add button */}
       <View style={styles.addArea}>
-        {!isPaid && (
-          <Text variant="caption" style={styles.itemCounter}>
-            {totalItemsInTrip}/{itemLimit} places
-          </Text>
-        )}
-        <TouchableOpacity style={styles.addButton} onPress={handleAddItem} activeOpacity={0.85}>
+        <TouchableOpacity style={[styles.addButton, { backgroundColor: colors.ink }]} onPress={handleAddItem} activeOpacity={0.85}>
           <Feather name="plus" size={16} color={colors.ivory} style={{ marginRight: 6 }} />
-          <Text variant="body" style={styles.addButtonText}>add plan</Text>
+          <Text variant="body" style={[styles.addButtonText, { color: colors.ivory }]}>add plan</Text>
         </TouchableOpacity>
       </View>
 
@@ -755,7 +777,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   backLink: {
-    color: colors.stone,
     fontSize: 13,
   },
   dayInfo: {
@@ -770,7 +791,6 @@ const styles = StyleSheet.create({
   },
   dayItemCount: {
     fontSize: 11,
-    color: colors.stone,
     fontFamily: "Inter_400Regular",
     marginTop: 6,
   },
@@ -789,14 +809,12 @@ const styles = StyleSheet.create({
   rollerDateNum: {
     fontFamily: "CormorantGaramond_500Medium",
     fontSize: 24,
-    color: colors.ink,
     lineHeight: 28,
   },
   rollerWeekday: {
     fontSize: 8,
     textTransform: "uppercase" as const,
     letterSpacing: 0.8,
-    color: colors.stone,
     fontFamily: "Inter_500Medium",
     marginTop: 2,
   },
@@ -812,23 +830,18 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: colors.teal + "14",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: spacing.xs,
   },
-  emptyText: {
-    color: colors.stone,
-  },
+  emptyText: {},
   emptyHint: {
-    color: colors.taupe,
     textAlign: "center",
   },
   emptyAddBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: colors.teal,
     borderRadius: 999,
     paddingHorizontal: 20,
     paddingVertical: 11,
@@ -837,7 +850,6 @@ const styles = StyleSheet.create({
   emptyAddText: {
     fontFamily: "Inter_500Medium",
     fontSize: 13,
-    color: colors.pearl,
   },
   timelineRow: {
     flexDirection: "row",
@@ -852,7 +864,6 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 12,
-    color: colors.taupe,
     fontFamily: "Inter_500Medium",
     letterSpacing: 0.2,
   },
@@ -869,7 +880,6 @@ const styles = StyleSheet.create({
   line: {
     width: StyleSheet.hairlineWidth,
     flex: 1,
-    backgroundColor: colors.sand,
     marginTop: 4,
   },
   contentColumn: {
@@ -889,15 +899,12 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 10,
     marginLeft: 12,
-    backgroundColor: colors.mist,
   },
   itemTitle: {
     fontSize: 15,
     fontFamily: "Inter_500Medium",
-    color: colors.ink,
   },
   itemSubtitle: {
-    color: colors.stone,
     marginTop: 2,
     fontSize: 13,
   },
@@ -908,8 +915,17 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   itemLocation: {
-    color: colors.stone,
     fontSize: 11,
+  },
+  linkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 4,
+  },
+  itemLinkText: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
   },
   deleteLink: {
     flexDirection: "row",
@@ -934,10 +950,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
     borderRadius: 6,
   },
-  outfitHeaderPressed: {
-    opacity: 0.5,
-    backgroundColor: colors.mist,
-  },
   outfitHeaderLeft: {
     flexDirection: "row",
     alignItems: "center",
@@ -945,7 +957,6 @@ const styles = StyleSheet.create({
   },
   outfitLabel: {
     fontSize: 10,
-    color: colors.taupe,
   },
   outfitHeaderRight: {
     flexDirection: "row",
@@ -961,11 +972,9 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: colors.coral,
   },
   outfitPrivacyText: {
     fontSize: 9,
-    color: colors.stone,
     fontFamily: "Inter_500Medium",
   },
   outfitScroll: {
@@ -976,9 +985,7 @@ const styles = StyleSheet.create({
     width: 72,
     borderRadius: 10,
     overflow: "hidden",
-    backgroundColor: colors.pearl,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
   },
   outfitThumb: {
     width: 72,
@@ -989,7 +996,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     fontSize: 9,
     fontFamily: "Inter_500Medium",
-    color: colors.ink,
   },
   notesSection: {
     marginTop: spacing.lg,
@@ -998,15 +1004,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   notesInput: {
-    backgroundColor: colors.pearl,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     padding: spacing.md,
     minHeight: 80,
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 16,
-    color: colors.ink,
     textAlignVertical: "top",
   },
   /* Memory book hint */
@@ -1020,16 +1023,13 @@ const styles = StyleSheet.create({
   },
   memoryHintText: {
     fontSize: 10,
-    color: colors.sand,
     fontFamily: "Inter_400Regular",
   },
 
   /* NOW card */
   nowCard: {
-    backgroundColor: colors.pearl,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     overflow: "hidden",
     marginBottom: spacing.lg,
   },
@@ -1042,7 +1042,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 12,
     left: 12,
-    backgroundColor: colors.coral,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
@@ -1054,10 +1053,8 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: colors.pearl,
   },
   nowChipText: {
-    color: colors.pearl,
     fontSize: 9,
     fontFamily: "Inter_500Medium",
     letterSpacing: 2,
@@ -1081,7 +1078,6 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingTop: 14,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.mist,
   },
   nowAvatars: {
     flexDirection: "row",
@@ -1091,25 +1087,21 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     borderWidth: 1.5,
-    borderColor: colors.pearl,
     alignItems: "center",
     justifyContent: "center",
   },
   nowMiniAvText: {
-    color: colors.pearl,
     fontSize: 8,
     fontFamily: "Inter_600SemiBold",
   },
   nowMetaText: {
     fontSize: 11,
-    color: colors.stone,
   },
 
   /* Shared notes thread */
   threadSection: {
     marginTop: spacing.lg,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.mist,
     paddingTop: spacing.lg,
   },
   threadHeader: {
@@ -1145,7 +1137,6 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   threadAvatarText: {
-    color: colors.pearl,
     fontSize: 9,
     fontFamily: "Inter_600SemiBold",
   },
@@ -1156,7 +1147,6 @@ const styles = StyleSheet.create({
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 16,
     lineHeight: 22,
-    color: colors.ink,
   },
   threadTime: {
     fontSize: 10,
@@ -1166,12 +1156,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   threadInput: {
     flex: 1,
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 16,
-    color: colors.ink,
     paddingVertical: 4,
   },
 
@@ -1186,10 +1179,8 @@ const styles = StyleSheet.create({
   },
   itemCounter: {
     fontSize: 10,
-    color: colors.stone,
   },
   addButton: {
-    backgroundColor: colors.ink,
     borderRadius: 10,
     paddingVertical: 14,
     flexDirection: "row",
@@ -1198,7 +1189,6 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
   },
   addButtonText: {
-    color: colors.ivory,
     fontFamily: "Inter_500Medium",
   },
   bannerWrap: {

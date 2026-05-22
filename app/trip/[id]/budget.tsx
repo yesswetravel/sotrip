@@ -12,7 +12,7 @@ import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../features/design-system";
 import { useTrip } from "../../../features/trips/hooks";
-import { colors } from "../../../theme/colors";
+import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
 
 interface BudgetEntry {
@@ -22,16 +22,6 @@ interface BudgetEntry {
   category: string;
   paid: boolean;
 }
-
-const BUDGET_CATS = [
-  { key: "flights", label: "flights", icon: "navigation" as const, color: colors.coral },
-  { key: "accommodation", label: "stay", icon: "home" as const, color: colors.teal },
-  { key: "food", label: "food", icon: "coffee" as const, color: colors.gold },
-  { key: "transport", label: "transport", icon: "map" as const, color: colors.stone },
-  { key: "activities", label: "activities", icon: "compass" as const, color: colors.teal },
-  { key: "shopping", label: "shopping", icon: "shopping-bag" as const, color: colors.coral },
-  { key: "other", label: "other", icon: "more-horizontal" as const, color: colors.sand },
-];
 
 function storageKey(tripId: string) {
   return `budget_${tripId}`;
@@ -45,9 +35,20 @@ function fmt(amount: number): string {
 }
 
 export default function BudgetScreen() {
+  const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { data: trip } = useTrip(id);
+
+  const BUDGET_CATS = [
+    { key: "flights", label: "flights", icon: "navigation" as const, color: colors.coral },
+    { key: "accommodation", label: "stay", icon: "home" as const, color: colors.teal },
+    { key: "food", label: "food", icon: "coffee" as const, color: colors.gold },
+    { key: "transport", label: "transport", icon: "map" as const, color: colors.stone },
+    { key: "activities", label: "activities", icon: "compass" as const, color: colors.teal },
+    { key: "shopping", label: "shopping", icon: "shopping-bag" as const, color: colors.coral },
+    { key: "other", label: "other", icon: "more-horizontal" as const, color: colors.sand },
+  ];
 
   const [entries, setEntries] = useState<BudgetEntry[]>([]);
   const [budgetLimit, setBudgetLimit] = useState("");
@@ -131,11 +132,11 @@ export default function BudgetScreen() {
   if (!loaded) return null;
 
   return (
-    <Container>
+    <Container logo>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backRow}>
           <Feather name="chevron-left" size={16} color={colors.stone} />
-          <Text variant="body" style={styles.backLink}>{trip?.title ?? "trip"}</Text>
+          <Text variant="body" style={[styles.backLink, { color: colors.stone }]}>{trip?.title ?? "trip"}</Text>
         </TouchableOpacity>
       </View>
 
@@ -147,12 +148,12 @@ export default function BudgetScreen() {
         style={styles.body}
       >
         {/* Budget hero */}
-        <View style={styles.heroCard}>
+        <View style={[styles.heroCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
           <Text variant="eyebrow" style={styles.heroLabel}>trip budget</Text>
           <View style={styles.heroAmountRow}>
-            <Text variant="display" style={styles.heroDollar}>$</Text>
+            <Text variant="display" style={[styles.heroDollar, { color: colors.taupe }]}>$</Text>
             <TextInput
-              style={styles.heroInput}
+              style={[styles.heroInput, { color: colors.ink }]}
               placeholder="0"
               placeholderTextColor={colors.sand}
               value={budgetLimit}
@@ -161,11 +162,11 @@ export default function BudgetScreen() {
             />
           </View>
           {limit > 0 && (
-            <View style={styles.heroBar}>
+            <View style={[styles.heroBar, { backgroundColor: colors.mist }]}>
               <View
                 style={[
                   styles.heroBarFill,
-                  { width: `${pct}%` as any },
+                  { width: `${pct}%` as any, backgroundColor: colors.moss },
                   overBudget && { backgroundColor: "#C44" },
                 ]}
               />
@@ -175,16 +176,16 @@ export default function BudgetScreen() {
 
         {/* Stats row */}
         <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text variant="caption" style={styles.statLabel}>spent</Text>
-            <Text variant="title" style={styles.statValue}>{fmt(totalSpent)}</Text>
+          <View style={[styles.statCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
+            <Text variant="caption" style={[styles.statLabel, { color: colors.stone }]}>spent</Text>
+            <Text variant="title" style={[styles.statValue, { color: colors.ink }]}>{fmt(totalSpent)}</Text>
           </View>
           {limit > 0 && (
-            <View style={styles.statCard}>
-              <Text variant="caption" style={styles.statLabel}>remaining</Text>
+            <View style={[styles.statCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
+              <Text variant="caption" style={[styles.statLabel, { color: colors.stone }]}>remaining</Text>
               <Text
                 variant="title"
-                style={[styles.statValue, overBudget && styles.overBudgetText]}
+                style={[styles.statValue, { color: colors.ink }, overBudget && styles.overBudgetText]}
               >
                 {fmt(Math.abs(remaining))}
               </Text>
@@ -193,9 +194,9 @@ export default function BudgetScreen() {
               )}
             </View>
           )}
-          <View style={styles.statCard}>
-            <Text variant="caption" style={styles.statLabel}>items</Text>
-            <Text variant="title" style={styles.statValue}>{entries.length}</Text>
+          <View style={[styles.statCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
+            <Text variant="caption" style={[styles.statLabel, { color: colors.stone }]}>items</Text>
+            <Text variant="title" style={[styles.statValue, { color: colors.ink }]}>{entries.length}</Text>
           </View>
         </View>
 
@@ -207,11 +208,11 @@ export default function BudgetScreen() {
               <View key={cat.key} style={styles.catRow}>
                 <View style={styles.catHeader}>
                   <Feather name={cat.icon} size={13} color={cat.color} />
-                  <Text variant="caption" style={styles.catName}>{cat.label}</Text>
-                  <Text variant="caption" style={styles.catAmount}>{fmt(cat.total)}</Text>
+                  <Text variant="caption" style={[styles.catName, { color: colors.ink }]}>{cat.label}</Text>
+                  <Text variant="caption" style={[styles.catAmount, { color: colors.ink }]}>{fmt(cat.total)}</Text>
                 </View>
                 {limit > 0 && (
-                  <View style={styles.catBar}>
+                  <View style={[styles.catBar, { backgroundColor: colors.mist }]}>
                     <View
                       style={[
                         styles.catBarFill,
@@ -230,18 +231,18 @@ export default function BudgetScreen() {
           <Text variant="eyebrow" style={styles.sectionLabel}>expenses</Text>
           {entries.length === 0 && (
             <View style={styles.emptyState}>
-              <View style={styles.emptyIcon}>
+              <View style={[styles.emptyIcon, { backgroundColor: colors.taupe + "14" }]}>
                 <Feather name="dollar-sign" size={24} color={colors.taupe} />
               </View>
-              <Text variant="titleItalic" style={styles.emptyText}>
+              <Text variant="titleItalic" style={[styles.emptyText, { color: colors.stone }]}>
                 no expenses yet
               </Text>
-              <Text variant="caption" style={styles.emptyHint}>
+              <Text variant="caption" style={[styles.emptyHint, { color: colors.sand }]}>
                 track flights, hotels, meals & more
               </Text>
             </View>
           )}
-          <View style={entries.length > 0 ? styles.entriesCard : undefined}>
+          <View style={entries.length > 0 ? [styles.entriesCard, { backgroundColor: colors.pearl, borderColor: colors.mist }] : undefined}>
             {entries.map((entry, idx) => {
               const cat = BUDGET_CATS.find((c) => c.key === entry.category) ?? BUDGET_CATS[6];
               return (
@@ -249,13 +250,14 @@ export default function BudgetScreen() {
                   key={entry.id}
                   style={[
                     styles.entryRow,
-                    idx < entries.length - 1 && styles.entryBorder,
+                    idx < entries.length - 1 && [styles.entryBorder, { borderBottomColor: colors.mist }],
                   ]}
                 >
                   <TouchableOpacity
                     onPress={() => togglePaid(entry.id)}
                     style={[
                       styles.paidDot,
+                      { borderColor: colors.sand },
                       entry.paid && { backgroundColor: cat.color, borderColor: cat.color },
                     ]}
                   >
@@ -264,7 +266,7 @@ export default function BudgetScreen() {
                   <View style={styles.entryInfo}>
                     <Text
                       variant="body"
-                      style={[styles.entryLabel, entry.paid && styles.entryPaid]}
+                      style={[styles.entryLabel, { color: colors.ink }, entry.paid && { textDecorationLine: "line-through", color: colors.stone, opacity: 0.6 }]}
                       numberOfLines={1}
                     >
                       {entry.label}
@@ -276,7 +278,7 @@ export default function BudgetScreen() {
                       </Text>
                     </View>
                   </View>
-                  <Text variant="body" style={styles.entryAmount}>{fmt(entry.amount)}</Text>
+                  <Text variant="body" style={[styles.entryAmount, { color: colors.ink }]}>{fmt(entry.amount)}</Text>
                   <TouchableOpacity
                     onPress={() => deleteEntry(entry.id)}
                     hitSlop={8}
@@ -295,12 +297,12 @@ export default function BudgetScreen() {
 
       {/* Add button */}
       <TouchableOpacity
-        style={styles.addButton}
+        style={[styles.addButton, { backgroundColor: colors.ink }]}
         onPress={() => setShowAdd(true)}
         activeOpacity={0.85}
       >
         <Feather name="plus" size={16} color={colors.ivory} style={{ marginRight: 6 }} />
-        <Text variant="body" style={styles.addButtonText}>add expense</Text>
+        <Text variant="body" style={[styles.addButtonText, { color: colors.ivory }]}>add expense</Text>
       </TouchableOpacity>
 
       {/* Add sheet */}
@@ -311,22 +313,22 @@ export default function BudgetScreen() {
             activeOpacity={1}
             onPress={() => setShowAdd(false)}
           >
-            <TouchableOpacity style={styles.sheet} activeOpacity={1} onPress={() => {}}>
-              <View style={styles.handle} />
+            <TouchableOpacity style={[styles.sheet, { backgroundColor: colors.ivory }]} activeOpacity={1} onPress={() => {}}>
+              <View style={[styles.handle, { backgroundColor: colors.mist }]} />
               <Text variant="title" style={styles.sheetTitle}>new expense</Text>
 
               <TextInput
-                style={styles.input}
+                style={[styles.input, { borderColor: colors.sand, color: colors.ink, backgroundColor: colors.pearl }]}
                 placeholder="what was it for?"
                 placeholderTextColor={colors.sand}
                 value={newLabel}
                 onChangeText={setNewLabel}
                 autoFocus
               />
-              <View style={styles.amountInputRow}>
-                <Text variant="body" style={styles.amountDollar}>$</Text>
+              <View style={[styles.amountInputRow, { borderColor: colors.sand, backgroundColor: colors.pearl }]}>
+                <Text variant="body" style={[styles.amountDollar, { color: colors.taupe }]}>$</Text>
                 <TextInput
-                  style={styles.amountInput}
+                  style={[styles.amountInput, { color: colors.ink }]}
                   placeholder="0"
                   placeholderTextColor={colors.sand}
                   value={newAmount}
@@ -343,6 +345,7 @@ export default function BudgetScreen() {
                     key={cat.key}
                     style={[
                       styles.catChip,
+                      { borderColor: colors.sand, backgroundColor: colors.pearl },
                       newCategory === cat.key && { backgroundColor: cat.color, borderColor: cat.color },
                     ]}
                     onPress={() => setNewCategory(cat.key)}
@@ -368,20 +371,20 @@ export default function BudgetScreen() {
               </View>
 
               <TouchableOpacity
-                style={[styles.saveBtn, (!newLabel.trim() || !newAmount) && styles.saveBtnDisabled]}
+                style={[styles.saveBtn, { backgroundColor: colors.ink }, (!newLabel.trim() || !newAmount) && styles.saveBtnDisabled]}
                 onPress={addEntry}
                 disabled={!newLabel.trim() || !newAmount}
                 activeOpacity={0.8}
               >
-                <Text variant="body" style={styles.saveBtnText}>add expense</Text>
+                <Text variant="body" style={[styles.saveBtnText, { color: colors.ivory }]}>add expense</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.cancelBtn}
+                style={[styles.cancelBtn, { borderColor: colors.sand }]}
                 onPress={() => setShowAdd(false)}
                 activeOpacity={0.8}
               >
-                <Text variant="body" style={styles.cancelText}>cancel</Text>
+                <Text variant="body" style={[styles.cancelText, { color: colors.stone }]}>cancel</Text>
               </TouchableOpacity>
             </TouchableOpacity>
           </TouchableOpacity>
@@ -402,7 +405,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   backLink: {
-    color: colors.stone,
     fontSize: 13,
   },
   pageTitle: {
@@ -413,11 +415,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   heroCard: {
-    backgroundColor: colors.pearl,
     borderRadius: 14,
     padding: spacing.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     alignItems: "center",
     marginBottom: spacing.md,
   },
@@ -430,12 +430,10 @@ const styles = StyleSheet.create({
   },
   heroDollar: {
     fontSize: 24,
-    color: colors.taupe,
   },
   heroInput: {
     fontSize: 36,
     fontFamily: "CormorantGaramond_700Bold",
-    color: colors.ink,
     minWidth: 50,
     textAlign: "center",
     paddingVertical: 0,
@@ -443,14 +441,12 @@ const styles = StyleSheet.create({
   heroBar: {
     width: "100%",
     height: 4,
-    backgroundColor: colors.mist,
     borderRadius: 2,
     marginTop: 12,
     overflow: "hidden",
   },
   heroBarFill: {
     height: 4,
-    backgroundColor: colors.moss,
     borderRadius: 2,
   },
   statsRow: {
@@ -460,21 +456,17 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: colors.pearl,
     borderRadius: 10,
     padding: spacing.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     alignItems: "center",
     gap: 2,
   },
   statLabel: {
-    color: colors.stone,
     fontSize: 10,
   },
   statValue: {
     fontSize: 18,
-    color: colors.ink,
   },
   overBudgetText: {
     color: "#C44",
@@ -501,17 +493,14 @@ const styles = StyleSheet.create({
   catName: {
     flex: 1,
     fontSize: 12,
-    color: colors.ink,
     fontFamily: "Inter_500Medium",
   },
   catAmount: {
     fontSize: 12,
     fontFamily: "Inter_500Medium",
-    color: colors.ink,
   },
   catBar: {
     height: 3,
-    backgroundColor: colors.mist,
     borderRadius: 2,
     overflow: "hidden",
   },
@@ -528,22 +517,17 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.taupe + "14",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
   },
   emptyText: {
-    color: colors.stone,
   },
   emptyHint: {
-    color: colors.sand,
   },
   entriesCard: {
-    backgroundColor: colors.pearl,
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     overflow: "hidden",
   },
   entryRow: {
@@ -555,14 +539,12 @@ const styles = StyleSheet.create({
   },
   entryBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.mist,
   },
   paidDot: {
     width: 20,
     height: 20,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: colors.sand,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -572,12 +554,6 @@ const styles = StyleSheet.create({
   },
   entryLabel: {
     fontSize: 14,
-    color: colors.ink,
-  },
-  entryPaid: {
-    textDecorationLine: "line-through",
-    color: colors.stone,
-    opacity: 0.6,
   },
   entryCatRow: {
     flexDirection: "row",
@@ -587,7 +563,6 @@ const styles = StyleSheet.create({
   entryAmount: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: colors.ink,
   },
   deleteBtn: {
     padding: 4,
@@ -598,7 +573,6 @@ const styles = StyleSheet.create({
     bottom: 24,
     left: spacing.lg,
     right: spacing.lg,
-    backgroundColor: colors.ink,
     borderRadius: 10,
     paddingVertical: 14,
     flexDirection: "row",
@@ -606,7 +580,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   addButtonText: {
-    color: colors.ivory,
     fontFamily: "Inter_500Medium",
   },
   overlay: {
@@ -615,7 +588,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.3)",
   },
   sheet: {
-    backgroundColor: colors.ivory,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     padding: spacing.lg,
@@ -625,7 +597,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: colors.mist,
     alignSelf: "center",
     marginBottom: spacing.lg,
   },
@@ -634,28 +605,22 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.sand,
     borderRadius: 8,
     paddingHorizontal: spacing.md,
     paddingVertical: 14,
     fontFamily: "Inter_400Regular",
     fontSize: 15,
-    color: colors.ink,
-    backgroundColor: colors.pearl,
     marginBottom: 12,
   },
   amountInputRow: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.sand,
     borderRadius: 8,
     paddingHorizontal: spacing.md,
-    backgroundColor: colors.pearl,
     marginBottom: spacing.md,
   },
   amountDollar: {
-    color: colors.taupe,
     fontSize: 18,
     marginRight: 4,
   },
@@ -664,7 +629,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontFamily: "Inter_400Regular",
     fontSize: 18,
-    color: colors.ink,
   },
   catSectionLabel: {
     marginBottom: 8,
@@ -683,11 +647,8 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.sand,
-    backgroundColor: colors.pearl,
   },
   saveBtn: {
-    backgroundColor: colors.ink,
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
@@ -697,17 +658,14 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   saveBtnText: {
-    color: colors.ivory,
     fontFamily: "Inter_500Medium",
   },
   cancelBtn: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.sand,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",
   },
   cancelText: {
-    color: colors.stone,
   },
 });

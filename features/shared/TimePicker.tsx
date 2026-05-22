@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { StyleSheet, View, TextInput, TouchableOpacity } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Text } from "../design-system";
-import { colors } from "../../theme/colors";
+import { useColors } from "../theme/ThemeProvider";
 import { spacing } from "../../theme/spacing";
 
 interface Props {
@@ -39,6 +39,7 @@ export default function TimePicker({
   onClear,
   placeholder = "e.g. 2:30",
 }: Props) {
+  const colors = useColors();
   const initial = value ? to12h(value) : { display: "", period: "AM" as const };
   const [display, setDisplay] = useState(initial.display);
   const [period, setPeriod] = useState<"AM" | "PM">(initial.period);
@@ -84,10 +85,10 @@ export default function TimePicker({
   }
 
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, { backgroundColor: colors.pearl, borderColor: colors.sand }]}>
       <Feather name="clock" size={16} color={colors.stone} style={styles.icon} />
       <TextInput
-        style={styles.input}
+        style={[styles.input, { color: colors.ink }]}
         placeholder={placeholder}
         placeholderTextColor={colors.stone}
         value={display}
@@ -96,8 +97,8 @@ export default function TimePicker({
         keyboardType="numbers-and-punctuation"
         returnKeyType="done"
       />
-      <TouchableOpacity style={styles.periodBtn} onPress={togglePeriod} activeOpacity={0.7}>
-        <Text variant="caption" style={styles.periodText}>{period}</Text>
+      <TouchableOpacity style={[styles.periodBtn, { backgroundColor: colors.ink }]} onPress={togglePeriod} activeOpacity={0.7}>
+        <Text variant="caption" style={[styles.periodText, { color: colors.ivory }]}>{period}</Text>
       </TouchableOpacity>
       {display.length > 0 && (
         <TouchableOpacity
@@ -115,10 +116,8 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.pearl,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.sand,
     paddingHorizontal: spacing.md,
   },
   icon: {
@@ -129,17 +128,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontFamily: "Inter_400Regular",
     fontSize: 15,
-    color: colors.ink,
   },
   periodBtn: {
-    backgroundColor: colors.ink,
     borderRadius: 4,
     paddingHorizontal: 10,
     paddingVertical: 4,
     marginLeft: 8,
   },
   periodText: {
-    color: colors.ivory,
     fontSize: 12,
     fontFamily: "Inter_500Medium",
     letterSpacing: 0.5,

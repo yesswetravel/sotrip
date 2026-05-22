@@ -1,7 +1,7 @@
 import { StyleSheet, View, Animated } from "react-native";
 import { useEffect, useRef } from "react";
 import { Text } from "../../design-system";
-import { colors } from "../../../theme/colors";
+import { useColors } from "../../theme/ThemeProvider";
 import type { PhotoUploadJob } from "../../../types/photos";
 
 interface Props {
@@ -9,6 +9,7 @@ interface Props {
 }
 
 export default function UploadProgressBanner({ jobs }: Props) {
+  const colors = useColors();
   const widthAnim = useRef(new Animated.Value(0)).current;
 
   const total = jobs.length;
@@ -34,14 +35,15 @@ export default function UploadProgressBanner({ jobs }: Props) {
     : `uploading ${done}/${total}…`;
 
   return (
-    <View style={styles.container}>
-      <Text variant="caption" style={styles.label}>
+    <View style={[styles.container, { backgroundColor: colors.pearl, borderBottomColor: colors.mist }]}>
+      <Text variant="caption" style={[styles.label, { color: colors.stone }]}>
         {label}
       </Text>
-      <View style={styles.track}>
+      <View style={[styles.track, { backgroundColor: colors.mist }]}>
         <Animated.View
           style={[
             styles.fill,
+            { backgroundColor: colors.ink },
             {
               width: widthAnim.interpolate({
                 inputRange: [0, 1],
@@ -60,23 +62,18 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: colors.pearl,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.mist,
   },
   label: {
     marginBottom: 6,
-    color: colors.stone,
   },
   track: {
     height: 3,
-    backgroundColor: colors.mist,
     borderRadius: 2,
     overflow: "hidden",
   },
   fill: {
     height: "100%",
-    backgroundColor: colors.ink,
     borderRadius: 2,
   },
   fillError: {

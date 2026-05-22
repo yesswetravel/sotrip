@@ -11,7 +11,7 @@ import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../features/design-system";
 import { useTrip } from "../../../features/trips/hooks";
-import { colors } from "../../../theme/colors";
+import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
 
 /* ------------------------------------------------------------------ */
@@ -58,6 +58,7 @@ const STATUS_ORDER = ["confirmed", "processing", "printing", "shipped", "deliver
 /* ------------------------------------------------------------------ */
 
 export default function MemoryTrackingScreen() {
+  const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { data: trip } = useTrip(id);
@@ -84,13 +85,13 @@ export default function MemoryTrackingScreen() {
   estimatedDate.setDate(estimatedDate.getDate() + 7);
 
   return (
-    <Container>
+    <Container logo>
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
           <Feather name="chevron-left" size={20} color={colors.stone} />
         </TouchableOpacity>
-        <Text variant="eyebrow" style={s.headerLabel}>order tracking</Text>
+        <Text variant="eyebrow" style={{ color: colors.stone }}>order tracking</Text>
         <View style={{ width: 20 }} />
       </View>
 
@@ -99,25 +100,25 @@ export default function MemoryTrackingScreen() {
         contentContainerStyle={s.scroll}
       >
         {/* Book info */}
-        <View style={s.bookCard}>
-          <View style={s.bookIconWrap}>
+        <View style={[s.bookCard, { backgroundColor: colors.pearl }]}>
+          <View style={[s.bookIconWrap, { backgroundColor: colors.coral + "12" }]}>
             <Feather name="book" size={22} color={colors.coral} />
           </View>
           <View style={s.bookInfo}>
-            <Text style={s.bookTitle}>{trip.title.toLowerCase()}</Text>
-            <Text variant="caption" style={s.bookMeta}>
+            <Text style={[s.bookTitle, { color: colors.ink }]}>{trip.title.toLowerCase()}</Text>
+            <Text variant="caption" style={{ fontSize: 11, color: colors.stone }}>
               printed + digital · {orderDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
             </Text>
           </View>
-          <Text style={s.bookPrice}>${order.price}</Text>
+          <Text style={[s.bookPrice, { color: colors.ink }]}>${order.price}</Text>
         </View>
 
         {/* Estimated delivery */}
-        <View style={s.deliveryCard}>
+        <View style={[s.deliveryCard, { backgroundColor: colors.teal + "0A", borderColor: colors.teal + "20" }]}>
           <Feather name="calendar" size={14} color={colors.teal} />
           <View style={s.deliveryInfo}>
-            <Text style={s.deliveryLabel}>estimated delivery</Text>
-            <Text style={s.deliveryDate}>
+            <Text style={[s.deliveryLabel, { color: colors.teal }]}>estimated delivery</Text>
+            <Text style={[s.deliveryDate, { color: colors.ink }]}>
               {estimatedDate.toLocaleDateString("en-US", {
                 weekday: "long",
                 month: "long",
@@ -141,8 +142,9 @@ export default function MemoryTrackingScreen() {
                   <View
                     style={[
                       s.timelineDot,
-                      isComplete && s.timelineDotComplete,
-                      isCurrent && s.timelineDotCurrent,
+                      { backgroundColor: colors.mist },
+                      isComplete && { backgroundColor: colors.teal },
+                      isCurrent && { backgroundColor: colors.coral },
                     ]}
                   >
                     {isComplete ? (
@@ -155,7 +157,8 @@ export default function MemoryTrackingScreen() {
                     <View
                       style={[
                         s.timelineConnector,
-                        isComplete && i < currentStepIndex && s.timelineConnectorComplete,
+                        { backgroundColor: colors.mist },
+                        isComplete && i < currentStepIndex && { backgroundColor: colors.teal },
                       ]}
                     />
                   )}
@@ -166,17 +169,18 @@ export default function MemoryTrackingScreen() {
                   <Text
                     style={[
                       s.stepLabel,
-                      isComplete && s.stepLabelComplete,
-                      isCurrent && s.stepLabelCurrent,
+                      { color: colors.sand },
+                      isComplete && { color: colors.ink },
+                      isCurrent && { color: colors.coral },
                     ]}
                   >
                     {step.label}
                   </Text>
-                  <Text variant="caption" style={s.stepDesc}>{step.desc}</Text>
+                  <Text variant="caption" style={[s.stepDesc, { color: colors.stone }]}>{step.desc}</Text>
                   {isCurrent && (
-                    <View style={s.currentBadge}>
-                      <View style={s.currentDot} />
-                      <Text style={s.currentText}>in progress</Text>
+                    <View style={[s.currentBadge, { backgroundColor: colors.coral + "12" }]}>
+                      <View style={[s.currentDot, { backgroundColor: colors.coral }]} />
+                      <Text style={[s.currentText, { color: colors.coral }]}>in progress</Text>
                     </View>
                   )}
                 </View>
@@ -187,16 +191,16 @@ export default function MemoryTrackingScreen() {
 
         {/* Shipping address */}
         {order.shipping && (
-          <View style={s.addressCard}>
-            <Text style={s.addressTitle}>shipping to</Text>
-            <Text style={s.addressLine}>{order.shipping.name}</Text>
-            <Text variant="caption" style={s.addressDetail}>
+          <View style={[s.addressCard, { backgroundColor: colors.pearl }]}>
+            <Text style={[s.addressTitle, { color: colors.sand }]}>shipping to</Text>
+            <Text style={[s.addressLine, { color: colors.ink }]}>{order.shipping.name}</Text>
+            <Text variant="caption" style={{ fontSize: 12, color: colors.stone }}>
               {order.shipping.address}
             </Text>
-            <Text variant="caption" style={s.addressDetail}>
+            <Text variant="caption" style={{ fontSize: 12, color: colors.stone }}>
               {order.shipping.city}, {order.shipping.zip}
             </Text>
-            <Text variant="caption" style={s.addressDetail}>
+            <Text variant="caption" style={{ fontSize: 12, color: colors.stone }}>
               {order.shipping.country}
             </Text>
           </View>
@@ -205,12 +209,12 @@ export default function MemoryTrackingScreen() {
         {/* Actions */}
         <View style={s.actions}>
           <TouchableOpacity
-            style={s.primaryBtn}
+            style={[s.primaryBtn, { backgroundColor: colors.ink }]}
             activeOpacity={0.85}
             onPress={() => router.push(`/trip/${id}/memory`)}
           >
             <Feather name="book-open" size={15} color={colors.pearl} />
-            <Text style={s.primaryBtnText}>view digital book</Text>
+            <Text style={[s.primaryBtnText, { color: colors.pearl }]}>view digital book</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -218,7 +222,7 @@ export default function MemoryTrackingScreen() {
             activeOpacity={0.7}
             onPress={() => router.back()}
           >
-            <Text style={s.secondaryBtnText}>back</Text>
+            <Text style={[s.secondaryBtnText, { color: colors.stone }]}>back</Text>
           </TouchableOpacity>
         </View>
 
@@ -240,14 +244,12 @@ const s = StyleSheet.create({
     marginTop: spacing.sm,
     marginBottom: spacing.md,
   },
-  headerLabel: { color: colors.stone },
   scroll: { paddingBottom: 40 },
 
   /* Book card */
   bookCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.pearl,
     borderRadius: 14,
     padding: 16,
     gap: 12,
@@ -257,7 +259,6 @@ const s = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 10,
-    backgroundColor: colors.coral + "12",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -265,13 +266,10 @@ const s = StyleSheet.create({
   bookTitle: {
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 18,
-    color: colors.ink,
   },
-  bookMeta: { fontSize: 11, color: colors.stone },
   bookPrice: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 16,
-    color: colors.ink,
   },
 
   /* Delivery estimate */
@@ -279,10 +277,8 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: colors.teal + "0A",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.teal + "20",
     padding: 14,
     marginBottom: spacing.xl,
   },
@@ -290,14 +286,12 @@ const s = StyleSheet.create({
   deliveryLabel: {
     fontFamily: "Inter_500Medium",
     fontSize: 10,
-    color: colors.teal,
     letterSpacing: 0.5,
     textTransform: "uppercase",
   },
   deliveryDate: {
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 17,
-    color: colors.ink,
   },
 
   /* Timeline */
@@ -314,24 +308,13 @@ const s = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: colors.mist,
     alignItems: "center",
     justifyContent: "center",
-  },
-  timelineDotComplete: {
-    backgroundColor: colors.teal,
-  },
-  timelineDotCurrent: {
-    backgroundColor: colors.coral,
   },
   timelineConnector: {
     width: 2,
     flex: 1,
-    backgroundColor: colors.mist,
     marginVertical: 4,
-  },
-  timelineConnectorComplete: {
-    backgroundColor: colors.teal,
   },
   timelineContent: {
     flex: 1,
@@ -340,20 +323,15 @@ const s = StyleSheet.create({
   stepLabel: {
     fontFamily: "Inter_500Medium",
     fontSize: 14,
-    color: colors.sand,
   },
-  stepLabelComplete: { color: colors.ink },
-  stepLabelCurrent: { color: colors.coral },
   stepDesc: {
     fontSize: 11,
-    color: colors.stone,
     marginTop: 2,
   },
   currentBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: colors.coral + "12",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
@@ -364,17 +342,14 @@ const s = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.coral,
   },
   currentText: {
     fontFamily: "Inter_500Medium",
     fontSize: 10,
-    color: colors.coral,
   },
 
   /* Address */
   addressCard: {
-    backgroundColor: colors.pearl,
     borderRadius: 14,
     padding: 16,
     marginBottom: spacing.xl,
@@ -382,7 +357,6 @@ const s = StyleSheet.create({
   addressTitle: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 10,
-    color: colors.sand,
     letterSpacing: 1,
     textTransform: "uppercase",
     marginBottom: 10,
@@ -390,10 +364,8 @@ const s = StyleSheet.create({
   addressLine: {
     fontFamily: "Inter_500Medium",
     fontSize: 14,
-    color: colors.ink,
     marginBottom: 2,
   },
-  addressDetail: { fontSize: 12, color: colors.stone },
 
   /* Actions */
   actions: { gap: 10 },
@@ -402,14 +374,12 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: colors.ink,
     borderRadius: 999,
     paddingVertical: 15,
   },
   primaryBtnText: {
     fontFamily: "Inter_500Medium",
     fontSize: 14,
-    color: colors.pearl,
     letterSpacing: 0.3,
   },
   secondaryBtn: {
@@ -419,6 +389,5 @@ const s = StyleSheet.create({
   secondaryBtnText: {
     fontFamily: "Inter_500Medium",
     fontSize: 13,
-    color: colors.stone,
   },
 });

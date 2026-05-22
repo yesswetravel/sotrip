@@ -6,7 +6,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { Text } from "../design-system";
-import { colors } from "../../theme/colors";
+import { useColors } from "../theme/ThemeProvider";
 import { spacing } from "../../theme/spacing";
 
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
@@ -25,6 +25,7 @@ export default function CalendarStrip({
   onSelectDay,
   todayDate,
 }: CalendarStripProps) {
+  const colors = useColors();
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -56,7 +57,7 @@ export default function CalendarStrip({
             key={day.dayNumber}
             style={[
               styles.dayItem,
-              isSelected && styles.dayItemSelected,
+              isSelected && [styles.dayItemSelected, { backgroundColor: colors.ink }],
             ]}
             onPress={() => onSelectDay(day.dayNumber)}
             activeOpacity={0.7}
@@ -65,7 +66,7 @@ export default function CalendarStrip({
               variant="caption"
               style={[
                 styles.weekday,
-                isSelected && styles.textSelected,
+                isSelected && { color: colors.ivory },
               ]}
             >
               {weekday}
@@ -74,8 +75,8 @@ export default function CalendarStrip({
               variant="body"
               style={[
                 styles.dateNum,
-                isSelected && styles.textSelected,
-                isToday && !isSelected && styles.dateToday,
+                isSelected && { color: colors.ivory },
+                isToday && !isSelected && { color: colors.taupe },
               ]}
             >
               {dateNum}
@@ -98,9 +99,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 8,
   },
-  dayItemSelected: {
-    backgroundColor: colors.ink,
-  },
+  dayItemSelected: {},
   weekday: {
     fontSize: 10,
     marginBottom: 2,
@@ -108,11 +107,5 @@ const styles = StyleSheet.create({
   dateNum: {
     fontSize: 16,
     fontFamily: "Inter_500Medium",
-  },
-  textSelected: {
-    color: colors.ivory,
-  },
-  dateToday: {
-    color: colors.taupe,
   },
 });

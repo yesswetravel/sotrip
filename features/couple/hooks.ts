@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { TripMember, TripInvite, InviteStatus } from "../../types/database";
-import { colors } from "../../theme/colors";
+import { useColors } from "../theme/ThemeProvider";
 
 /* ------------------------------------------------------------------ */
 /*  Storage helpers                                                    */
@@ -14,17 +14,19 @@ const invitesKey = (tripId: string) => `@trip:${tripId}:invites`;
 /*  Avatar colors — rotate through palette                             */
 /* ------------------------------------------------------------------ */
 
-const AVATAR_COLORS = [
-  colors.coral,
-  colors.teal,
-  "#7B68C8", // lavender
-  "#C86895", // rose
-  "#68A8C8", // sky
-  colors.gold,
-];
+function getAvatarColors(colors: ReturnType<typeof useColors>) {
+  return [
+    colors.coral,
+    colors.teal,
+    "#7B68C8", // lavender
+    "#C86895", // rose
+    "#68A8C8", // sky
+    colors.gold,
+  ];
+}
 
-function pickColor(index: number): string {
-  return AVATAR_COLORS[index % AVATAR_COLORS.length];
+function pickColor(index: number, avatarColors: string[]): string {
+  return avatarColors[index % avatarColors.length];
 }
 
 /* ------------------------------------------------------------------ */
@@ -45,6 +47,8 @@ function generateInviteCode(): string {
 /* ------------------------------------------------------------------ */
 
 export function useTripMembers(tripId: string | undefined) {
+  const colors = useColors();
+  const avatarColors = getAvatarColors(colors);
   const [members, setMembers] = useState<TripMember[]>([]);
   const [invites, setInvites] = useState<TripInvite[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,7 +114,7 @@ export function useTripMembers(tripId: string | undefined) {
         trip_id: tripId ?? "",
         user_id: null,
         display_name: name,
-        avatar_color: pickColor(members.length + 1), // +1 because owner is index 0
+        avatar_color: pickColor(members.length + 1, avatarColors), // +1 because owner is index 0
         email: email || null,
         role: "editor",
         joined_at: new Date().toISOString(),

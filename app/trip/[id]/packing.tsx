@@ -16,7 +16,7 @@ import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../features/design-system";
 import { useTrip } from "../../../features/trips/hooks";
-import { colors } from "../../../theme/colors";
+import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
 
 const SCREEN_W = Dimensions.get("window").width;
@@ -39,14 +39,6 @@ interface Outfit {
   createdAt: string;
 }
 
-const CATEGORIES = [
-  { key: "clothes", label: "clothes", icon: "shopping-bag" as const, color: colors.teal },
-  { key: "toiletries", label: "toiletries", icon: "droplet" as const, color: colors.gold },
-  { key: "electronics", label: "electronics", icon: "battery-charging" as const, color: colors.stone },
-  { key: "documents", label: "documents", icon: "file-text" as const, color: colors.coral },
-  { key: "other", label: "other", icon: "package" as const, color: colors.sand },
-];
-
 function packingKey(tripId: string) {
   return `packing_${tripId}`;
 }
@@ -64,9 +56,18 @@ function formatDayDate(dateStr: string | null): string {
 }
 
 export default function PackingListScreen() {
+  const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { data: trip } = useTrip(id);
+
+  const CATEGORIES = [
+    { key: "clothes", label: "clothes", icon: "shopping-bag" as const, color: colors.teal },
+    { key: "toiletries", label: "toiletries", icon: "droplet" as const, color: colors.gold },
+    { key: "electronics", label: "electronics", icon: "battery-charging" as const, color: colors.stone },
+    { key: "documents", label: "documents", icon: "file-text" as const, color: colors.coral },
+    { key: "other", label: "other", icon: "package" as const, color: colors.sand },
+  ];
 
   const [items, setItems] = useState<PackingItem[]>([]);
   const [newText, setNewText] = useState("");
@@ -214,12 +215,12 @@ export default function PackingListScreen() {
   if (!loaded) return null;
 
   return (
-    <Container>
+    <Container logo>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backRow}>
           <Feather name="chevron-left" size={16} color={colors.stone} />
-          <Text variant="body" style={styles.backLink}>{trip?.title ?? "trip"}</Text>
+          <Text variant="body" style={[styles.backLink, { color: colors.stone }]}>{trip?.title ?? "trip"}</Text>
         </TouchableOpacity>
       </View>
 
@@ -228,21 +229,21 @@ export default function PackingListScreen() {
       {/* Progress ring area */}
       {totalItems > 0 ? (
         <View style={styles.progressSection}>
-          <View style={styles.progressCircle}>
-            <Text variant="title" style={styles.progressNumber}>{totalPacked}</Text>
-            <Text variant="caption" style={styles.progressOf}>of {totalItems}</Text>
+          <View style={[styles.progressCircle, { borderColor: colors.moss }]}>
+            <Text variant="title" style={[styles.progressNumber, { color: colors.moss }]}>{totalPacked}</Text>
+            <Text variant="caption" style={[styles.progressOf, { color: colors.stone }]}>of {totalItems}</Text>
           </View>
           <View style={styles.progressBarWrap}>
-            <View style={styles.progressBar}>
+            <View style={[styles.progressBar, { backgroundColor: colors.mist }]}>
               <View
                 style={[
                   styles.progressFill,
-                  { width: `${progressPct}%` as any },
-                  progressPct === 100 && styles.progressComplete,
+                  { width: `${progressPct}%` as any, backgroundColor: colors.moss },
+                  progressPct === 100 && { backgroundColor: colors.moss },
                 ]}
               />
             </View>
-            <Text variant="caption" style={styles.progressLabel}>
+            <Text variant="caption" style={[styles.progressLabel, { color: colors.stone }]}>
               {progressPct === 100 ? "all packed!" : `${Math.round(progressPct)}% packed`}
             </Text>
           </View>
@@ -271,7 +272,7 @@ export default function PackingListScreen() {
             return (
               <TouchableOpacity
                 key={cat.key}
-                style={[styles.catTab, isActive && { backgroundColor: cat.color }]}
+                style={[styles.catTab, { borderColor: colors.sand, backgroundColor: colors.pearl }, isActive && { backgroundColor: cat.color }]}
                 onPress={() => setActiveCategory(cat.key)}
                 activeOpacity={0.7}
               >
@@ -283,15 +284,15 @@ export default function PackingListScreen() {
                 <Text
                   variant="caption"
                   style={[
-                    styles.catTabText,
-                    isActive && styles.catTabTextActive,
+                    styles.catTabText, { color: colors.stone },
+                    isActive && { color: colors.ivory },
                   ]}
                 >
                   {cat.label}
                 </Text>
                 {count > 0 && (
-                  <View style={[styles.catBadge, isActive && { backgroundColor: "rgba(255,255,255,0.3)" }]}>
-                    <Text variant="caption" style={[styles.catBadgeText, isActive && { color: colors.ivory }]}>
+                  <View style={[styles.catBadge, { backgroundColor: colors.mist }, isActive && { backgroundColor: "rgba(255,255,255,0.3)" }]}>
+                    <Text variant="caption" style={[styles.catBadgeText, { color: colors.stone }, isActive && { color: colors.ivory }]}>
                       {count}
                     </Text>
                   </View>
@@ -303,10 +304,10 @@ export default function PackingListScreen() {
 
         {/* Add item input */}
         <View style={styles.addRow}>
-          <View style={styles.addInputWrap}>
+          <View style={[styles.addInputWrap, { backgroundColor: colors.pearl, borderColor: colors.sand }]}>
             <Feather name="plus" size={14} color={colors.taupe} style={styles.addIcon} />
             <TextInput
-              style={styles.addInput}
+              style={[styles.addInput, { color: colors.ink }]}
               placeholder={`add to ${activeCategory}…`}
               placeholderTextColor={colors.sand}
               value={newText}
@@ -327,18 +328,18 @@ export default function PackingListScreen() {
                 <Text variant="eyebrow" style={styles.groupLabel}>
                   {group.label}
                 </Text>
-                <Text variant="caption" style={styles.groupCount}>
+                <Text variant="caption" style={[styles.groupCount, { color: colors.stone }]}>
                   {packedCount}/{group.items.length}
                 </Text>
               </View>
-              <View style={styles.groupCard}>
+              <View style={[styles.groupCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
                 {group.items.map((item, idx) => (
                   <Pressable
                     key={item.id}
                     style={({ pressed }) => [
                       styles.itemRow,
                       pressed && { backgroundColor: colors.mist + "40" },
-                      idx < group.items.length - 1 && styles.itemBorder,
+                      idx < group.items.length - 1 && [styles.itemBorder, { borderBottomColor: colors.mist }],
                     ]}
                     onPress={() => toggleItem(item.id)}
                     role="button"
@@ -346,6 +347,7 @@ export default function PackingListScreen() {
                     <View
                       style={[
                         styles.checkbox,
+                        { borderColor: colors.sand },
                         item.packed && { backgroundColor: group.color, borderColor: group.color },
                       ]}
                     >
@@ -353,7 +355,7 @@ export default function PackingListScreen() {
                     </View>
                     <Text
                       variant="body"
-                      style={[styles.itemText, item.packed && styles.itemTextPacked]}
+                      style={[styles.itemText, { color: colors.ink }, item.packed && { textDecorationLine: "line-through", color: colors.stone, opacity: 0.6 }]}
                     >
                       {item.text}
                     </Text>
@@ -379,7 +381,7 @@ export default function PackingListScreen() {
               size={24}
               color={colors.mist}
             />
-            <Text variant="titleItalic" style={styles.emptyText}>
+            <Text variant="titleItalic" style={[styles.emptyText, { color: colors.stone }]}>
               no {activeCategory} yet
             </Text>
           </View>
@@ -387,13 +389,13 @@ export default function PackingListScreen() {
 
         {/* ============ Outfits & Styling Section ============ */}
         <View style={styles.outfitsDivider}>
-          <View style={styles.outfitsDividerLine} />
+          <View style={[styles.outfitsDividerLine, { backgroundColor: colors.mist }]} />
           <Feather name="camera" size={12} color={colors.taupe} />
-          <Text style={styles.outfitsDividerLabel}>outfits & styling</Text>
-          <View style={styles.outfitsDividerLine} />
+          <Text style={[styles.outfitsDividerLabel, { color: colors.taupe }]}>outfits & styling</Text>
+          <View style={[styles.outfitsDividerLine, { backgroundColor: colors.mist }]} />
         </View>
 
-        <Text variant="caption" style={styles.outfitsHint}>
+        <Text variant="caption" style={[styles.outfitsHint, { color: colors.stone }]}>
           {outfits.length} {outfits.length === 1 ? "look" : "looks"} planned
         </Text>
 
@@ -401,21 +403,21 @@ export default function PackingListScreen() {
         {dayRows.map((row) => (
           <View key={row.dayNumber} style={styles.outfitDaySection}>
             <View style={styles.outfitDayHeader}>
-              <View style={styles.outfitDayBadge}>
-                <Text style={styles.outfitDayBadgeText}>
+              <View style={[styles.outfitDayBadge, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
+                <Text style={[styles.outfitDayBadgeText, { color: colors.ink }]}>
                   {String(row.dayNumber).padStart(2, "0")}
                 </Text>
               </View>
               <View style={styles.outfitDayInfo}>
-                <Text variant="body" style={styles.outfitDayLabel}>
+                <Text variant="body" style={[styles.outfitDayLabel, { color: colors.ink }]}>
                   day {row.dayNumber}
                 </Text>
-                <Text variant="caption" style={styles.outfitDayDate}>
+                <Text variant="caption" style={[styles.outfitDayDate, { color: colors.taupe }]}>
                   {formatDayDate(row.date)}
                 </Text>
               </View>
               <TouchableOpacity
-                style={styles.outfitAddDayBtn}
+                style={[styles.outfitAddDayBtn, { backgroundColor: colors.pearl, borderColor: colors.sand }]}
                 onPress={() => addOutfit(row.dayNumber)}
                 activeOpacity={0.7}
                 hitSlop={8}
@@ -429,7 +431,7 @@ export default function PackingListScreen() {
                 {row.outfits.map((outfit) => (
                   <TouchableOpacity
                     key={outfit.id}
-                    style={styles.outfitTile}
+                    style={[styles.outfitTile, { backgroundColor: colors.pearl, borderColor: colors.mist }]}
                     onPress={() => openOutfit(outfit)}
                     activeOpacity={0.85}
                   >
@@ -440,7 +442,7 @@ export default function PackingListScreen() {
                       transition={200}
                     />
                     {outfit.name ? (
-                      <Text variant="caption" style={styles.outfitTileName} numberOfLines={1}>
+                      <Text variant="caption" style={[styles.outfitTileName, { color: colors.ink }]} numberOfLines={1}>
                         {outfit.name}
                       </Text>
                     ) : null}
@@ -449,12 +451,12 @@ export default function PackingListScreen() {
               </View>
             ) : (
               <TouchableOpacity
-                style={styles.outfitEmptySlot}
+                style={[styles.outfitEmptySlot, { backgroundColor: colors.pearl, borderColor: colors.mist }]}
                 onPress={() => addOutfit(row.dayNumber)}
                 activeOpacity={0.7}
               >
                 <Feather name="camera" size={14} color={colors.sand} />
-                <Text variant="caption" style={styles.outfitEmptyText}>
+                <Text variant="caption" style={[styles.outfitEmptyText, { color: colors.sand }]}>
                   add outfit
                 </Text>
               </TouchableOpacity>
@@ -472,7 +474,7 @@ export default function PackingListScreen() {
               {unassignedOutfits.map((outfit) => (
                 <TouchableOpacity
                   key={outfit.id}
-                  style={styles.outfitTile}
+                  style={[styles.outfitTile, { backgroundColor: colors.pearl, borderColor: colors.mist }]}
                   onPress={() => openOutfit(outfit)}
                   activeOpacity={0.85}
                 >
@@ -483,7 +485,7 @@ export default function PackingListScreen() {
                     transition={200}
                   />
                   {outfit.name ? (
-                    <Text variant="caption" style={styles.outfitTileName} numberOfLines={1}>
+                    <Text variant="caption" style={[styles.outfitTileName, { color: colors.ink }]} numberOfLines={1}>
                       {outfit.name}
                     </Text>
                   ) : null}
@@ -495,12 +497,12 @@ export default function PackingListScreen() {
 
         {/* Add inspiration button */}
         <TouchableOpacity
-          style={styles.outfitAddInspirationBtn}
+          style={[styles.outfitAddInspirationBtn, { borderColor: colors.sand }]}
           onPress={() => addOutfit(null)}
           activeOpacity={0.7}
         >
           <Feather name="camera" size={13} color={colors.stone} />
-          <Text variant="body" style={styles.outfitAddInspirationText}>
+          <Text variant="body" style={[styles.outfitAddInspirationText, { color: colors.stone }]}>
             add inspiration photo
           </Text>
         </TouchableOpacity>
@@ -516,8 +518,8 @@ export default function PackingListScreen() {
             activeOpacity={1}
             onPress={saveOutfitDetails}
           >
-            <TouchableOpacity style={styles.outfitSheet} activeOpacity={1} onPress={() => {}}>
-              <View style={styles.outfitHandle} />
+            <TouchableOpacity style={[styles.outfitSheet, { backgroundColor: colors.ivory }]} activeOpacity={1} onPress={() => {}}>
+              <View style={[styles.outfitHandle, { backgroundColor: colors.mist }]} />
               <ScrollView
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
@@ -532,7 +534,7 @@ export default function PackingListScreen() {
                 </View>
 
                 <TextInput
-                  style={styles.outfitNameInput}
+                  style={[styles.outfitNameInput, { color: colors.ink, borderBottomColor: colors.mist }]}
                   placeholder="name this look…"
                   placeholderTextColor={colors.sand}
                   value={editName}
@@ -540,12 +542,12 @@ export default function PackingListScreen() {
                 />
 
                 <TouchableOpacity
-                  style={styles.outfitDayAssignRow}
+                  style={[styles.outfitDayAssignRow, { backgroundColor: colors.pearl, borderColor: colors.mist }]}
                   onPress={() => setShowDayPicker(!showDayPicker)}
                   activeOpacity={0.7}
                 >
                   <Feather name="calendar" size={14} color={colors.taupe} />
-                  <Text variant="body" style={styles.outfitDayAssignText}>
+                  <Text variant="body" style={[styles.outfitDayAssignText, { color: colors.ink }]}>
                     {viewingOutfit.dayNumber
                       ? `day ${String(viewingOutfit.dayNumber).padStart(2, "0")}`
                       : "assign to a day"}
@@ -603,7 +605,7 @@ export default function PackingListScreen() {
                 )}
 
                 <TextInput
-                  style={styles.outfitNotesInput}
+                  style={[styles.outfitNotesInput, { color: colors.stone }]}
                   placeholder="styling notes…"
                   placeholderTextColor={colors.sand}
                   value={editNotes}
@@ -612,11 +614,11 @@ export default function PackingListScreen() {
                 />
 
                 <TouchableOpacity
-                  style={styles.outfitSaveBtn}
+                  style={[styles.outfitSaveBtn, { backgroundColor: colors.ink }]}
                   onPress={saveOutfitDetails}
                   activeOpacity={0.8}
                 >
-                  <Text variant="body" style={styles.outfitSaveBtnText}>done</Text>
+                  <Text variant="body" style={[styles.outfitSaveBtnText, { color: colors.ivory }]}>done</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -649,7 +651,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   backLink: {
-    color: colors.stone,
     fontSize: 13,
   },
   pageTitle: {
@@ -673,18 +674,15 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 28,
     borderWidth: 2,
-    borderColor: colors.moss,
     alignItems: "center",
     justifyContent: "center",
   },
   progressNumber: {
     fontSize: 20,
     lineHeight: 22,
-    color: colors.moss,
   },
   progressOf: {
     fontSize: 9,
-    color: colors.stone,
     marginTop: -2,
   },
   progressBarWrap: {
@@ -693,21 +691,15 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 4,
-    backgroundColor: colors.mist,
     borderRadius: 2,
     overflow: "hidden",
   },
   progressFill: {
     height: 4,
-    backgroundColor: colors.moss,
     borderRadius: 2,
-  },
-  progressComplete: {
-    backgroundColor: colors.moss,
   },
   progressLabel: {
     fontSize: 11,
-    color: colors.stone,
   },
   body: {
     flex: 1,
@@ -727,19 +719,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.sand,
-    backgroundColor: colors.pearl,
   },
   catTabText: {
     fontSize: 12,
-    color: colors.stone,
     fontFamily: "Inter_500Medium",
   },
-  catTabTextActive: {
-    color: colors.ivory,
-  },
   catBadge: {
-    backgroundColor: colors.mist,
     borderRadius: 8,
     paddingHorizontal: 5,
     paddingVertical: 1,
@@ -747,7 +732,6 @@ const styles = StyleSheet.create({
   },
   catBadgeText: {
     fontSize: 10,
-    color: colors.stone,
     fontFamily: "Inter_500Medium",
   },
   addRow: {
@@ -756,10 +740,8 @@ const styles = StyleSheet.create({
   addInputWrap: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.pearl,
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.sand,
     paddingHorizontal: spacing.md,
   },
   addIcon: {
@@ -770,7 +752,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontFamily: "Inter_400Regular",
     fontSize: 15,
-    color: colors.ink,
   },
   group: {
     marginBottom: spacing.lg,
@@ -792,15 +773,12 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
   groupCount: {
-    color: colors.stone,
     fontSize: 11,
     fontFamily: "Inter_400Regular",
   },
   groupCard: {
-    backgroundColor: colors.pearl,
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     overflow: "hidden",
   },
   itemRow: {
@@ -812,26 +790,18 @@ const styles = StyleSheet.create({
   },
   itemBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.mist,
   },
   checkbox: {
     width: 20,
     height: 20,
     borderRadius: 5,
     borderWidth: 1.5,
-    borderColor: colors.sand,
     alignItems: "center",
     justifyContent: "center",
   },
   itemText: {
     flex: 1,
     fontSize: 15,
-    color: colors.ink,
-  },
-  itemTextPacked: {
-    textDecorationLine: "line-through",
-    color: colors.stone,
-    opacity: 0.6,
   },
   deleteBtn: {
     padding: 4,
@@ -843,7 +813,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyText: {
-    color: colors.stone,
   },
 
   /* Outfits section divider */
@@ -857,18 +826,15 @@ const styles = StyleSheet.create({
   outfitsDividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: colors.mist,
   },
   outfitsDividerLabel: {
     fontSize: 9,
     textTransform: "uppercase",
     letterSpacing: 1.5,
-    color: colors.taupe,
     fontFamily: "Inter_600SemiBold",
   },
   outfitsHint: {
     textAlign: "center",
-    color: colors.stone,
     fontSize: 11,
     marginBottom: spacing.md,
   },
@@ -887,16 +853,13 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 8,
-    backgroundColor: colors.pearl,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     alignItems: "center",
     justifyContent: "center",
   },
   outfitDayBadgeText: {
     fontSize: 14,
     fontFamily: "Inter_600SemiBold",
-    color: colors.ink,
   },
   outfitDayInfo: {
     flex: 1,
@@ -905,19 +868,15 @@ const styles = StyleSheet.create({
   outfitDayLabel: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    color: colors.ink,
   },
   outfitDayDate: {
     fontSize: 11,
-    color: colors.taupe,
   },
   outfitAddDayBtn: {
     width: 30,
     height: 30,
     borderRadius: 8,
-    backgroundColor: colors.pearl,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.sand,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -930,9 +889,7 @@ const styles = StyleSheet.create({
     width: TILE_W,
     borderRadius: 10,
     overflow: "hidden",
-    backgroundColor: colors.pearl,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
   },
   outfitTileImage: {
     width: "100%",
@@ -943,22 +900,18 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     fontSize: 10,
     fontFamily: "Inter_500Medium",
-    color: colors.ink,
   },
   outfitEmptySlot: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: colors.pearl,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.mist,
     borderStyle: "dashed",
     paddingVertical: 20,
   },
   outfitEmptyText: {
-    color: colors.sand,
     fontSize: 12,
   },
 
@@ -978,12 +931,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.sand,
     marginTop: spacing.sm,
   },
   outfitAddInspirationText: {
     fontSize: 13,
-    color: colors.stone,
   },
 
   /* Outfit detail modal */
@@ -993,7 +944,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.4)",
   },
   outfitSheet: {
-    backgroundColor: colors.ivory,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     padding: spacing.lg,
@@ -1004,7 +954,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: colors.mist,
     alignSelf: "center",
     marginBottom: spacing.md,
   },
@@ -1021,28 +970,23 @@ const styles = StyleSheet.create({
   outfitNameInput: {
     fontSize: 18,
     fontFamily: "CormorantGaramond_700Bold",
-    color: colors.ink,
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.mist,
     marginBottom: spacing.md,
   },
   outfitDayAssignRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: colors.pearl,
     borderRadius: 8,
     paddingHorizontal: spacing.md,
     paddingVertical: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     marginBottom: spacing.sm,
   },
   outfitDayAssignText: {
     flex: 1,
     fontSize: 14,
-    color: colors.ink,
   },
   outfitDayPickerList: {
     marginBottom: spacing.md,
@@ -1059,20 +1003,17 @@ const styles = StyleSheet.create({
   outfitNotesInput: {
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 15,
-    color: colors.stone,
     lineHeight: 22,
     minHeight: 40,
     marginBottom: spacing.lg,
   },
   outfitSaveBtn: {
-    backgroundColor: colors.ink,
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
     marginBottom: 12,
   },
   outfitSaveBtnText: {
-    color: colors.ivory,
     fontFamily: "Inter_500Medium",
   },
   outfitDeleteLink: {

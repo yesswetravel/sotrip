@@ -1,5 +1,6 @@
-import { Text as RNText, TextProps as RNTextProps, StyleSheet } from "react-native";
+import { Text as RNText, TextProps as RNTextProps } from "react-native";
 import { typography } from "../../theme";
+import { useTheme } from "../theme/ThemeProvider";
 
 type Variant = keyof typeof typography;
 
@@ -7,12 +8,17 @@ interface TextProps extends RNTextProps {
   variant?: Variant;
 }
 
-export default function Text({ variant = "body", style, ...props }: TextProps) {
-  return <RNText style={[styles[variant], style]} {...props} />;
-}
+const INK_VARIANTS: Variant[] = ["display", "title", "titleItalic", "subtitle", "body"];
+const STONE_VARIANTS: Variant[] = ["eyebrow", "caption"];
 
-const styles = StyleSheet.create(
-  Object.fromEntries(
-    Object.entries(typography).map(([key, value]) => [key, value])
-  ) as Record<Variant, object>
-);
+export default function Text({ variant = "body", style, ...props }: TextProps) {
+  const { theme } = useTheme();
+
+  const color = INK_VARIANTS.includes(variant)
+    ? theme.ink
+    : STONE_VARIANTS.includes(variant)
+      ? theme.stone
+      : theme.ink;
+
+  return <RNText style={[typography[variant], { color }, style]} {...props} />;
+}

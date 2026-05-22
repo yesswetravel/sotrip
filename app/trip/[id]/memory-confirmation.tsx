@@ -10,12 +10,13 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { Container, Text } from "../../../features/design-system";
 import { useTrip } from "../../../features/trips/hooks";
-import { colors } from "../../../theme/colors";
+import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
 
 const { width: SW } = Dimensions.get("window");
 
 export default function MemoryConfirmationScreen() {
+  const colors = useColors();
   const { id, plan } = useLocalSearchParams<{ id: string; plan?: string }>();
   const router = useRouter();
   const { data: trip } = useTrip(id);
@@ -43,7 +44,7 @@ export default function MemoryConfirmationScreen() {
   if (!trip) return null;
 
   return (
-    <Container>
+    <Container logo>
       <View style={s.container}>
         {/* Animated hero */}
         <Animated.View
@@ -53,17 +54,17 @@ export default function MemoryConfirmationScreen() {
           ]}
         >
           {/* Success circle */}
-          <View style={s.successCircle}>
-            <View style={s.successInner}>
+          <View style={[s.successCircle, { backgroundColor: colors.coral + "15" }]}>
+            <View style={[s.successInner, { backgroundColor: colors.coral }]}>
               <Feather name="check" size={32} color={colors.pearl} />
             </View>
           </View>
 
-          <Text style={s.title}>
+          <Text style={[s.title, { color: colors.ink }]}>
             {isPrint ? "order placed!" : "book unlocked!"}
           </Text>
-          <Text style={s.subtitle}>{trip.title.toLowerCase()}</Text>
-          <Text variant="caption" style={s.desc}>
+          <Text style={[s.subtitle, { color: colors.stone }]}>{trip.title.toLowerCase()}</Text>
+          <Text variant="caption" style={[s.desc, { color: colors.stone }]}>
             {isPrint
               ? "your printed memory book is on its way"
               : "your full memory book is now available"}
@@ -71,34 +72,34 @@ export default function MemoryConfirmationScreen() {
         </Animated.View>
 
         {/* Order summary */}
-        <View style={s.summaryCard}>
-          <Text style={s.summaryTitle}>order summary</Text>
-          <View style={s.summaryDivider} />
+        <View style={[s.summaryCard, { backgroundColor: colors.pearl }]}>
+          <Text style={[s.summaryTitle, { color: colors.sand }]}>order summary</Text>
+          <View style={[s.summaryDivider, { backgroundColor: colors.mist }]} />
 
           <View style={s.summaryRow}>
-            <Text variant="caption" style={s.summaryLabel}>plan</Text>
-            <Text style={s.summaryValue}>
+            <Text variant="caption" style={{ color: colors.stone }}>plan</Text>
+            <Text style={[s.summaryValue, { color: colors.ink }]}>
               {isPrint ? "printed + digital" : "digital book"}
             </Text>
           </View>
 
           <View style={s.summaryRow}>
-            <Text variant="caption" style={s.summaryLabel}>total</Text>
-            <Text style={s.summaryValue}>{isPrint ? "$79" : "$39"}</Text>
+            <Text variant="caption" style={{ color: colors.stone }}>total</Text>
+            <Text style={[s.summaryValue, { color: colors.ink }]}>{isPrint ? "$79" : "$39"}</Text>
           </View>
 
           {isPrint && (
             <>
-              <View style={s.summaryDivider} />
+              <View style={[s.summaryDivider, { backgroundColor: colors.mist }]} />
               <View style={s.summaryRow}>
-                <Text variant="caption" style={s.summaryLabel}>shipping</Text>
-                <Text style={s.summaryValue}>5–7 business days</Text>
+                <Text variant="caption" style={{ color: colors.stone }}>shipping</Text>
+                <Text style={[s.summaryValue, { color: colors.ink }]}>5–7 business days</Text>
               </View>
               <View style={s.summaryRow}>
-                <Text variant="caption" style={s.summaryLabel}>status</Text>
-                <View style={s.statusBadge}>
-                  <View style={s.statusDot} />
-                  <Text style={s.statusText}>processing</Text>
+                <Text variant="caption" style={{ color: colors.stone }}>status</Text>
+                <View style={[s.statusBadge, { backgroundColor: colors.coral + "12" }]}>
+                  <View style={[s.statusDot, { backgroundColor: colors.coral }]} />
+                  <Text style={[s.statusText, { color: colors.coral }]}>processing</Text>
                 </View>
               </View>
             </>
@@ -107,30 +108,30 @@ export default function MemoryConfirmationScreen() {
 
         {/* What's next */}
         <View style={s.nextSection}>
-          <Text style={s.nextTitle}>what's next</Text>
+          <Text style={[s.nextTitle, { color: colors.ink }]}>what's next</Text>
           <View style={s.nextList}>
             <View style={s.nextItem}>
-              <View style={s.nextIconWrap}>
+              <View style={[s.nextIconWrap, { backgroundColor: colors.coral + "10" }]}>
                 <Feather name="book-open" size={14} color={colors.coral} />
               </View>
-              <Text variant="caption" style={s.nextText}>
+              <Text variant="caption" style={{ color: colors.stone, flex: 1 }}>
                 view your full memory book anytime
               </Text>
             </View>
             <View style={s.nextItem}>
-              <View style={s.nextIconWrap}>
+              <View style={[s.nextIconWrap, { backgroundColor: colors.coral + "10" }]}>
                 <Feather name="share-2" size={14} color={colors.coral} />
               </View>
-              <Text variant="caption" style={s.nextText}>
+              <Text variant="caption" style={{ color: colors.stone, flex: 1 }}>
                 share it with your travel partner
               </Text>
             </View>
             {isPrint && (
               <View style={s.nextItem}>
-                <View style={s.nextIconWrap}>
+                <View style={[s.nextIconWrap, { backgroundColor: colors.coral + "10" }]}>
                   <Feather name="package" size={14} color={colors.coral} />
                 </View>
-                <Text variant="caption" style={s.nextText}>
+                <Text variant="caption" style={{ color: colors.stone, flex: 1 }}>
                   track your print order in my books
                 </Text>
               </View>
@@ -144,12 +145,12 @@ export default function MemoryConfirmationScreen() {
         {/* Actions */}
         <View style={s.actions}>
           <TouchableOpacity
-            style={s.primaryBtn}
+            style={[s.primaryBtn, { backgroundColor: colors.ink }]}
             activeOpacity={0.85}
             onPress={() => router.replace(`/trip/${id}/memory`)}
           >
             <Feather name="book-open" size={15} color={colors.pearl} />
-            <Text style={s.primaryBtnText}>view memory book</Text>
+            <Text style={[s.primaryBtnText, { color: colors.pearl }]}>view memory book</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -157,7 +158,7 @@ export default function MemoryConfirmationScreen() {
             activeOpacity={0.7}
             onPress={() => router.replace(`/trip/${id}`)}
           >
-            <Text style={s.secondaryBtnText}>back to trip</Text>
+            <Text style={[s.secondaryBtnText, { color: colors.stone }]}>back to trip</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -181,7 +182,6 @@ const s = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: colors.coral + "15",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 20,
@@ -190,23 +190,19 @@ const s = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.coral,
     alignItems: "center",
     justifyContent: "center",
   },
   title: {
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 30,
-    color: colors.ink,
   },
   subtitle: {
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 18,
-    color: colors.stone,
     marginTop: 2,
   },
   desc: {
-    color: colors.stone,
     marginTop: 8,
     textAlign: "center",
     paddingHorizontal: 40,
@@ -214,7 +210,6 @@ const s = StyleSheet.create({
 
   /* Summary card */
   summaryCard: {
-    backgroundColor: colors.pearl,
     borderRadius: 14,
     padding: 18,
     marginBottom: spacing.lg,
@@ -222,14 +217,12 @@ const s = StyleSheet.create({
   summaryTitle: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 11,
-    color: colors.sand,
     letterSpacing: 1,
     textTransform: "uppercase",
     marginBottom: 12,
   },
   summaryDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.mist,
     marginVertical: 12,
   },
   summaryRow: {
@@ -238,17 +231,14 @@ const s = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
   },
-  summaryLabel: { color: colors.stone },
   summaryValue: {
     fontFamily: "Inter_500Medium",
     fontSize: 13,
-    color: colors.ink,
   },
   statusBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: colors.coral + "12",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
@@ -257,12 +247,10 @@ const s = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.coral,
   },
   statusText: {
     fontFamily: "Inter_500Medium",
     fontSize: 11,
-    color: colors.coral,
   },
 
   /* What's next */
@@ -270,7 +258,6 @@ const s = StyleSheet.create({
   nextTitle: {
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 18,
-    color: colors.ink,
     marginBottom: 14,
   },
   nextList: { gap: 10 },
@@ -283,11 +270,9 @@ const s = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.coral + "10",
     alignItems: "center",
     justifyContent: "center",
   },
-  nextText: { color: colors.stone, flex: 1 },
 
   /* Actions */
   actions: {
@@ -299,14 +284,12 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: colors.ink,
     borderRadius: 999,
     paddingVertical: 15,
   },
   primaryBtnText: {
     fontFamily: "Inter_500Medium",
     fontSize: 14,
-    color: colors.pearl,
     letterSpacing: 0.3,
   },
   secondaryBtn: {
@@ -316,6 +299,5 @@ const s = StyleSheet.create({
   secondaryBtnText: {
     fontFamily: "Inter_500Medium",
     fontSize: 13,
-    color: colors.stone,
   },
 });

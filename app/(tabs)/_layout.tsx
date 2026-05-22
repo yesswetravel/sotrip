@@ -1,9 +1,10 @@
 import { StyleSheet } from "react-native";
 import { Tabs } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { colors } from "../../theme/colors";
+import { useColors } from "../../features/theme/ThemeProvider";
 
 export default function TabsLayout() {
+  const colors = useColors();
   return (
     <Tabs
       screenOptions={{

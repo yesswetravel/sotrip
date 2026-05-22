@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { StyleSheet, Animated, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors } from "../../theme/colors";
+import { useColors } from "../theme/ThemeProvider";
 import { typography } from "../../theme/typography";
 
 interface ToastProps {
@@ -11,6 +11,7 @@ interface ToastProps {
 }
 
 export default function Toast({ message, onDismiss, duration = 4000 }: ToastProps) {
+  const colors = useColors();
   const opacity = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
 
@@ -37,7 +38,7 @@ export default function Toast({ message, onDismiss, duration = 4000 }: ToastProp
     <Animated.Text
       style={[
         styles.toast,
-        { opacity, bottom: insets.bottom + 16 },
+        { opacity, bottom: insets.bottom + 16, backgroundColor: colors.ink, color: colors.ivory },
       ]}
     >
       {message}
@@ -50,8 +51,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 16,
     right: 16,
-    backgroundColor: colors.ink,
-    color: colors.ivory,
     fontFamily: typography.body.fontFamily,
     fontSize: 14,
     paddingVertical: 12,

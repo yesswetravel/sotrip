@@ -15,7 +15,7 @@ import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../features/design-system";
 import { useTrip } from "../../../features/trips/hooks";
-import { colors } from "../../../theme/colors";
+import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
 
 interface Outfit {
@@ -52,6 +52,7 @@ function formatDayDateShort(dateStr: string | null): string {
 }
 
 export default function OutfitsScreen() {
+  const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { data: trip } = useTrip(id);
@@ -159,11 +160,11 @@ export default function OutfitsScreen() {
   if (!loaded) return null;
 
   return (
-    <Container>
+    <Container logo>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backRow}>
           <Feather name="chevron-left" size={16} color={colors.stone} />
-          <Text variant="body" style={styles.backLink}>{trip?.title ?? "trip"}</Text>
+          <Text variant="body" style={[styles.backLink, { color: colors.stone }]}>{trip?.title ?? "trip"}</Text>
         </TouchableOpacity>
       </View>
 
@@ -179,21 +180,21 @@ export default function OutfitsScreen() {
           <View key={row.dayNumber} style={styles.daySection}>
             {/* Day header with number + date */}
             <View style={styles.dayHeader}>
-              <View style={styles.dayNumberWrap}>
-                <Text variant="title" style={styles.dayNumber}>
+              <View style={[styles.dayNumberWrap, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
+                <Text variant="title" style={[styles.dayNumber, { color: colors.ink }]}>
                   {String(row.dayNumber).padStart(2, "0")}
                 </Text>
               </View>
               <View style={styles.dayInfo}>
-                <Text variant="body" style={styles.dayLabel}>
+                <Text variant="body" style={[styles.dayLabel, { color: colors.ink }]}>
                   day {row.dayNumber}
                 </Text>
-                <Text variant="caption" style={styles.dayDate}>
+                <Text variant="caption" style={{ fontSize: 12, color: colors.taupe, fontFamily: "Inter_400Regular" }}>
                   {formatDayDate(row.date)}
                 </Text>
               </View>
               <TouchableOpacity
-                style={styles.addDayBtn}
+                style={[styles.addDayBtn, { backgroundColor: colors.pearl, borderColor: colors.sand }]}
                 onPress={() => addOutfit(row.dayNumber)}
                 activeOpacity={0.7}
                 hitSlop={8}
@@ -208,7 +209,7 @@ export default function OutfitsScreen() {
                 {row.outfits.map((outfit) => (
                   <TouchableOpacity
                     key={outfit.id}
-                    style={styles.outfitTile}
+                    style={[styles.outfitTile, { backgroundColor: colors.pearl, borderColor: colors.mist, shadowColor: colors.ink }]}
                     onPress={() => openOutfit(outfit)}
                     activeOpacity={0.85}
                   >
@@ -219,7 +220,7 @@ export default function OutfitsScreen() {
                       transition={200}
                     />
                     {outfit.name ? (
-                      <Text variant="caption" style={styles.outfitName} numberOfLines={1}>
+                      <Text variant="caption" style={[styles.outfitName, { color: colors.ink }]} numberOfLines={1}>
                         {outfit.name}
                       </Text>
                     ) : null}
@@ -228,12 +229,12 @@ export default function OutfitsScreen() {
               </View>
             ) : (
               <TouchableOpacity
-                style={styles.emptyDaySlot}
+                style={[styles.emptyDaySlot, { backgroundColor: colors.pearl, borderColor: colors.mist }]}
                 onPress={() => addOutfit(row.dayNumber)}
                 activeOpacity={0.7}
               >
                 <Feather name="camera" size={16} color={colors.sand} />
-                <Text variant="caption" style={styles.emptyDayText}>
+                <Text variant="caption" style={{ color: colors.sand, fontSize: 13 }}>
                   add outfit
                 </Text>
               </TouchableOpacity>
@@ -245,14 +246,14 @@ export default function OutfitsScreen() {
         {unassigned.length > 0 && (
           <View style={styles.inspirationSection}>
             <Text variant="eyebrow" style={styles.sectionLabel}>inspiration</Text>
-            <Text variant="caption" style={styles.inspirationHint}>
+            <Text variant="caption" style={{ color: colors.sand, fontSize: 11, marginBottom: spacing.sm }}>
               not assigned to any day yet
             </Text>
             <View style={styles.grid}>
               {unassigned.map((outfit) => (
                 <TouchableOpacity
                   key={outfit.id}
-                  style={styles.outfitTile}
+                  style={[styles.outfitTile, { backgroundColor: colors.pearl, borderColor: colors.mist, shadowColor: colors.ink }]}
                   onPress={() => openOutfit(outfit)}
                   activeOpacity={0.85}
                 >
@@ -263,7 +264,7 @@ export default function OutfitsScreen() {
                     transition={200}
                   />
                   {outfit.name ? (
-                    <Text variant="caption" style={styles.outfitName} numberOfLines={1}>
+                    <Text variant="caption" style={[styles.outfitName, { color: colors.ink }]} numberOfLines={1}>
                       {outfit.name}
                     </Text>
                   ) : null}
@@ -276,13 +277,13 @@ export default function OutfitsScreen() {
         {/* Empty state when no outfits at all */}
         {outfits.length === 0 && dayRows.length === 0 && (
           <View style={styles.emptyState}>
-            <View style={styles.emptyIcon}>
+            <View style={[styles.emptyIcon, { backgroundColor: colors.taupe + "14" }]}>
               <Feather name="camera" size={24} color={colors.taupe} />
             </View>
-            <Text variant="titleItalic" style={styles.emptyText}>
+            <Text variant="titleItalic" style={{ color: colors.stone }}>
               plan your travel looks
             </Text>
-            <Text variant="caption" style={styles.emptyHint}>
+            <Text variant="caption" style={{ color: colors.sand, textAlign: "center" }}>
               add outfit photos and assign them to days
             </Text>
           </View>
@@ -293,12 +294,12 @@ export default function OutfitsScreen() {
 
       {/* Add inspiration button */}
       <TouchableOpacity
-        style={styles.addButton}
+        style={[styles.addButton, { backgroundColor: colors.ink }]}
         onPress={() => addOutfit(null)}
         activeOpacity={0.85}
       >
         <Feather name="camera" size={16} color={colors.ivory} style={{ marginRight: 6 }} />
-        <Text variant="body" style={styles.addButtonText}>add inspiration</Text>
+        <Text variant="body" style={{ color: colors.ivory, fontFamily: "Inter_500Medium" }}>add inspiration</Text>
       </TouchableOpacity>
 
       {/* Outfit detail modal */}
@@ -309,8 +310,8 @@ export default function OutfitsScreen() {
             activeOpacity={1}
             onPress={saveOutfitDetails}
           >
-            <TouchableOpacity style={styles.sheet} activeOpacity={1} onPress={() => {}}>
-              <View style={styles.handle} />
+            <TouchableOpacity style={[styles.sheet, { backgroundColor: colors.ivory }]} activeOpacity={1} onPress={() => {}}>
+              <View style={[styles.handle, { backgroundColor: colors.mist }]} />
 
               <ScrollView
                 showsVerticalScrollIndicator={false}
@@ -328,7 +329,7 @@ export default function OutfitsScreen() {
 
                 {/* Name */}
                 <TextInput
-                  style={styles.nameInput}
+                  style={[styles.nameInput, { color: colors.ink, borderBottomColor: colors.mist }]}
                   placeholder="name this look…"
                   placeholderTextColor={colors.sand}
                   value={editName}
@@ -337,12 +338,12 @@ export default function OutfitsScreen() {
 
                 {/* Day assignment */}
                 <TouchableOpacity
-                  style={styles.dayAssignRow}
+                  style={[styles.dayAssignRow, { backgroundColor: colors.pearl, borderColor: colors.mist }]}
                   onPress={() => setShowDayPicker(!showDayPicker)}
                   activeOpacity={0.7}
                 >
                   <Feather name="calendar" size={14} color={colors.taupe} />
-                  <Text variant="body" style={styles.dayAssignText}>
+                  <Text variant="body" style={[styles.dayAssignText, { color: colors.ink }]}>
                     {viewingOutfit.dayNumber
                       ? `day ${String(viewingOutfit.dayNumber).padStart(2, "0")} — ${formatDayDateShort(
                           trip?.trip_days.find((d) => d.day_number === viewingOutfit.dayNumber)?.date ?? null
@@ -366,7 +367,7 @@ export default function OutfitsScreen() {
                         activeOpacity={0.7}
                       >
                         <Feather name="x-circle" size={14} color={colors.stone} />
-                        <Text variant="caption" style={styles.dayPickerUnassign}>
+                        <Text variant="caption" style={{ color: colors.stone, fontSize: 12 }}>
                           unassign from day
                         </Text>
                       </TouchableOpacity>
@@ -378,7 +379,7 @@ export default function OutfitsScreen() {
                           key={d.day_number}
                           style={[
                             styles.dayPickerRow,
-                            isSelected && styles.dayPickerRowActive,
+                            isSelected && { backgroundColor: colors.ink },
                           ]}
                           onPress={() => assignDay(viewingOutfit.id, d.day_number)}
                           activeOpacity={0.7}
@@ -387,7 +388,8 @@ export default function OutfitsScreen() {
                             variant="body"
                             style={[
                               styles.dayPickerDayNum,
-                              isSelected && styles.dayPickerTextActive,
+                              { color: colors.ink },
+                              isSelected && { color: colors.ivory },
                             ]}
                           >
                             day {String(d.day_number).padStart(2, "0")}
@@ -396,7 +398,8 @@ export default function OutfitsScreen() {
                             variant="caption"
                             style={[
                               styles.dayPickerDate,
-                              isSelected && styles.dayPickerTextActive,
+                              { color: colors.stone },
+                              isSelected && { color: colors.ivory },
                             ]}
                           >
                             {formatDayDate(d.date)}
@@ -412,7 +415,7 @@ export default function OutfitsScreen() {
 
                 {/* Notes */}
                 <TextInput
-                  style={styles.notesInput}
+                  style={[styles.notesInput, { color: colors.stone }]}
                   placeholder="styling notes…"
                   placeholderTextColor={colors.sand}
                   value={editNotes}
@@ -422,11 +425,11 @@ export default function OutfitsScreen() {
 
                 {/* Actions */}
                 <TouchableOpacity
-                  style={styles.saveBtn}
+                  style={[styles.saveBtn, { backgroundColor: colors.ink }]}
                   onPress={saveOutfitDetails}
                   activeOpacity={0.8}
                 >
-                  <Text variant="body" style={styles.saveBtnText}>done</Text>
+                  <Text variant="body" style={{ color: colors.ivory, fontFamily: "Inter_500Medium" }}>done</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -459,7 +462,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   backLink: {
-    color: colors.stone,
     fontSize: 13,
   },
   pageTitle: {
@@ -488,15 +490,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: colors.pearl,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     alignItems: "center",
     justifyContent: "center",
   },
   dayNumber: {
     fontSize: 16,
-    color: colors.ink,
   },
   dayInfo: {
     flex: 1,
@@ -505,20 +504,12 @@ const styles = StyleSheet.create({
   dayLabel: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: colors.ink,
-  },
-  dayDate: {
-    fontSize: 12,
-    color: colors.taupe,
-    fontFamily: "Inter_400Regular",
   },
   addDayBtn: {
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: colors.pearl,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.sand,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -532,16 +523,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: colors.pearl,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.mist,
     borderStyle: "dashed",
     paddingVertical: 24,
-  },
-  emptyDayText: {
-    color: colors.sand,
-    fontSize: 13,
   },
 
   /* Outfit tiles */
@@ -549,10 +534,7 @@ const styles = StyleSheet.create({
     width: TILE_W,
     borderRadius: 10,
     overflow: "hidden",
-    backgroundColor: colors.pearl,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
-    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
@@ -567,7 +549,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     fontSize: 11,
     fontFamily: "Inter_500Medium",
-    color: colors.ink,
   },
 
   /* Inspiration section */
@@ -577,11 +558,6 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     marginBottom: 4,
-  },
-  inspirationHint: {
-    color: colors.sand,
-    fontSize: 11,
-    marginBottom: spacing.sm,
   },
   grid: {
     flexDirection: "row",
@@ -599,17 +575,9 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.taupe + "14",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
-  },
-  emptyText: {
-    color: colors.stone,
-  },
-  emptyHint: {
-    color: colors.sand,
-    textAlign: "center",
   },
 
   /* Add button */
@@ -618,16 +586,11 @@ const styles = StyleSheet.create({
     bottom: 24,
     left: spacing.lg,
     right: spacing.lg,
-    backgroundColor: colors.ink,
     borderRadius: 10,
     paddingVertical: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-  },
-  addButtonText: {
-    color: colors.ivory,
-    fontFamily: "Inter_500Medium",
   },
 
   /* Detail modal */
@@ -637,7 +600,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.4)",
   },
   sheet: {
-    backgroundColor: colors.ivory,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     padding: spacing.lg,
@@ -648,7 +610,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: colors.mist,
     alignSelf: "center",
     marginBottom: spacing.md,
   },
@@ -665,28 +626,23 @@ const styles = StyleSheet.create({
   nameInput: {
     fontSize: 18,
     fontFamily: "CormorantGaramond_700Bold",
-    color: colors.ink,
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.mist,
     marginBottom: spacing.md,
   },
   dayAssignRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: colors.pearl,
     borderRadius: 8,
     paddingHorizontal: spacing.md,
     paddingVertical: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     marginBottom: spacing.sm,
   },
   dayAssignText: {
     flex: 1,
     fontSize: 14,
-    color: colors.ink,
   },
   dayPickerList: {
     marginBottom: spacing.md,
@@ -700,44 +656,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
   },
-  dayPickerRowActive: {
-    backgroundColor: colors.ink,
-  },
   dayPickerDayNum: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: colors.ink,
   },
   dayPickerDate: {
     flex: 1,
-    fontSize: 12,
-    color: colors.stone,
-  },
-  dayPickerTextActive: {
-    color: colors.ivory,
-  },
-  dayPickerUnassign: {
-    color: colors.stone,
     fontSize: 12,
   },
   notesInput: {
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 15,
-    color: colors.stone,
     lineHeight: 22,
     minHeight: 40,
     marginBottom: spacing.lg,
   },
   saveBtn: {
-    backgroundColor: colors.ink,
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
     marginBottom: 12,
-  },
-  saveBtnText: {
-    color: colors.ivory,
-    fontFamily: "Inter_500Medium",
   },
   deleteLink: {
     flexDirection: "row",

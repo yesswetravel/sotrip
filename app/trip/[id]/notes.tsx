@@ -12,7 +12,7 @@ import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../features/design-system";
 import { useTrip } from "../../../features/trips/hooks";
-import { colors } from "../../../theme/colors";
+import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
 
 interface NoteEntry {
@@ -24,14 +24,6 @@ interface NoteEntry {
   createdAt: string;
   updatedAt: string;
 }
-
-const NOTE_COLORS = [
-  { key: "ivory", value: colors.pearl, label: "white" },
-  { key: "mist", value: colors.mist, label: "mist" },
-  { key: "teal", value: colors.teal + "14", label: "sage" },
-  { key: "gold", value: colors.gold + "14", label: "gold" },
-  { key: "coral", value: colors.coral + "14", label: "rose" },
-];
 
 function storageKey(tripId: string) {
   return `notes_${tripId}`;
@@ -55,9 +47,18 @@ function timeAgo(iso: string): string {
 }
 
 export default function NotesScreen() {
+  const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { data: trip } = useTrip(id);
+
+  const NOTE_COLORS = [
+    { key: "ivory", value: colors.pearl, label: "white" },
+    { key: "mist", value: colors.mist, label: "mist" },
+    { key: "teal", value: colors.teal + "14", label: "sage" },
+    { key: "gold", value: colors.gold + "14", label: "gold" },
+    { key: "coral", value: colors.coral + "14", label: "rose" },
+  ];
 
   const [notes, setNotes] = useState<NoteEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -155,11 +156,11 @@ export default function NotesScreen() {
   if (!loaded) return null;
 
   return (
-    <Container>
+    <Container logo>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backRow}>
           <Feather name="chevron-left" size={16} color={colors.stone} />
-          <Text variant="body" style={styles.backLink}>{trip?.title ?? "trip"}</Text>
+          <Text variant="body" style={[styles.backLink, { color: colors.stone }]}>{trip?.title ?? "trip"}</Text>
         </TouchableOpacity>
       </View>
 
@@ -174,13 +175,13 @@ export default function NotesScreen() {
       >
         {notes.length === 0 && (
           <View style={styles.emptyState}>
-            <View style={styles.emptyIcon}>
+            <View style={[styles.emptyIcon, { backgroundColor: colors.taupe + "14" }]}>
               <Feather name="edit-3" size={24} color={colors.taupe} />
             </View>
-            <Text variant="titleItalic" style={styles.emptyText}>
+            <Text variant="titleItalic" style={{ color: colors.stone }}>
               jot down trip ideas
             </Text>
-            <Text variant="caption" style={styles.emptyHint}>
+            <Text variant="caption" style={[styles.emptyHint, { color: colors.sand }]}>
               restaurant recommendations, phrases to learn, tips from friends
             </Text>
           </View>
@@ -193,7 +194,7 @@ export default function NotesScreen() {
               key={note.id}
               style={[
                 styles.noteCard,
-                { backgroundColor: note.color || colors.pearl },
+                { backgroundColor: note.color || colors.pearl, borderColor: colors.mist, shadowColor: colors.ink },
               ]}
               onPress={() => openEditNote(note)}
               onLongPress={() => togglePin(note.id)}
@@ -205,16 +206,16 @@ export default function NotesScreen() {
                 </View>
               )}
               {note.title ? (
-                <Text variant="body" style={styles.noteTitle} numberOfLines={1}>
+                <Text variant="body" style={[styles.noteTitle, { color: colors.ink }]} numberOfLines={1}>
                   {note.title}
                 </Text>
               ) : null}
               {note.body ? (
-                <Text variant="caption" style={styles.noteBody} numberOfLines={5}>
+                <Text variant="caption" style={[styles.noteBody, { color: colors.stone }]} numberOfLines={5}>
                   {note.body}
                 </Text>
               ) : null}
-              <Text variant="caption" style={styles.noteDate}>
+              <Text variant="caption" style={[styles.noteDate, { color: colors.sand }]}>
                 {timeAgo(note.updatedAt)}
               </Text>
             </TouchableOpacity>
@@ -226,12 +227,12 @@ export default function NotesScreen() {
 
       {/* Add button */}
       <TouchableOpacity
-        style={styles.addButton}
+        style={[styles.addButton, { backgroundColor: colors.ink }]}
         onPress={openNewNote}
         activeOpacity={0.85}
       >
         <Feather name="plus" size={16} color={colors.ivory} style={{ marginRight: 6 }} />
-        <Text variant="body" style={styles.addButtonText}>new note</Text>
+        <Text variant="body" style={{ color: colors.ivory, fontFamily: "Inter_500Medium" }}>new note</Text>
       </TouchableOpacity>
 
       {/* Edit modal */}
@@ -239,12 +240,12 @@ export default function NotesScreen() {
         <Modal visible animationType="slide" transparent>
           <View style={styles.overlay}>
             <View style={[styles.sheet, { backgroundColor: editColor || colors.ivory }]}>
-              <View style={styles.handle} />
+              <View style={[styles.handle, { backgroundColor: colors.mist }]} />
 
               {/* Top bar */}
               <View style={styles.sheetHeader}>
                 <TouchableOpacity onPress={saveNote} activeOpacity={0.7}>
-                  <Text variant="body" style={styles.doneText}>done</Text>
+                  <Text variant="body" style={[styles.doneText, { color: colors.taupe }]}>done</Text>
                 </TouchableOpacity>
                 <View style={styles.sheetActions}>
                   <TouchableOpacity
@@ -287,8 +288,8 @@ export default function NotesScreen() {
                     key={c.key}
                     style={[
                       styles.colorDot,
-                      { backgroundColor: c.value },
-                      editColor === c.value && styles.colorDotActive,
+                      { backgroundColor: c.value, borderColor: colors.sand },
+                      editColor === c.value && { borderWidth: 2, borderColor: colors.taupe },
                     ]}
                     onPress={() => setEditColor(c.value)}
                     activeOpacity={0.7}
@@ -301,7 +302,7 @@ export default function NotesScreen() {
                 keyboardShouldPersistTaps="handled"
               >
                 <TextInput
-                  style={styles.titleInput}
+                  style={[styles.titleInput, { color: colors.ink }]}
                   placeholder="title"
                   placeholderTextColor={colors.sand}
                   value={editTitle}
@@ -309,7 +310,7 @@ export default function NotesScreen() {
                   autoFocus={!editingNote.title}
                 />
                 <TextInput
-                  style={styles.bodyInput}
+                  style={[styles.bodyInput, { color: colors.ink }]}
                   placeholder="start writing…"
                   placeholderTextColor={colors.sand}
                   value={editBody}
@@ -337,7 +338,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   backLink: {
-    color: colors.stone,
     fontSize: 13,
   },
   pageTitle: {
@@ -360,16 +360,11 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.taupe + "14",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
   },
-  emptyText: {
-    color: colors.stone,
-  },
   emptyHint: {
-    color: colors.sand,
     textAlign: "center",
     paddingHorizontal: spacing.xl,
   },
@@ -383,10 +378,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: spacing.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     minHeight: 130,
     justifyContent: "space-between",
-    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
     shadowRadius: 4,
@@ -400,19 +393,16 @@ const styles = StyleSheet.create({
   noteTitle: {
     fontSize: 15,
     fontFamily: "Inter_500Medium",
-    color: colors.ink,
     marginBottom: 6,
   },
   noteBody: {
     fontSize: 13,
-    color: colors.stone,
     lineHeight: 18,
     fontFamily: "CormorantGaramond_500Medium_Italic",
     flex: 1,
   },
   noteDate: {
     fontSize: 10,
-    color: colors.sand,
     marginTop: 10,
   },
   addButton: {
@@ -420,16 +410,11 @@ const styles = StyleSheet.create({
     bottom: 24,
     left: spacing.lg,
     right: spacing.lg,
-    backgroundColor: colors.ink,
     borderRadius: 10,
     paddingVertical: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-  },
-  addButtonText: {
-    color: colors.ivory,
-    fontFamily: "Inter_500Medium",
   },
   overlay: {
     flex: 1,
@@ -448,7 +433,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: colors.mist,
     alignSelf: "center",
     marginBottom: spacing.md,
   },
@@ -459,7 +443,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   doneText: {
-    color: colors.taupe,
     fontFamily: "Inter_500Medium",
     fontSize: 15,
   },
@@ -493,23 +476,16 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.sand,
-  },
-  colorDotActive: {
-    borderWidth: 2,
-    borderColor: colors.taupe,
   },
   titleInput: {
     fontSize: 24,
     fontFamily: "CormorantGaramond_700Bold",
-    color: colors.ink,
     marginBottom: spacing.sm,
     paddingVertical: 4,
   },
   bodyInput: {
     fontSize: 16,
     fontFamily: "CormorantGaramond_500Medium_Italic",
-    color: colors.ink,
     lineHeight: 26,
     minHeight: 200,
     textAlignVertical: "top",

@@ -19,16 +19,21 @@ import {
 } from "../../features/subscription/hooks";
 import UpgradeModal from "../../features/subscription/UpgradeModal";
 import { TIER_LIMITS } from "../../features/subscription/constants";
-import { colors } from "../../theme/colors";
+import { useColors } from "../../features/theme/ThemeProvider";
 import { spacing } from "../../theme/spacing";
 import type { Trip } from "../../types/database";
 
 function TripCard({ trip, onPress }: { trip: Trip; onPress: () => void }) {
+  const colors = useColors();
   const dates = formatDateRange(trip.start_date, trip.end_date);
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
+    <TouchableOpacity
+      style={[styles.card, { backgroundColor: colors.pearl, borderColor: colors.mist, shadowColor: colors.ink }]}
+      onPress={onPress}
+      activeOpacity={0.85}
+    >
       <View style={styles.cardPhoto}>
-        {trip.cover_photo_url ? null : <View style={styles.placeholder} />}
+        {trip.cover_photo_url ? null : <View style={[styles.placeholder, { backgroundColor: colors.taupe }]} />}
       </View>
       <View style={styles.cardBody}>
         <Text variant="title" numberOfLines={1}>{trip.title}</Text>
@@ -49,19 +54,20 @@ function formatDateRange(start: string | null, end: string | null): string {
 }
 
 function EmptyState({ onNew }: { onNew: () => void }) {
+  const colors = useColors();
   return (
     <View style={styles.empty}>
-      <View style={styles.emptyIcon}>
+      <View style={[styles.emptyIcon, { backgroundColor: colors.coral + "14" }]}>
         <Feather name="map" size={28} color={colors.coral} />
       </View>
-      <Text variant="titleItalic" style={styles.emptyTitle}>
+      <Text variant="titleItalic" style={[styles.emptyTitle, { color: colors.stone }]}>
         no trips yet
       </Text>
-      <Text variant="caption" style={styles.emptyCaption}>
+      <Text variant="caption" style={[styles.emptyCaption, { color: colors.taupe }]}>
         plan your first adventure — add places{"\n"}from pinterest, google, or just your imagination
       </Text>
-      <TouchableOpacity style={styles.newButton} onPress={onNew} activeOpacity={0.85}>
-        <Text variant="body" style={styles.newButtonText}>+ create a trip</Text>
+      <TouchableOpacity style={[styles.newButton, { backgroundColor: colors.coral }]} onPress={onNew} activeOpacity={0.85}>
+        <Text variant="body" style={[styles.newButtonText, { color: colors.pearl }]}>+ create a trip</Text>
       </TouchableOpacity>
     </View>
   );
@@ -77,6 +83,7 @@ function LoadingSkeleton() {
 }
 
 export default function HomeScreen() {
+  const colors = useColors();
   const { session } = useSession();
   const router = useRouter();
   const { data: trips, isLoading, refetch, isRefetching } = useTrips(session?.user.id);
@@ -113,8 +120,8 @@ export default function HomeScreen() {
 
   if (isLoading) {
     return (
-      <Container>
-        <Text variant="display" style={styles.greeting}>bonjour, {firstName}</Text>
+      <Container logo>
+        <Text variant="display" style={styles.greeting}>Hey, {firstName}</Text>
         <LoadingSkeleton />
       </Container>
     );
@@ -123,8 +130,8 @@ export default function HomeScreen() {
   const hasTrips = upcoming.length > 0 || past.length > 0;
 
   return (
-    <Container>
-      <Text variant="display" style={styles.greeting}>bonjour, {firstName}</Text>
+    <Container logo>
+      <Text variant="display" style={styles.greeting}>Hey, {firstName}</Text>
 
       {!hasTrips ? (
         <EmptyState onNew={handleNew} />
@@ -166,14 +173,14 @@ export default function HomeScreen() {
       {hasTrips && (
         <View style={styles.fabArea}>
           {!isPaid && (
-            <View style={styles.tierBadge}>
-              <Text variant="caption" style={styles.tierBadgeText}>
+            <View style={[styles.tierBadge, { backgroundColor: colors.mist }]}>
+              <Text variant="caption" style={[styles.tierBadgeText, { color: colors.stone }]}>
                 free · {upcoming.length}/{limit} trip{limit === 1 ? "" : "s"}
               </Text>
             </View>
           )}
-          <TouchableOpacity style={styles.fab} onPress={handleNew} activeOpacity={0.85}>
-            <Text variant="body" style={styles.fabText}>+</Text>
+          <TouchableOpacity style={[styles.fab, { backgroundColor: colors.ink, shadowColor: colors.ink }]} onPress={handleNew} activeOpacity={0.85}>
+            <Text variant="body" style={[styles.fabText, { color: colors.ivory }]}>+</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -202,28 +209,22 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: colors.coral + "14",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: spacing.xs,
   },
-  emptyTitle: {
-    color: colors.stone,
-  },
+  emptyTitle: {},
   emptyCaption: {
-    color: colors.taupe,
     textAlign: "center",
     lineHeight: 20,
   },
   newButton: {
     marginTop: spacing.sm,
-    backgroundColor: colors.coral,
     borderRadius: 999,
     paddingHorizontal: 24,
     paddingVertical: 13,
   },
   newButtonText: {
-    color: colors.pearl,
     fontFamily: "Inter_500Medium",
     fontSize: 13,
   },
@@ -235,13 +236,10 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
   },
   card: {
-    backgroundColor: colors.pearl,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     marginBottom: 12,
     overflow: "hidden",
-    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
@@ -252,7 +250,6 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     flex: 1,
-    backgroundColor: colors.taupe,
     opacity: 0.2,
   },
   cardBody: {
@@ -271,30 +268,25 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tierBadge: {
-    backgroundColor: colors.mist,
     borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   tierBadgeText: {
     fontSize: 10,
-    color: colors.stone,
   },
   fab: {
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: colors.ink,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 4,
   },
   fabText: {
-    color: colors.ivory,
     fontSize: 24,
     lineHeight: 26,
   },

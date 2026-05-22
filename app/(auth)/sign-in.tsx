@@ -12,41 +12,41 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { Text } from "../../features/design-system";
+import { Text, Cairn } from "../../features/design-system";
 import { useToast } from "../../features/shared/toast-context";
 import { supabase } from "../../lib/supabase";
-import { colors } from "../../theme/colors";
+import { useColors } from "../../features/theme/ThemeProvider";
 import { spacing } from "../../theme/spacing";
-import { APP_NAME } from "../../theme/brand";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const AUTO_ADVANCE_MS = 4000;
 
-const SLIDES = [
-  {
-    icon: "map" as const,
-    accent: colors.coral,
-    title: "plan beautifully",
-    subtitle: "day-by-day itineraries\nthat feel like a magazine",
-    decorChar: "✦",
-  },
-  {
-    icon: "camera" as const,
-    accent: colors.gold,
-    title: "capture moments",
-    subtitle: "photos & notes that become\na keepsake memory book",
-    decorChar: "◈",
-  },
-  {
-    icon: "users" as const,
-    accent: colors.teal,
-    title: "travel together",
-    subtitle: "invite companions and\nplan adventures as one",
-    decorChar: "❋",
-  },
-];
+function buildSlides(colors: ReturnType<typeof useColors>) {
+  return [
+    {
+      icon: "map" as const,
+      accent: colors.coral,
+      title: "plan beautifully",
+      subtitle: "day-by-day itineraries\nthat feel like a magazine",
+    },
+    {
+      icon: "camera" as const,
+      accent: colors.gold,
+      title: "capture moments",
+      subtitle: "photos & notes that become\na keepsake memory book",
+    },
+    {
+      icon: "users" as const,
+      accent: colors.teal,
+      title: "travel together",
+      subtitle: "invite companions and\nplan adventures as one",
+    },
+  ];
+}
 
 export default function SignInScreen() {
+  const colors = useColors();
+  const SLIDES = buildSlides(colors);
   const [step, setStep] = useState<"welcome" | "email">("welcome");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -168,8 +168,8 @@ export default function SignInScreen() {
 
   if (step === "email") {
     return (
-      <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <Animated.View style={[styles.emailScreen, { opacity: emailFade }]}>
+      <KeyboardAvoidingView style={[styles.root, { backgroundColor: colors.ivory }]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <Animated.View style={[styles.emailScreen, { opacity: emailFade, backgroundColor: colors.ivory }]}>
           <TouchableOpacity style={styles.backBtn} onPress={goBackToWelcome} activeOpacity={0.7}>
             <Feather name="arrow-left" size={20} color={colors.ink} />
           </TouchableOpacity>
@@ -178,15 +178,15 @@ export default function SignInScreen() {
             <Text variant="display" style={styles.emailTitle}>
               {isSignUp ? "create account" : "welcome back"}
             </Text>
-            <Text variant="subtitle" style={styles.emailSubtitle}>
+            <Text variant="subtitle" style={[styles.emailSubtitle, { color: colors.stone }]}>
               {isSignUp ? "start planning your next adventure" : "sign in to continue your journey"}
             </Text>
 
             <View style={styles.inputGroup}>
-              <View style={styles.inputWrap}>
+              <View style={[styles.inputWrap, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
                 <Feather name="mail" size={16} color={colors.stone} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.ink }]}
                   placeholder="your@email.com"
                   placeholderTextColor={colors.sand}
                   value={email}
@@ -197,10 +197,10 @@ export default function SignInScreen() {
                   editable={!loading}
                 />
               </View>
-              <View style={styles.inputWrap}>
+              <View style={[styles.inputWrap, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
                 <Feather name="lock" size={16} color={colors.stone} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.ink }]}
                   placeholder="password"
                   placeholderTextColor={colors.sand}
                   value={password}
@@ -213,7 +213,7 @@ export default function SignInScreen() {
             </View>
 
             <TouchableOpacity
-              style={[styles.submitBtn, !canSubmit && styles.btnDisabled]}
+              style={[styles.submitBtn, { backgroundColor: colors.coral }, !canSubmit && styles.btnDisabled]}
               onPress={handleSubmit}
               disabled={!canSubmit || loading}
               activeOpacity={0.85}
@@ -221,12 +221,12 @@ export default function SignInScreen() {
               {loading ? (
                 <ActivityIndicator color={colors.pearl} size="small" />
               ) : (
-                <Text style={styles.submitBtnText}>{isSignUp ? "create account" : "sign in"}</Text>
+                <Text style={[styles.submitBtnText, { color: colors.pearl }]}>{isSignUp ? "create account" : "sign in"}</Text>
               )}
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)} activeOpacity={0.7} style={styles.toggleBtn}>
-              <Text style={styles.toggleText}>
+              <Text style={[styles.toggleText, { color: colors.taupe }]}>
                 {isSignUp ? "already have an account? sign in" : "new here? create account"}
               </Text>
             </TouchableOpacity>
@@ -237,15 +237,7 @@ export default function SignInScreen() {
   }
 
   return (
-    <View style={styles.root}>
-      {/* Decorative corner accents */}
-      <View style={styles.cornerTL}>
-        <Text style={styles.cornerChar}>✦</Text>
-      </View>
-      <View style={styles.cornerBR}>
-        <Text style={styles.cornerChar}>✦</Text>
-      </View>
-
+    <View style={[styles.root, { backgroundColor: colors.ivory }]}>
       {/* Hero carousel area — crossfade, not swipe */}
       <View style={styles.heroArea}>
         {SLIDES.map((slide, i) => (
@@ -257,8 +249,10 @@ export default function SignInScreen() {
             ]}
             pointerEvents={i === activeIndex ? "auto" : "none"}
           >
-            {/* Decorative character behind icon */}
-            <Text style={[styles.decorChar, { color: slide.accent + "18" }]}>{slide.decorChar}</Text>
+            {/* Cairn tower mark behind icon */}
+            <View style={styles.decorMark}>
+              <Cairn size="xl" layout="mark-only" animate={false} />
+            </View>
 
             {/* Floating icon */}
             <Animated.View
@@ -270,8 +264,8 @@ export default function SignInScreen() {
               <Feather name={slide.icon} size={34} color={slide.accent} />
             </Animated.View>
 
-            <Text variant="display" style={styles.slideTitle}>{slide.title}</Text>
-            <Text variant="subtitle" style={styles.slideSubtitle}>{slide.subtitle}</Text>
+            <Text variant="display" style={[styles.slideTitle, { color: colors.ink }]}>{slide.title}</Text>
+            <Text variant="subtitle" style={[styles.slideSubtitle, { color: colors.stone }]}>{slide.subtitle}</Text>
           </Animated.View>
         ))}
 
@@ -293,34 +287,35 @@ export default function SignInScreen() {
       {/* Auth area */}
       <Animated.View style={[styles.authArea, { opacity: brandFade, transform: [{ translateY: brandSlide }] }]}>
         {/* Brand */}
-        <Text style={styles.brandName}>{APP_NAME}</Text>
-        <View style={styles.brandDot} />
+        <View style={styles.brandWrap}>
+          <Cairn size="md" layout="wordmark-only" animate={false} />
+        </View>
 
         {/* Buttons */}
         <Animated.View style={[styles.btnsWrap, { opacity: btnsFade }]}>
-          <TouchableOpacity style={styles.appleBtn} onPress={() => show("apple sign-in coming soon")} activeOpacity={0.85}>
+          <TouchableOpacity style={[styles.appleBtn, { backgroundColor: colors.ink }]} onPress={() => show("apple sign-in coming soon")} activeOpacity={0.85}>
             <Feather name="smartphone" size={17} color={colors.pearl} />
-            <Text style={styles.appleBtnText}>continue with apple</Text>
+            <Text style={[styles.appleBtnText, { color: colors.pearl }]}>continue with apple</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.googleBtn} onPress={() => show("google sign-in coming soon")} activeOpacity={0.85}>
+          <TouchableOpacity style={[styles.googleBtn, { backgroundColor: colors.pearl, borderColor: colors.mist }]} onPress={() => show("google sign-in coming soon")} activeOpacity={0.85}>
             <Feather name="globe" size={17} color={colors.ink} />
-            <Text style={styles.googleBtnText}>continue with google</Text>
+            <Text style={[styles.googleBtnText, { color: colors.ink }]}>continue with google</Text>
           </TouchableOpacity>
 
           <View style={styles.orRow}>
-            <View style={styles.orLine} />
-            <Text style={styles.orText}>or</Text>
-            <View style={styles.orLine} />
+            <View style={[styles.orLine, { backgroundColor: colors.mist }]} />
+            <Text style={[styles.orText, { color: colors.sand }]}>or</Text>
+            <View style={[styles.orLine, { backgroundColor: colors.mist }]} />
           </View>
 
-          <TouchableOpacity style={styles.emailBtn} onPress={showEmailForm} activeOpacity={0.7}>
+          <TouchableOpacity style={[styles.emailBtn, { borderColor: colors.sand }]} onPress={showEmailForm} activeOpacity={0.7}>
             <Feather name="mail" size={15} color={colors.stone} />
-            <Text style={styles.emailBtnText}>sign in with email</Text>
+            <Text style={[styles.emailBtnText, { color: colors.stone }]}>sign in with email</Text>
           </TouchableOpacity>
         </Animated.View>
 
-        <Text style={styles.terms}>
+        <Text style={[styles.terms, { color: colors.sand }]}>
           by continuing, you agree to our terms{"\n"}of service and privacy policy
         </Text>
       </Animated.View>
@@ -331,26 +326,6 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.ivory,
-  },
-
-  /* Decorative corners */
-  cornerTL: {
-    position: "absolute",
-    top: Platform.OS === "ios" ? 60 : 40,
-    left: 24,
-    zIndex: 10,
-  },
-  cornerBR: {
-    position: "absolute",
-    bottom: Platform.OS === "ios" ? 48 : 28,
-    right: 24,
-    zIndex: 10,
-    transform: [{ rotate: "180deg" }],
-  },
-  cornerChar: {
-    fontSize: 14,
-    color: colors.mist,
   },
 
   /* Hero carousel */
@@ -370,12 +345,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: spacing.xl,
   },
-  decorChar: {
-    fontSize: 100,
+  decorMark: {
     position: "absolute",
-    top: "28%",
-    fontWeight: "200",
-    alignSelf: "center",
+    bottom: "22%",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    opacity: 0.08,
+    transform: [{ scale: 2.2 }],
   },
   iconCircle: {
     width: 88,
@@ -389,11 +366,9 @@ const styles = StyleSheet.create({
     fontSize: 30,
     textAlign: "center",
     marginBottom: 10,
-    color: colors.ink,
   },
   slideSubtitle: {
     textAlign: "center",
-    color: colors.stone,
     lineHeight: 24,
   },
   dots: {
@@ -415,20 +390,9 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === "ios" ? 44 : 28,
     alignItems: "center",
   },
-  brandName: {
-    fontFamily: "CormorantGaramond_500Medium",
-    fontSize: 22,
-    color: colors.ink,
-    letterSpacing: 8,
-    textTransform: "uppercase",
-    marginBottom: 6,
-  },
-  brandDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.coral,
+  brandWrap: {
     marginBottom: 20,
+    alignItems: "center",
   },
   btnsWrap: {
     width: "100%",
@@ -442,7 +406,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 10,
     width: "100%",
-    backgroundColor: colors.ink,
     borderRadius: 999,
     paddingVertical: 15,
     marginBottom: 10,
@@ -450,7 +413,6 @@ const styles = StyleSheet.create({
   appleBtnText: {
     fontFamily: "Inter_500Medium",
     fontSize: 14,
-    color: colors.pearl,
   },
   googleBtn: {
     flexDirection: "row",
@@ -458,9 +420,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 10,
     width: "100%",
-    backgroundColor: colors.pearl,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     borderRadius: 999,
     paddingVertical: 15,
     marginBottom: 0,
@@ -468,7 +428,6 @@ const styles = StyleSheet.create({
   googleBtnText: {
     fontFamily: "Inter_500Medium",
     fontSize: 14,
-    color: colors.ink,
   },
 
   /* Divider */
@@ -482,12 +441,10 @@ const styles = StyleSheet.create({
   orLine: {
     flex: 1,
     height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.mist,
   },
   orText: {
     fontFamily: "Inter_400Regular",
     fontSize: 11,
-    color: colors.sand,
     textTransform: "uppercase",
     letterSpacing: 1,
   },
@@ -500,7 +457,6 @@ const styles = StyleSheet.create({
     gap: 8,
     width: "100%",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.sand,
     borderRadius: 999,
     paddingVertical: 14,
     marginBottom: spacing.sm,
@@ -508,14 +464,12 @@ const styles = StyleSheet.create({
   emailBtnText: {
     fontFamily: "Inter_500Medium",
     fontSize: 13,
-    color: colors.stone,
   },
 
   /* Terms */
   terms: {
     fontFamily: "Inter_400Regular",
     fontSize: 10,
-    color: colors.sand,
     textAlign: "center",
     lineHeight: 16,
     marginTop: 4,
@@ -524,7 +478,6 @@ const styles = StyleSheet.create({
   /* Email form screen */
   emailScreen: {
     flex: 1,
-    backgroundColor: colors.ivory,
     paddingHorizontal: spacing.xl,
   },
   backBtn: {
@@ -542,7 +495,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   emailSubtitle: {
-    color: colors.stone,
     marginBottom: spacing.xl,
   },
   inputGroup: {
@@ -553,9 +505,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: colors.pearl,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: Platform.OS === "ios" ? 15 : 11,
@@ -564,10 +514,8 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: "Inter_400Regular",
     fontSize: 15,
-    color: colors.ink,
   },
   submitBtn: {
-    backgroundColor: colors.coral,
     borderRadius: 999,
     paddingVertical: 15,
     alignItems: "center",
@@ -576,7 +524,6 @@ const styles = StyleSheet.create({
   submitBtnText: {
     fontFamily: "Inter_500Medium",
     fontSize: 14,
-    color: colors.pearl,
   },
   btnDisabled: {
     opacity: 0.4,
@@ -588,6 +535,5 @@ const styles = StyleSheet.create({
   toggleText: {
     fontFamily: "Inter_400Regular",
     fontSize: 12,
-    color: colors.taupe,
   },
 });

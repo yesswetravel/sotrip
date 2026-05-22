@@ -1,10 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, ViewStyle } from "react-native";
-import { colors } from "../../theme/colors";
-
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
+import { useTheme } from "../theme/ThemeProvider";
 
 type AvatarVariant = "self" | "partner" | "add";
 type AvatarSize = "normal" | "mini";
@@ -21,19 +17,11 @@ interface AvatarPairProps {
   style?: ViewStyle;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Default labels per variant                                         */
-/* ------------------------------------------------------------------ */
-
 const DEFAULT_LABELS: Record<AvatarVariant, string> = {
   self: "P",
   partner: "L",
   add: "+",
 };
-
-/* ------------------------------------------------------------------ */
-/*  Avatar                                                             */
-/* ------------------------------------------------------------------ */
 
 export function Avatar({
   variant = "self",
@@ -41,6 +29,7 @@ export function Avatar({
   label,
   style,
 }: AvatarProps) {
+  const { theme } = useTheme();
   const isAdd = variant === "add";
   const isNormal = size === "normal";
 
@@ -51,16 +40,16 @@ export function Avatar({
   const backgroundColor = isAdd
     ? "transparent"
     : variant === "self"
-      ? colors.coral
-      : colors.teal;
+      ? theme.accent
+      : theme.accent2;
 
   const borderColor = isAdd
-    ? colors.stone
+    ? theme.stone
     : isNormal
-      ? colors.ivory
-      : colors.pearl;
+      ? theme.bg
+      : theme.pearl;
 
-  const textColor = isAdd ? colors.stone : colors.pearl;
+  const textColor = isAdd ? theme.stone : theme.pearl;
   const borderStyle: "solid" | "dashed" = isAdd ? "dashed" : "solid";
   const displayLabel = label ?? DEFAULT_LABELS[variant];
 
@@ -95,25 +84,16 @@ export function Avatar({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  AvatarPair                                                         */
-/* ------------------------------------------------------------------ */
-
 export function AvatarPair({ size = "normal", style }: AvatarPairProps) {
   const overlap = size === "normal" ? -10 : -6;
 
   return (
     <View style={[styles.pair, style]}>
-      {/* row-reverse means the first child renders on top (in front) */}
       <Avatar variant="self" size={size} />
       <Avatar variant="partner" size={size} style={{ marginLeft: overlap }} />
     </View>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Styles                                                             */
-/* ------------------------------------------------------------------ */
 
 const styles = StyleSheet.create({
   circle: {

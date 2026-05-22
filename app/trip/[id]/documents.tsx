@@ -12,7 +12,7 @@ import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../features/design-system";
 import { useTrip } from "../../../features/trips/hooks";
-import { colors } from "../../../theme/colors";
+import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
 
 interface DocItem {
@@ -33,20 +33,21 @@ const DOC_TYPES = [
   { key: "other", label: "other", icon: "file" as const },
 ];
 
-const STATUS_CONFIG = {
-  not_started: { label: "not started", color: colors.sand, icon: "circle" as const },
-  in_progress: { label: "in progress", color: colors.gold, icon: "loader" as const },
-  ready: { label: "ready", color: colors.teal, icon: "check-circle" as const },
-} as const;
-
 function storageKey(tripId: string) {
   return `documents_${tripId}`;
 }
 
 export default function DocumentsScreen() {
+  const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { data: trip } = useTrip(id);
+
+  const STATUS_CONFIG = {
+    not_started: { label: "not started", color: colors.sand, icon: "circle" as const },
+    in_progress: { label: "in progress", color: colors.gold, icon: "loader" as const },
+    ready: { label: "ready", color: colors.teal, icon: "check-circle" as const },
+  } as const;
 
   const [docs, setDocs] = useState<DocItem[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -105,11 +106,11 @@ export default function DocumentsScreen() {
   if (!loaded) return null;
 
   return (
-    <Container>
+    <Container logo>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backRow}>
           <Feather name="chevron-left" size={16} color={colors.stone} />
-          <Text variant="body" style={styles.backLink}>{trip?.title ?? "trip"}</Text>
+          <Text variant="body" style={[styles.backLink, { color: colors.stone }]}>{trip?.title ?? "trip"}</Text>
         </TouchableOpacity>
       </View>
 
@@ -120,21 +121,21 @@ export default function DocumentsScreen() {
         <View style={styles.statusSummary}>
           <View style={styles.statusChip}>
             <View style={[styles.statusIndicator, { backgroundColor: colors.moss }]} />
-            <Text variant="caption" style={styles.statusChipText}>
+            <Text variant="caption" style={[styles.statusChipText, { color: colors.stone }]}>
               {readyCount} ready
             </Text>
           </View>
           {inProgressCount > 0 && (
             <View style={styles.statusChip}>
               <View style={[styles.statusIndicator, { backgroundColor: colors.gold }]} />
-              <Text variant="caption" style={styles.statusChipText}>
+              <Text variant="caption" style={[styles.statusChipText, { color: colors.stone }]}>
                 {inProgressCount} in progress
               </Text>
             </View>
           )}
           <View style={styles.statusChip}>
             <View style={[styles.statusIndicator, { backgroundColor: colors.sand }]} />
-            <Text variant="caption" style={styles.statusChipText}>
+            <Text variant="caption" style={[styles.statusChipText, { color: colors.stone }]}>
               {docs.length - readyCount - inProgressCount} pending
             </Text>
           </View>
@@ -148,13 +149,13 @@ export default function DocumentsScreen() {
       >
         {docs.length === 0 && (
           <View style={styles.emptyState}>
-            <View style={styles.emptyIcon}>
+            <View style={[styles.emptyIcon, { backgroundColor: colors.taupe + "14" }]}>
               <Feather name="file-text" size={28} color={colors.taupe} />
             </View>
-            <Text variant="titleItalic" style={styles.emptyText}>
+            <Text variant="titleItalic" style={{ color: colors.stone }}>
               no documents added yet
             </Text>
-            <Text variant="caption" style={styles.emptyHint}>
+            <Text variant="caption" style={[styles.emptyHint, { color: colors.sand }]}>
               keep track of passports, visas, bookings & insurance
             </Text>
           </View>
@@ -164,13 +165,13 @@ export default function DocumentsScreen() {
           const statusCfg = STATUS_CONFIG[doc.status];
           const typeInfo = DOC_TYPES.find((t) => t.key === doc.type) ?? DOC_TYPES[5];
           return (
-            <View key={doc.id} style={styles.docCard}>
+            <View key={doc.id} style={[styles.docCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
               <View style={styles.docTopRow}>
                 <View style={[styles.docIconWrap, { backgroundColor: statusCfg.color + "14" }]}>
                   <Feather name={typeInfo.icon} size={16} color={statusCfg.color} />
                 </View>
                 <View style={styles.docInfo}>
-                  <Text variant="body" style={styles.docName}>{doc.name}</Text>
+                  <Text variant="body" style={[styles.docName, { color: colors.ink }]}>{doc.name}</Text>
                 </View>
                 <TouchableOpacity
                   onPress={() => deleteDoc(doc.id)}
@@ -191,12 +192,12 @@ export default function DocumentsScreen() {
                 <Text variant="caption" style={[styles.statusLabel, { color: statusCfg.color }]}>
                   {statusCfg.label}
                 </Text>
-                <Text variant="caption" style={styles.statusTapHint}>tap to change</Text>
+                <Text variant="caption" style={{ fontSize: 10, color: colors.sand }}>tap to change</Text>
               </TouchableOpacity>
 
               {/* Notes */}
               <TextInput
-                style={styles.docNotes}
+                style={[styles.docNotes, { color: colors.stone }]}
                 placeholder="add notes…"
                 placeholderTextColor={colors.sand}
                 value={doc.notes}
@@ -212,12 +213,12 @@ export default function DocumentsScreen() {
 
       {/* Add button */}
       <TouchableOpacity
-        style={styles.addButton}
+        style={[styles.addButton, { backgroundColor: colors.ink }]}
         onPress={() => setShowAddSheet(true)}
         activeOpacity={0.85}
       >
         <Feather name="plus" size={16} color={colors.ivory} style={{ marginRight: 6 }} />
-        <Text variant="body" style={styles.addButtonText}>add document</Text>
+        <Text variant="body" style={{ color: colors.ivory, fontFamily: "Inter_500Medium" }}>add document</Text>
       </TouchableOpacity>
 
       {/* Add sheet */}
@@ -228,32 +229,32 @@ export default function DocumentsScreen() {
             activeOpacity={1}
             onPress={() => setShowAddSheet(false)}
           >
-            <TouchableOpacity style={styles.sheet} activeOpacity={1} onPress={() => {}}>
-              <View style={styles.handle} />
+            <TouchableOpacity style={[styles.sheet, { backgroundColor: colors.ivory }]} activeOpacity={1} onPress={() => {}}>
+              <View style={[styles.handle, { backgroundColor: colors.mist }]} />
               <Text variant="title" style={styles.sheetTitle}>add document</Text>
-              <Text variant="caption" style={styles.sheetHint}>
+              <Text variant="caption" style={[styles.sheetHint, { color: colors.sand }]}>
                 choose a document type to track
               </Text>
               {DOC_TYPES.map((type) => (
                 <TouchableOpacity
                   key={type.key}
-                  style={styles.typeRow}
+                  style={[styles.typeRow, { borderBottomColor: colors.mist }]}
                   onPress={() => addDoc(type.key, type.label)}
                   activeOpacity={0.7}
                 >
-                  <View style={styles.typeIcon}>
+                  <View style={[styles.typeIcon, { backgroundColor: colors.taupe + "14" }]}>
                     <Feather name={type.icon} size={16} color={colors.taupe} />
                   </View>
-                  <Text variant="body" style={styles.typeLabel}>{type.label}</Text>
+                  <Text variant="body" style={[styles.typeLabel, { color: colors.ink }]}>{type.label}</Text>
                   <Feather name="plus" size={14} color={colors.sand} />
                 </TouchableOpacity>
               ))}
               <TouchableOpacity
-                style={styles.cancelBtn}
+                style={[styles.cancelBtn, { borderColor: colors.sand }]}
                 onPress={() => setShowAddSheet(false)}
                 activeOpacity={0.8}
               >
-                <Text variant="body" style={styles.cancelText}>cancel</Text>
+                <Text variant="body" style={{ color: colors.stone }}>cancel</Text>
               </TouchableOpacity>
             </TouchableOpacity>
           </TouchableOpacity>
@@ -274,7 +275,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   backLink: {
-    color: colors.stone,
     fontSize: 13,
   },
   pageTitle: {
@@ -299,7 +299,6 @@ const styles = StyleSheet.create({
   },
   statusChipText: {
     fontSize: 11,
-    color: colors.stone,
   },
   body: {
     flex: 1,
@@ -314,24 +313,17 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.taupe + "14",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
   },
-  emptyText: {
-    color: colors.stone,
-  },
   emptyHint: {
-    color: colors.sand,
     textAlign: "center",
     paddingHorizontal: spacing.xl,
   },
   docCard: {
-    backgroundColor: colors.pearl,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     padding: spacing.md,
     marginBottom: 12,
   },
@@ -353,7 +345,6 @@ const styles = StyleSheet.create({
   docName: {
     fontSize: 16,
     fontFamily: "Inter_500Medium",
-    color: colors.ink,
   },
   deleteBtn: {
     padding: 4,
@@ -372,15 +363,10 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
     flex: 1,
   },
-  statusTapHint: {
-    fontSize: 10,
-    color: colors.sand,
-  },
   docNotes: {
     marginTop: 8,
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 14,
-    color: colors.stone,
     lineHeight: 18,
     minHeight: 20,
   },
@@ -389,16 +375,11 @@ const styles = StyleSheet.create({
     bottom: 24,
     left: spacing.lg,
     right: spacing.lg,
-    backgroundColor: colors.ink,
     borderRadius: 10,
     paddingVertical: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-  },
-  addButtonText: {
-    color: colors.ivory,
-    fontFamily: "Inter_500Medium",
   },
   overlay: {
     flex: 1,
@@ -406,7 +387,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.3)",
   },
   sheet: {
-    backgroundColor: colors.ivory,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     padding: spacing.lg,
@@ -416,7 +396,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: colors.mist,
     alignSelf: "center",
     marginBottom: spacing.lg,
   },
@@ -424,7 +403,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   sheetHint: {
-    color: colors.sand,
     marginBottom: spacing.md,
   },
   typeRow: {
@@ -433,30 +411,23 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.mist,
   },
   typeIcon: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: colors.taupe + "14",
     alignItems: "center",
     justifyContent: "center",
   },
   typeLabel: {
     flex: 1,
     fontSize: 15,
-    color: colors.ink,
   },
   cancelBtn: {
     marginTop: spacing.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.sand,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",
-  },
-  cancelText: {
-    color: colors.stone,
   },
 });

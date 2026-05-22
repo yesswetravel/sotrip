@@ -15,7 +15,7 @@ import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../../features/design-system";
 import { useTrip } from "../../../../features/trips/hooks";
-import { colors } from "../../../../theme/colors";
+import { useColors } from "../../../../features/theme/ThemeProvider";
 import { spacing } from "../../../../theme/spacing";
 
 const SCREEN_W = Dimensions.get("window").width;
@@ -44,6 +44,7 @@ function formatDayDate(dateStr: string | null): string {
 }
 
 export default function DayLookScreen() {
+  const colors = useColors();
   const { id, n } = useLocalSearchParams<{ id: string; n: string }>();
   const router = useRouter();
   const { data: trip } = useTrip(id);
@@ -55,10 +56,10 @@ export default function DayLookScreen() {
   const [editName, setEditName] = useState("");
   const [editNotes, setEditNotes] = useState("");
 
-  const storageKey = `outfits_${id}`;
+  const storageKeyVal = `outfits_${id}`;
 
   useEffect(() => {
-    AsyncStorage.getItem(storageKey).then((raw) => {
+    AsyncStorage.getItem(storageKeyVal).then((raw) => {
       if (raw) setAllOutfits(JSON.parse(raw));
       setLoaded(true);
     });
@@ -69,9 +70,9 @@ export default function DayLookScreen() {
   const persist = useCallback(
     (next: Outfit[]) => {
       setAllOutfits(next);
-      AsyncStorage.setItem(storageKey, JSON.stringify(next));
+      AsyncStorage.setItem(storageKeyVal, JSON.stringify(next));
     },
-    [storageKey]
+    [storageKeyVal]
   );
 
   async function addPhotos() {
@@ -123,12 +124,12 @@ export default function DayLookScreen() {
   if (!loaded) return null;
 
   return (
-    <Container>
+    <Container logo>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backRow}>
           <Feather name="chevron-left" size={16} color={colors.stone} />
-          <Text variant="body" style={styles.backText}>
+          <Text variant="body" style={[styles.backText, { color: colors.stone }]}>
             day {String(dayNumber).padStart(2, "0")}
           </Text>
         </TouchableOpacity>
@@ -141,9 +142,9 @@ export default function DayLookScreen() {
         <Text variant="eyebrow" style={styles.dateText}>
           {formatDayDate(currentDay?.date ?? null)}
         </Text>
-        <View style={styles.privacyBadge}>
-          <View style={styles.privacyDot} />
-          <Text variant="caption" style={styles.privacyText}>only you</Text>
+        <View style={[styles.privacyBadge, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
+          <View style={[styles.privacyDot, { backgroundColor: colors.coral }]} />
+          <Text variant="caption" style={{ fontSize: 9, color: colors.stone, fontFamily: "Inter_500Medium" }}>only you</Text>
         </View>
       </View>
 
@@ -157,7 +158,7 @@ export default function DayLookScreen() {
             {dayOutfits.map((outfit) => (
               <TouchableOpacity
                 key={outfit.id}
-                style={styles.tile}
+                style={[styles.tile, { backgroundColor: colors.pearl, borderColor: colors.mist }]}
                 onPress={() => openOutfit(outfit)}
                 activeOpacity={0.85}
               >
@@ -169,7 +170,7 @@ export default function DayLookScreen() {
                 />
                 {outfit.name ? (
                   <View style={styles.tileNameWrap}>
-                    <Text variant="caption" style={styles.tileName} numberOfLines={1}>
+                    <Text variant="caption" style={[styles.tileName, { color: colors.ink }]} numberOfLines={1}>
                       {outfit.name}
                     </Text>
                   </View>
@@ -179,39 +180,39 @@ export default function DayLookScreen() {
 
             {/* Add more tile */}
             <TouchableOpacity
-              style={styles.addTile}
+              style={[styles.addTile, { borderColor: colors.mist, backgroundColor: colors.pearl }]}
               onPress={addPhotos}
               activeOpacity={0.7}
             >
               <Feather name="plus" size={20} color={colors.sand} />
-              <Text variant="caption" style={styles.addTileText}>add</Text>
+              <Text variant="caption" style={{ fontSize: 11, color: colors.sand, fontFamily: "Inter_500Medium" }}>add</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.emptyState}>
-            <View style={styles.emptyIcon}>
+            <View style={[styles.emptyIcon, { backgroundColor: colors.taupe + "14" }]}>
               <Feather name="camera" size={28} color={colors.taupe} />
             </View>
-            <Text variant="titleItalic" style={styles.emptyTitle}>
+            <Text variant="titleItalic" style={{ color: colors.stone, fontSize: 18 }}>
               no looks planned yet
             </Text>
-            <Text variant="caption" style={styles.emptyHint}>
+            <Text variant="caption" style={{ color: colors.sand, textAlign: "center" }}>
               add outfit photos for day {dayNumber}
             </Text>
             <TouchableOpacity
-              style={styles.emptyBtn}
+              style={[styles.emptyBtn, { backgroundColor: colors.ink }]}
               onPress={addPhotos}
               activeOpacity={0.8}
             >
               <Feather name="camera" size={14} color={colors.pearl} />
-              <Text variant="body" style={styles.emptyBtnText}>add photos</Text>
+              <Text variant="body" style={{ color: colors.pearl, fontFamily: "Inter_500Medium", fontSize: 13 }}>add photos</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {/* Summary */}
         {dayOutfits.length > 0 && (
-          <Text variant="caption" style={styles.summary}>
+          <Text variant="caption" style={{ textAlign: "center", color: colors.stone, fontSize: 11, marginTop: spacing.md }}>
             {dayOutfits.length} {dayOutfits.length === 1 ? "look" : "looks"} for this day
           </Text>
         )}
@@ -222,12 +223,12 @@ export default function DayLookScreen() {
       {/* Floating add button */}
       {dayOutfits.length > 0 && (
         <TouchableOpacity
-          style={styles.fab}
+          style={[styles.fab, { backgroundColor: colors.ink }]}
           onPress={addPhotos}
           activeOpacity={0.85}
         >
           <Feather name="camera" size={16} color={colors.ivory} />
-          <Text variant="body" style={styles.fabText}>add photos</Text>
+          <Text variant="body" style={{ color: colors.ivory, fontFamily: "Inter_500Medium" }}>add photos</Text>
         </TouchableOpacity>
       )}
 
@@ -257,7 +258,7 @@ export default function DayLookScreen() {
               {/* Bottom bar */}
               <View style={styles.fullBottomBar}>
                 <TextInput
-                  style={styles.fullNameInput}
+                  style={[styles.fullNameInput, { color: colors.pearl }]}
                   placeholder="name this look…"
                   placeholderTextColor="rgba(255,255,255,0.4)"
                   value={editName}
@@ -279,7 +280,7 @@ export default function DayLookScreen() {
                     onPress={saveDetails}
                     activeOpacity={0.8}
                   >
-                    <Text variant="body" style={styles.fullSaveBtnText}>done</Text>
+                    <Text variant="body" style={{ color: colors.pearl, fontFamily: "Inter_500Medium", fontSize: 14 }}>done</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => deleteOutfit(viewingOutfit.id)}
@@ -309,7 +310,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   backText: {
-    color: colors.stone,
     fontSize: 13,
   },
   titleSection: {
@@ -327,23 +327,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 5,
     marginTop: 8,
-    backgroundColor: colors.pearl,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
   },
   privacyDot: {
     width: 5,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: colors.coral,
-  },
-  privacyText: {
-    fontSize: 9,
-    color: colors.stone,
-    fontFamily: "Inter_500Medium",
   },
   scrollContent: {
     paddingHorizontal: 0,
@@ -359,9 +351,7 @@ const styles = StyleSheet.create({
     width: TILE_W,
     borderRadius: 12,
     overflow: "hidden",
-    backgroundColor: colors.pearl,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
   },
   tileImage: {
     width: "100%",
@@ -374,24 +364,16 @@ const styles = StyleSheet.create({
   tileName: {
     fontSize: 12,
     fontFamily: "Inter_500Medium",
-    color: colors.ink,
   },
   addTile: {
     width: TILE_W,
     aspectRatio: 3 / 4,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: colors.mist,
     borderStyle: "dashed",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    backgroundColor: colors.pearl,
-  },
-  addTileText: {
-    fontSize: 11,
-    color: colors.sand,
-    fontFamily: "Inter_500Medium",
   },
 
   /* Empty state */
@@ -404,40 +386,18 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: colors.taupe + "14",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 6,
-  },
-  emptyTitle: {
-    color: colors.stone,
-    fontSize: 18,
-  },
-  emptyHint: {
-    color: colors.sand,
-    textAlign: "center",
   },
   emptyBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: colors.ink,
     borderRadius: 999,
     paddingVertical: 12,
     paddingHorizontal: 24,
     marginTop: 8,
-  },
-  emptyBtnText: {
-    color: colors.pearl,
-    fontFamily: "Inter_500Medium",
-    fontSize: 13,
-  },
-
-  summary: {
-    textAlign: "center",
-    color: colors.stone,
-    fontSize: 11,
-    marginTop: spacing.md,
   },
 
   /* FAB */
@@ -446,17 +406,12 @@ const styles = StyleSheet.create({
     bottom: 24,
     left: spacing.lg,
     right: spacing.lg,
-    backgroundColor: colors.ink,
     borderRadius: 10,
     paddingVertical: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-  },
-  fabText: {
-    color: colors.ivory,
-    fontFamily: "Inter_500Medium",
   },
 
   /* Full-screen detail modal */
@@ -498,7 +453,6 @@ const styles = StyleSheet.create({
   fullNameInput: {
     fontSize: 20,
     fontFamily: "CormorantGaramond_700Bold",
-    color: colors.pearl,
     paddingVertical: 6,
     marginBottom: 4,
   },
@@ -521,11 +475,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",
-  },
-  fullSaveBtnText: {
-    color: colors.pearl,
-    fontFamily: "Inter_500Medium",
-    fontSize: 14,
   },
   fullDeleteBtn: {
     width: 44,

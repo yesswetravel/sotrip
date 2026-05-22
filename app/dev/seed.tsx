@@ -6,7 +6,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQueryClient } from "@tanstack/react-query";
 import { Container, Text } from "../../features/design-system";
 import { useSubscriptionStore } from "../../features/subscription/store";
-import { colors } from "../../theme/colors";
+import { useColors } from "../../features/theme/ThemeProvider";
 import { spacing } from "../../theme/spacing";
 import type { TripWithDaysAndItems, Trip } from "../../types/database";
 
@@ -318,6 +318,7 @@ function buildMockTrip(): TripWithDaysAndItems {
 }
 
 export default function SeedScreen() {
+  const colors = useColors();
   const router = useRouter();
   const queryClient = useQueryClient();
   const setTier = useSubscriptionStore((s) => s.setTier);
@@ -421,15 +422,15 @@ export default function SeedScreen() {
         </TouchableOpacity>
 
         <View style={styles.header}>
-          <Text style={styles.icon}>✦</Text>
+          <Text style={[styles.icon, { color: colors.coral }]}>✦</Text>
           <Text variant="display">preview demo</Text>
-          <Text variant="body" style={styles.subtitle}>
+          <Text variant="body" style={[styles.subtitle, { color: colors.stone }]}>
             preview a complete 10-day paris trip with 70+ activities, outfit planning, packing list, budget tracking, and travel notes — all local, nothing saved to database
           </Text>
         </View>
 
-        <View style={styles.preview}>
-          <Text variant="eyebrow" style={styles.previewLabel}>what you'll see</Text>
+        <View style={[styles.preview, { backgroundColor: colors.pearl }]}>
+          <Text variant="eyebrow" style={[styles.previewLabel, { color: colors.sand }]}>what you'll see</Text>
           <View style={styles.previewList}>
             {[
               ["map-pin", "10 days of activities with times & locations"],
@@ -441,31 +442,31 @@ export default function SeedScreen() {
             ].map(([icon, text]) => (
               <View key={text} style={styles.previewRow}>
                 <Feather name={icon as any} size={14} color={colors.teal} />
-                <Text variant="body" style={styles.previewText}>{text}</Text>
+                <Text variant="body" style={[styles.previewText, { color: colors.ink }]}>{text}</Text>
               </View>
             ))}
           </View>
         </View>
 
         {status ? (
-          <View style={styles.statusBox}>
-            <Text variant="caption" style={styles.statusText}>{status}</Text>
+          <View style={[styles.statusBox, { backgroundColor: colors.mist }]}>
+            <Text variant="caption" style={[styles.statusText, { color: colors.stone }]}>{status}</Text>
           </View>
         ) : null}
 
         <TouchableOpacity
-          style={[styles.seedBtn, (seeding || done) && styles.seedBtnDisabled]}
+          style={[styles.seedBtn, { backgroundColor: colors.coral }, (seeding || done) && styles.seedBtnDisabled]}
           onPress={seedPreview}
           activeOpacity={0.85}
           disabled={seeding || done}
         >
           <Feather name={done ? "check" : "eye"} size={16} color={colors.ivory} />
-          <Text variant="body" style={styles.seedBtnText}>
+          <Text variant="body" style={[styles.seedBtnText, { color: colors.ivory }]}>
             {done ? "opening..." : seeding ? "loading..." : "preview paris trip"}
           </Text>
         </TouchableOpacity>
 
-        <Text variant="caption" style={styles.note}>
+        <Text variant="caption" style={[styles.note, { color: colors.sand }]}>
           local preview only — nothing is saved to the database.{"\n"}
           data disappears when you refresh the app.
         </Text>
@@ -493,24 +494,20 @@ const styles = StyleSheet.create({
   },
   icon: {
     fontSize: 32,
-    color: colors.coral,
     marginBottom: 4,
   },
   subtitle: {
-    color: colors.stone,
     textAlign: "center",
     lineHeight: 20,
     paddingHorizontal: spacing.md,
   },
   preview: {
-    backgroundColor: colors.pearl,
     borderRadius: 14,
     padding: spacing.lg,
     marginBottom: spacing.xl,
     gap: 12,
   },
   previewLabel: {
-    color: colors.sand,
     marginBottom: 4,
   },
   previewList: {
@@ -522,21 +519,17 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   previewText: {
-    color: colors.ink,
     flex: 1,
   },
   statusBox: {
-    backgroundColor: colors.mist,
     borderRadius: 8,
     padding: 12,
     marginBottom: spacing.md,
     alignItems: "center",
   },
   statusText: {
-    color: colors.stone,
   },
   seedBtn: {
-    backgroundColor: colors.coral,
     borderRadius: 10,
     paddingVertical: 16,
     flexDirection: "row",
@@ -549,12 +542,10 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   seedBtnText: {
-    color: colors.ivory,
     fontFamily: "Inter_500Medium",
   },
   note: {
     textAlign: "center",
-    color: colors.sand,
     lineHeight: 18,
   },
 });

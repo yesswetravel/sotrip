@@ -14,7 +14,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../features/design-system";
 import { useTrip, useUpdateTrip, useDeleteTrip } from "../../../features/trips/hooks";
 import { useTripMembers } from "../../../features/couple/hooks";
-import { colors } from "../../../theme/colors";
+import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
 import type { MemberRole } from "../../../types/database";
 
@@ -40,9 +40,9 @@ function roleLabel(role: MemberRole): string {
 /*  Section header                                                     */
 /* ------------------------------------------------------------------ */
 
-function SectionHeader({ label }: { label: string }) {
+function SectionHeader({ label, colors }: { label: string; colors: ReturnType<typeof useColors> }) {
   return (
-    <Text variant="eyebrow" style={styles.sectionHeader}>
+    <Text variant="eyebrow" style={[styles.sectionHeader, { color: colors.taupe }]}>
       {label}
     </Text>
   );
@@ -59,6 +59,7 @@ function SettingsRow({
   onPress,
   danger,
   chevron = true,
+  colors,
 }: {
   icon: keyof typeof Feather.glyphMap;
   label: string;
@@ -66,15 +67,16 @@ function SettingsRow({
   onPress?: () => void;
   danger?: boolean;
   chevron?: boolean;
+  colors: ReturnType<typeof useColors>;
 }) {
   return (
     <TouchableOpacity
-      style={styles.row}
+      style={[styles.row, { borderBottomColor: colors.mist }]}
       onPress={onPress}
       activeOpacity={onPress ? 0.7 : 1}
       disabled={!onPress}
     >
-      <View style={[styles.rowIcon, danger && { backgroundColor: "#C4444414" }]}>
+      <View style={[styles.rowIcon, danger ? { backgroundColor: "#C4444414" } : { backgroundColor: colors.mist + "60" }]}>
         <Feather
           name={icon}
           size={14}
@@ -84,12 +86,12 @@ function SettingsRow({
       <View style={styles.rowContent}>
         <Text
           variant="body"
-          style={[styles.rowLabel, danger && { color: "#C44" }]}
+          style={[styles.rowLabel, { color: colors.ink }, danger && { color: "#C44" }]}
         >
           {label}
         </Text>
         {value ? (
-          <Text variant="caption" style={styles.rowValue} numberOfLines={1}>
+          <Text variant="caption" style={[styles.rowValue, { color: colors.stone }]} numberOfLines={1}>
             {value}
           </Text>
         ) : null}
@@ -106,6 +108,7 @@ function SettingsRow({
 /* ------------------------------------------------------------------ */
 
 export default function TripSettingsScreen() {
+  const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { data: trip } = useTrip(id);
@@ -177,16 +180,11 @@ export default function TripSettingsScreen() {
       setConfirmLeave(true);
       return;
     }
-    // If there are other members, ownership transfers automatically
-    // If last member, trip gets deleted
     if (members.length === 0) {
-      // Last person — delete the trip
       deleteTrip.mutate(trip!.id, {
         onSuccess: () => router.replace("/(tabs)"),
       });
     } else {
-      // Transfer ownership to next member (first by join date)
-      // For now with AsyncStorage, we just archive for this user
       handleArchive();
     }
   }
@@ -194,7 +192,7 @@ export default function TripSettingsScreen() {
   if (!trip) return null;
 
   return (
-    <Container>
+    <Container logo>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -203,7 +201,7 @@ export default function TripSettingsScreen() {
           activeOpacity={0.7}
         >
           <Feather name="chevron-left" size={16} color={colors.stone} />
-          <Text variant="body" style={styles.backText}>
+          <Text variant="body" style={[styles.backText, { color: colors.stone }]}>
             {trip.title}
           </Text>
         </TouchableOpacity>
@@ -217,12 +215,12 @@ export default function TripSettingsScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         {/* ============ Details ============ */}
-        <SectionHeader label="details" />
-        <View style={styles.card}>
+        <SectionHeader label="details" colors={colors} />
+        <View style={[styles.card, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
           {editingTitle ? (
-            <View style={styles.editRow}>
+            <View style={[styles.editRow, { borderBottomColor: colors.mist }]}>
               <TextInput
-                style={styles.editInput}
+                style={[styles.editInput, { color: colors.ink, borderBottomColor: colors.teal }]}
                 value={titleDraft}
                 onChangeText={setTitleDraft}
                 autoFocus
@@ -250,13 +248,14 @@ export default function TripSettingsScreen() {
                 setTitleDraft(trip.title);
                 setEditingTitle(true);
               }}
+              colors={colors}
             />
           )}
 
           {editingDest ? (
-            <View style={styles.editRow}>
+            <View style={[styles.editRow, { borderBottomColor: colors.mist }]}>
               <TextInput
-                style={styles.editInput}
+                style={[styles.editInput, { color: colors.ink, borderBottomColor: colors.teal }]}
                 value={destDraft}
                 onChangeText={setDestDraft}
                 autoFocus
@@ -284,6 +283,7 @@ export default function TripSettingsScreen() {
                 setDestDraft(trip.destination ?? "");
                 setEditingDest(true);
               }}
+              colors={colors}
             />
           )}
 
@@ -292,44 +292,46 @@ export default function TripSettingsScreen() {
             label="dates"
             value={`${formatDate(trip.start_date)} — ${formatDate(trip.end_date)}`}
             chevron={false}
+            colors={colors}
           />
 
           <SettingsRow
             icon="image"
             label="cover photo"
             value={trip.cover_photo_url ? "set" : "none"}
+            colors={colors}
           />
         </View>
 
         {/* ============ Members ============ */}
-        <SectionHeader label="members" />
-        <View style={styles.card}>
+        <SectionHeader label="members" colors={colors} />
+        <View style={[styles.card, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
           {/* Owner (you) */}
-          <View style={styles.memberRow}>
+          <View style={[styles.memberRow, { borderBottomColor: colors.mist }]}>
             <View style={[styles.memberAvatar, { backgroundColor: colors.coral }]}>
-              <Text style={styles.memberAvatarText}>P</Text>
+              <Text style={[styles.memberAvatarText, { color: colors.pearl }]}>P</Text>
             </View>
             <View style={styles.memberInfo}>
-              <Text variant="body" style={styles.memberName}>you</Text>
-              <Text variant="caption" style={styles.memberRole}>owner</Text>
+              <Text variant="body" style={[styles.memberName, { color: colors.ink }]}>you</Text>
+              <Text variant="caption" style={[styles.memberRole, { color: colors.stone }]}>owner</Text>
             </View>
           </View>
 
           {/* Other members */}
           {members.map((m) => (
-            <View key={m.id} style={styles.memberRow}>
+            <View key={m.id} style={[styles.memberRow, { borderBottomColor: colors.mist }]}>
               <View
                 style={[styles.memberAvatar, { backgroundColor: m.avatar_color }]}
               >
-                <Text style={styles.memberAvatarText}>
+                <Text style={[styles.memberAvatarText, { color: colors.pearl }]}>
                   {m.display_name.charAt(0).toUpperCase()}
                 </Text>
               </View>
               <View style={styles.memberInfo}>
-                <Text variant="body" style={styles.memberName}>
+                <Text variant="body" style={[styles.memberName, { color: colors.ink }]}>
                   {m.display_name}
                 </Text>
-                <Text variant="caption" style={styles.memberRole}>
+                <Text variant="caption" style={[styles.memberRole, { color: colors.stone }]}>
                   {roleLabel(m.role)}
                 </Text>
               </View>
@@ -345,15 +347,15 @@ export default function TripSettingsScreen() {
 
           {/* Pending invites */}
           {pendingInvites.map((inv) => (
-            <View key={inv.id} style={styles.memberRow}>
-              <View style={[styles.memberAvatar, styles.memberAvatarPending]}>
+            <View key={inv.id} style={[styles.memberRow, { borderBottomColor: colors.mist }]}>
+              <View style={[styles.memberAvatar, styles.memberAvatarPending, { borderColor: colors.sand }]}>
                 <Feather name="clock" size={12} color={colors.stone} />
               </View>
               <View style={styles.memberInfo}>
-                <Text variant="body" style={styles.memberName}>
+                <Text variant="body" style={[styles.memberName, { color: colors.ink }]}>
                   {inv.invitee_email ?? "invite sent"}
                 </Text>
-                <Text variant="caption" style={styles.memberRole}>pending</Text>
+                <Text variant="caption" style={[styles.memberRole, { color: colors.stone }]}>pending</Text>
               </View>
               <TouchableOpacity
                 onPress={() => cancelInvite(inv.id)}
@@ -367,49 +369,52 @@ export default function TripSettingsScreen() {
         </View>
 
         {/* ============ Invite Code ============ */}
-        <SectionHeader label="invite code" />
-        <View style={styles.card}>
+        <SectionHeader label="invite code" colors={colors} />
+        <View style={[styles.card, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
           <View style={styles.inviteCodeSection}>
-            <Text style={styles.inviteCodeText}>{inviteCode ?? "..."}</Text>
-            <Text variant="caption" style={styles.inviteCodeHint}>
+            <Text style={[styles.inviteCodeText, { color: colors.ink }]}>{inviteCode ?? "..."}</Text>
+            <Text variant="caption" style={{ fontSize: 11, color: colors.stone, textAlign: "center" }}>
               share this code with anyone to join your trip
             </Text>
           </View>
           <TouchableOpacity
-            style={styles.shareBtn}
+            style={[styles.shareBtn, { backgroundColor: colors.ink }]}
             onPress={handleShareInvite}
             activeOpacity={0.8}
           >
             <Feather name="share" size={14} color={colors.pearl} />
-            <Text variant="body" style={styles.shareBtnText}>
+            <Text variant="body" style={[styles.shareBtnText, { color: colors.pearl }]}>
               share invite
             </Text>
           </TouchableOpacity>
         </View>
 
         {/* ============ Preferences ============ */}
-        <SectionHeader label="preferences" />
-        <View style={styles.card}>
+        <SectionHeader label="preferences" colors={colors} />
+        <View style={[styles.card, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
           <SettingsRow
             icon="dollar-sign"
             label="currency"
             value="USD"
+            colors={colors}
           />
           <SettingsRow
             icon="globe"
             label="timezone"
             value="auto-detect"
+            colors={colors}
           />
         </View>
 
         {/* ============ Danger Zone ============ */}
-        <SectionHeader label="danger zone" />
-        <View style={[styles.card, styles.dangerCard]}>
+        <SectionHeader label="danger zone" colors={colors} />
+        <View style={[styles.card, styles.dangerCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
           <SettingsRow
             icon="archive"
             label="archive trip"
             onPress={handleArchive}
             chevron={false}
+            colors={colors}
           />
           <TouchableOpacity
             style={styles.leaveRow}
@@ -425,7 +430,7 @@ export default function TripSettingsScreen() {
                   ? "tap again to confirm"
                   : "leave this trip"}
               </Text>
-              <Text variant="caption" style={styles.leaveHint}>
+              <Text variant="caption" style={[styles.leaveHint, { color: colors.stone }]}>
                 {members.length === 0
                   ? "you're the only member — this will delete the trip"
                   : `ownership will transfer to ${members[0].display_name}`}
@@ -456,7 +461,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   backText: {
-    color: colors.stone,
     fontSize: 13,
   },
   pageTitle: {
@@ -471,13 +475,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
-    color: colors.taupe,
   },
   card: {
-    backgroundColor: colors.pearl,
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     overflow: "hidden",
   },
   dangerCard: {
@@ -491,14 +492,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.mist,
     gap: 12,
   },
   rowIcon: {
     width: 30,
     height: 30,
     borderRadius: 8,
-    backgroundColor: colors.mist + "60",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -508,11 +507,9 @@ const styles = StyleSheet.create({
   rowLabel: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: colors.ink,
   },
   rowValue: {
     fontSize: 12,
-    color: colors.stone,
     marginTop: 1,
   },
 
@@ -524,16 +521,13 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     gap: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.mist,
   },
   editInput: {
     flex: 1,
     fontFamily: "Inter_400Regular",
     fontSize: 14,
-    color: colors.ink,
     paddingVertical: 4,
     borderBottomWidth: 1,
-    borderBottomColor: colors.teal,
   },
 
   /* Members */
@@ -543,7 +537,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.mist,
     gap: 12,
   },
   memberAvatar: {
@@ -554,14 +547,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   memberAvatarText: {
-    color: colors.pearl,
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
   },
   memberAvatarPending: {
     backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: colors.sand,
     borderStyle: "dashed" as any,
   },
   memberInfo: {
@@ -570,11 +561,9 @@ const styles = StyleSheet.create({
   memberName: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: colors.ink,
   },
   memberRole: {
     fontSize: 11,
-    color: colors.stone,
     marginTop: 1,
   },
   memberAction: {
@@ -591,27 +580,19 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     fontSize: 28,
     letterSpacing: 6,
-    color: colors.ink,
     marginBottom: 6,
-  },
-  inviteCodeHint: {
-    fontSize: 11,
-    color: colors.stone,
-    textAlign: "center",
   },
   shareBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: colors.ink,
     marginHorizontal: 16,
     marginBottom: 16,
     paddingVertical: 12,
     borderRadius: 10,
   },
   shareBtnText: {
-    color: colors.pearl,
     fontFamily: "Inter_500Medium",
     fontSize: 13,
   },
@@ -631,7 +612,6 @@ const styles = StyleSheet.create({
   },
   leaveHint: {
     fontSize: 11,
-    color: colors.stone,
     marginTop: 1,
   },
 });

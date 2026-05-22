@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Text } from "../design-system";
-import { colors } from "../../theme/colors";
+import { useColors } from "../theme/ThemeProvider";
 import { spacing } from "../../theme/spacing";
 
 const PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? "";
@@ -106,6 +106,7 @@ export default function LocationPicker({
   onClear,
   placeholder = "search a place...",
 }: Props) {
+  const colors = useColors();
   const [query, setQuery] = useState(value);
   const [predictions, setPredictions] = useState<(Prediction & { lat: number; lng: number })[]>([]);
   const [loading, setLoading] = useState(false);
@@ -167,10 +168,10 @@ export default function LocationPicker({
   if (!PLACES_API_KEY) {
     return (
       <View style={styles.container}>
-        <View style={styles.inputRow}>
+        <View style={[styles.inputRow, { backgroundColor: colors.pearl, borderColor: colors.sand }]}>
           <Feather name="search" size={14} color={colors.stone} style={styles.searchIcon} />
           <TextInput
-            style={[styles.input, styles.inputFlex]}
+            style={[styles.input, styles.inputFlex, { color: colors.ink }]}
             placeholder={placeholder}
             placeholderTextColor={colors.stone}
             value={query}
@@ -189,10 +190,10 @@ export default function LocationPicker({
 
   return (
     <View style={styles.container}>
-      <View style={styles.inputRow}>
+      <View style={[styles.inputRow, { backgroundColor: colors.pearl, borderColor: colors.sand }]}>
         <Feather name="search" size={14} color={colors.stone} style={styles.searchIcon} />
         <TextInput
-          style={[styles.input, styles.inputFlex]}
+          style={[styles.input, styles.inputFlex, { color: colors.ink }]}
           placeholder={placeholder}
           placeholderTextColor={colors.stone}
           value={query}
@@ -211,20 +212,20 @@ export default function LocationPicker({
       </View>
 
       {predictions.length > 0 && (
-        <View style={styles.dropdown}>
+        <View style={[styles.dropdown, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
           {predictions.map((item) => (
             <TouchableOpacity
               key={item.place_id}
-              style={styles.row}
+              style={[styles.row, { borderBottomColor: colors.mist }]}
               onPress={() => handleSelect(item)}
               activeOpacity={0.7}
             >
               <Feather name="map-pin" size={14} color={colors.taupe} style={styles.rowIcon} />
               <View style={styles.rowText}>
-                <Text variant="body" numberOfLines={1} style={styles.mainText}>
+                <Text variant="body" numberOfLines={1} style={[styles.mainText, { color: colors.ink }]}>
                   {item.name}
                 </Text>
-                <Text variant="caption" numberOfLines={1} style={styles.secondaryText}>
+                <Text variant="caption" numberOfLines={1} style={[styles.secondaryText, { color: colors.stone }]}>
                   {item.address}
                 </Text>
               </View>
@@ -244,10 +245,8 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.pearl,
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.sand,
   },
   searchIcon: {
     paddingLeft: spacing.md,
@@ -257,7 +256,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontFamily: "Inter_400Regular",
     fontSize: 15,
-    color: colors.ink,
   },
   inputFlex: {
     flex: 1,
@@ -270,10 +268,8 @@ const styles = StyleSheet.create({
     top: "100%",
     left: 0,
     right: 0,
-    backgroundColor: colors.pearl,
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     marginTop: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -289,7 +285,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.mist,
   },
   rowIcon: {
     marginRight: 10,
@@ -301,11 +296,9 @@ const styles = StyleSheet.create({
   mainText: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: colors.ink,
     marginBottom: 2,
   },
   secondaryText: {
     fontSize: 12,
-    color: colors.stone,
   },
 });

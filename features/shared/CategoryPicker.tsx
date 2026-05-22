@@ -2,7 +2,7 @@ import { StyleSheet, View, TouchableOpacity, ScrollView } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Text } from "../design-system";
 import { CATEGORIES, type ItemCategory } from "../../theme/categories";
-import { colors } from "../../theme/colors";
+import { useColors } from "../theme/ThemeProvider";
 import { spacing } from "../../theme/spacing";
 
 interface Props {
@@ -11,9 +11,9 @@ interface Props {
 }
 
 export default function CategoryPicker({ value, onChange }: Props) {
+  const colors = useColors();
   return (
     <View>
-      <Text variant="eyebrow" style={styles.label}>category</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -26,6 +26,7 @@ export default function CategoryPicker({ value, onChange }: Props) {
               key={cat.key}
               style={[
                 styles.chip,
+                { backgroundColor: colors.pearl, borderColor: colors.mist },
                 selected && { backgroundColor: cat.color },
               ]}
               onPress={() => onChange(cat.key)}
@@ -40,6 +41,7 @@ export default function CategoryPicker({ value, onChange }: Props) {
                 variant="caption"
                 style={[
                   styles.chipText,
+                  { color: colors.ink },
                   selected && styles.chipTextSelected,
                 ]}
               >
@@ -69,12 +71,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: colors.pearl,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
   },
   chipText: {
-    color: colors.ink,
     fontSize: 12,
   },
   chipTextSelected: {

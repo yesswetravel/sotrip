@@ -12,12 +12,13 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { Text } from "../../../../features/design-system";
 import { usePhotosByTrip, useUpdatePhoto, useDeletePhoto } from "../../../../features/photos/hooks";
-import { colors } from "../../../../theme/colors";
+import { useColors } from "../../../../features/theme/ThemeProvider";
 import { spacing } from "../../../../theme/spacing";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
 export default function PhotoViewerScreen() {
+  const colors = useColors();
   const { id, photoId } = useLocalSearchParams<{ id: string; photoId: string }>();
   const router = useRouter();
   const { data: photos } = usePhotosByTrip(id);
@@ -30,7 +31,7 @@ export default function PhotoViewerScreen() {
 
   if (!photo) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.ink }]}>
         <ActivityIndicator color={colors.ivory} />
       </View>
     );
@@ -58,7 +59,7 @@ export default function PhotoViewerScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.ink }]}>
       <TouchableOpacity
         style={styles.imageWrap}
         activeOpacity={1}
@@ -77,7 +78,7 @@ export default function PhotoViewerScreen() {
           {/* Top bar */}
           <View style={styles.topBar}>
             <TouchableOpacity onPress={() => router.back()}>
-              <Text variant="body" style={styles.closeBtn}>✕</Text>
+              <Text variant="body" style={[styles.closeBtn, { color: colors.ivory }]}>✕</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleDelete}>
               <Text variant="caption" style={styles.deleteLink}>delete</Text>
@@ -87,7 +88,7 @@ export default function PhotoViewerScreen() {
           {/* Bottom caption */}
           <View style={styles.bottomBar}>
             <TextInput
-              style={styles.captionInput}
+              style={[styles.captionInput, { color: colors.ivory }]}
               placeholder="add a caption…"
               placeholderTextColor="rgba(255,255,255,0.5)"
               value={caption}
@@ -106,11 +107,9 @@ export default function PhotoViewerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.ink,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: colors.ink,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -131,7 +130,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   closeBtn: {
-    color: colors.ivory,
     fontSize: 20,
   },
   deleteLink: {
@@ -148,7 +146,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: colors.ivory,
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 16,
   },

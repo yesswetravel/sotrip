@@ -4,10 +4,11 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Text } from "../../../features/design-system";
 import MapWrapper from "../../../features/shared/MapWrapper";
 import { useTrip } from "../../../features/trips/hooks";
-import { colors } from "../../../theme/colors";
+import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
 
 export default function TripMapScreen() {
+  const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { data: trip } = useTrip(id);
@@ -32,11 +33,11 @@ export default function TripMapScreen() {
   }, [trip]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.ivory }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.ivory }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text variant="body" style={styles.backText}>← back</Text>
+          <Text variant="body" style={[styles.backText, { color: colors.stone }]}>← back</Text>
         </TouchableOpacity>
         <Text variant="eyebrow">{trip?.title ?? ""} · map</Text>
       </View>
@@ -46,10 +47,10 @@ export default function TripMapScreen() {
         <MapWrapper pins={pins} />
       ) : (
         <View style={styles.empty}>
-          <Text variant="titleItalic" style={styles.emptyText}>
+          <Text variant="titleItalic" style={{ color: colors.stone }}>
             no locations yet
           </Text>
-          <Text variant="caption" style={styles.emptyHint}>
+          <Text variant="caption" style={[styles.emptyHint, { color: colors.taupe }]}>
             add locations to your itinerary items{"\n"}and they'll appear on the map
           </Text>
         </View>
@@ -61,7 +62,6 @@ export default function TripMapScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.ivory,
   },
   header: {
     paddingTop: 56,
@@ -70,10 +70,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: colors.ivory,
   },
   backText: {
-    color: colors.stone,
     fontSize: 13,
   },
   empty: {
@@ -82,11 +80,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
   },
-  emptyText: {
-    color: colors.stone,
-  },
   emptyHint: {
-    color: colors.taupe,
     textAlign: "center",
     lineHeight: 20,
   },

@@ -10,7 +10,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { Text } from "../../design-system";
 import { getCategoryForItem } from "../../../theme/categories";
-import { colors } from "../../../theme/colors";
+import { useColors } from "../../theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
 import type { TripItem } from "../../../types/database";
 
@@ -44,6 +44,7 @@ function openInMaps(name: string, lat: number, lng: number) {
 }
 
 export default function ItemDetailSheet({ item, onClose, onEdit }: Props) {
+  const colors = useColors();
   const cat = getCategoryForItem(item.category);
   const hasLocation = item.location_name && item.location_lat && item.location_lng;
 
@@ -55,11 +56,11 @@ export default function ItemDetailSheet({ item, onClose, onEdit }: Props) {
         onPress={onClose}
       >
         <TouchableOpacity
-          style={styles.sheet}
+          style={[styles.sheet, { backgroundColor: colors.ivory }]}
           activeOpacity={1}
           onPress={() => {}}
         >
-          <View style={styles.handle} />
+          <View style={[styles.handle, { backgroundColor: colors.mist }]} />
 
           <ScrollView showsVerticalScrollIndicator={false}>
             {/* Category + time row */}
@@ -71,7 +72,7 @@ export default function ItemDetailSheet({ item, onClose, onEdit }: Props) {
                 </Text>
               </View>
               {item.time && (
-                <Text variant="caption" style={styles.timeLabel}>
+                <Text variant="caption" style={[styles.timeLabel, { color: colors.taupe }]}>
                   {formatTime12h(item.time)}
                 </Text>
               )}
@@ -84,7 +85,7 @@ export default function ItemDetailSheet({ item, onClose, onEdit }: Props) {
 
             {/* Subtitle */}
             {item.subtitle && (
-              <Text variant="body" style={styles.subtitle}>
+              <Text variant="body" style={[styles.subtitle, { color: colors.stone }]}>
                 {item.subtitle}
               </Text>
             )}
@@ -92,7 +93,7 @@ export default function ItemDetailSheet({ item, onClose, onEdit }: Props) {
             {/* Location — tappable to open map */}
             {item.location_name && (
               <TouchableOpacity
-                style={styles.locationCard}
+                style={[styles.locationCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}
                 activeOpacity={hasLocation ? 0.7 : 1}
                 onPress={() => {
                   if (hasLocation) {
@@ -104,15 +105,15 @@ export default function ItemDetailSheet({ item, onClose, onEdit }: Props) {
                   }
                 }}
               >
-                <View style={styles.locationIcon}>
+                <View style={[styles.locationIcon, { backgroundColor: colors.taupe + "14" }]}>
                   <Feather name="map-pin" size={16} color={colors.taupe} />
                 </View>
                 <View style={styles.locationInfo}>
-                  <Text variant="body" style={styles.locationName}>
+                  <Text variant="body" style={[styles.locationName, { color: colors.ink }]}>
                     {item.location_name}
                   </Text>
                   {hasLocation && (
-                    <Text variant="caption" style={styles.locationAction}>
+                    <Text variant="caption" style={[styles.locationAction, { color: colors.taupe }]}>
                       open in maps →
                     </Text>
                   )}
@@ -124,7 +125,7 @@ export default function ItemDetailSheet({ item, onClose, onEdit }: Props) {
             {item.notes && (
               <View style={styles.notesSection}>
                 <Text variant="eyebrow" style={styles.notesLabel}>notes</Text>
-                <Text variant="body" style={styles.notesText}>
+                <Text variant="body" style={[styles.notesText, { color: colors.stone }]}>
                   {item.notes}
                 </Text>
               </View>
@@ -133,20 +134,20 @@ export default function ItemDetailSheet({ item, onClose, onEdit }: Props) {
             {/* Actions */}
             <View style={styles.actions}>
               <TouchableOpacity
-                style={styles.editBtn}
+                style={[styles.editBtn, { backgroundColor: colors.ink }]}
                 onPress={onEdit}
                 activeOpacity={0.8}
               >
                 <Feather name="edit-2" size={14} color={colors.ivory} style={{ marginRight: 6 }} />
-                <Text variant="body" style={styles.editBtnText}>edit</Text>
+                <Text variant="body" style={[styles.editBtnText, { color: colors.ivory }]}>edit</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.closeBtn}
+                style={[styles.closeBtn, { borderColor: colors.sand }]}
                 onPress={onClose}
                 activeOpacity={0.8}
               >
-                <Text variant="body" style={styles.closeBtnText}>close</Text>
+                <Text variant="body" style={[styles.closeBtnText, { color: colors.stone }]}>close</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -163,7 +164,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.3)",
   },
   sheet: {
-    backgroundColor: colors.ivory,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     padding: spacing.lg,
@@ -174,7 +174,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: colors.mist,
     alignSelf: "center",
     marginBottom: spacing.lg,
   },
@@ -198,7 +197,6 @@ const styles = StyleSheet.create({
   },
   timeLabel: {
     fontSize: 13,
-    color: colors.taupe,
     fontFamily: "Inter_500Medium",
   },
   title: {
@@ -206,26 +204,22 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   subtitle: {
-    color: colors.stone,
     fontSize: 15,
     marginBottom: spacing.md,
   },
   locationCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.pearl,
     borderRadius: 10,
     padding: spacing.md,
     marginTop: spacing.sm,
     marginBottom: spacing.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
   },
   locationIcon: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.taupe + "14",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -236,11 +230,9 @@ const styles = StyleSheet.create({
   locationName: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: colors.ink,
   },
   locationAction: {
     fontSize: 12,
-    color: colors.taupe,
     marginTop: 2,
   },
   notesSection: {
@@ -250,7 +242,6 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   notesText: {
-    color: colors.stone,
     fontSize: 14,
     lineHeight: 20,
     fontFamily: "CormorantGaramond_500Medium_Italic",
@@ -260,7 +251,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   editBtn: {
-    backgroundColor: colors.ink,
     borderRadius: 8,
     paddingVertical: 14,
     flexDirection: "row",
@@ -268,17 +258,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   editBtnText: {
-    color: colors.ivory,
     fontFamily: "Inter_500Medium",
   },
   closeBtn: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.sand,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",
   },
-  closeBtnText: {
-    color: colors.stone,
-  },
+  closeBtnText: {},
 });

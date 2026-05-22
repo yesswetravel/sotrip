@@ -14,7 +14,7 @@ import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../features/design-system";
 import { useTrip } from "../../../features/trips/hooks";
-import { colors } from "../../../theme/colors";
+import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
 
 const { width: SW } = Dimensions.get("window");
@@ -60,6 +60,7 @@ const PLANS = [
 /* ------------------------------------------------------------------ */
 
 export default function MemoryOrderScreen() {
+  const colors = useColors();
   const { id, type } = useLocalSearchParams<{ id: string; type?: string }>();
   const router = useRouter();
   const { data: trip } = useTrip(id);
@@ -114,12 +115,12 @@ export default function MemoryOrderScreen() {
   // If print is selected, show shipping form
   if (showShipping) {
     return (
-      <Container>
+      <Container logo>
         <View style={s.header}>
           <TouchableOpacity onPress={() => setShowShipping(false)} hitSlop={12}>
             <Feather name="chevron-left" size={20} color={colors.stone} />
           </TouchableOpacity>
-          <Text variant="eyebrow" style={s.headerLabel}>shipping address</Text>
+          <Text variant="eyebrow" style={{ color: colors.stone }}>shipping address</Text>
           <View style={{ width: 20 }} />
         </View>
 
@@ -128,18 +129,18 @@ export default function MemoryOrderScreen() {
           contentContainerStyle={s.shippingScroll}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={s.shippingIcon}>
+          <View style={[s.shippingIcon, { backgroundColor: colors.coral + "12" }]}>
             <Feather name="package" size={28} color={colors.coral} />
           </View>
-          <Text style={s.shippingTitle}>where should we send it?</Text>
-          <Text variant="caption" style={s.shippingSub}>
+          <Text style={[s.shippingTitle, { color: colors.ink }]}>where should we send it?</Text>
+          <Text variant="caption" style={[s.shippingSub, { color: colors.stone }]}>
             soft-touch linen hardcover · ships in 5–7 days
           </Text>
 
           <View style={s.formGroup}>
-            <Text style={s.formLabel}>full name</Text>
+            <Text style={[s.formLabel, { color: colors.stone }]}>full name</Text>
             <TextInput
-              style={s.formInput}
+              style={[s.formInput, { backgroundColor: colors.pearl, borderColor: colors.mist, color: colors.ink }]}
               value={name}
               onChangeText={setName}
               placeholder="your name"
@@ -148,9 +149,9 @@ export default function MemoryOrderScreen() {
           </View>
 
           <View style={s.formGroup}>
-            <Text style={s.formLabel}>street address</Text>
+            <Text style={[s.formLabel, { color: colors.stone }]}>street address</Text>
             <TextInput
-              style={s.formInput}
+              style={[s.formInput, { backgroundColor: colors.pearl, borderColor: colors.mist, color: colors.ink }]}
               value={address}
               onChangeText={setAddress}
               placeholder="123 main street, apt 4"
@@ -160,9 +161,9 @@ export default function MemoryOrderScreen() {
 
           <View style={s.formRow}>
             <View style={[s.formGroup, { flex: 1 }]}>
-              <Text style={s.formLabel}>city</Text>
+              <Text style={[s.formLabel, { color: colors.stone }]}>city</Text>
               <TextInput
-                style={s.formInput}
+                style={[s.formInput, { backgroundColor: colors.pearl, borderColor: colors.mist, color: colors.ink }]}
                 value={city}
                 onChangeText={setCity}
                 placeholder="city"
@@ -170,9 +171,9 @@ export default function MemoryOrderScreen() {
               />
             </View>
             <View style={[s.formGroup, { width: 100 }]}>
-              <Text style={s.formLabel}>zip code</Text>
+              <Text style={[s.formLabel, { color: colors.stone }]}>zip code</Text>
               <TextInput
-                style={s.formInput}
+                style={[s.formInput, { backgroundColor: colors.pearl, borderColor: colors.mist, color: colors.ink }]}
                 value={zip}
                 onChangeText={setZip}
                 placeholder="10001"
@@ -183,9 +184,9 @@ export default function MemoryOrderScreen() {
           </View>
 
           <View style={s.formGroup}>
-            <Text style={s.formLabel}>country</Text>
+            <Text style={[s.formLabel, { color: colors.stone }]}>country</Text>
             <TextInput
-              style={s.formInput}
+              style={[s.formInput, { backgroundColor: colors.pearl, borderColor: colors.mist, color: colors.ink }]}
               value={country}
               onChangeText={setCountry}
               placeholder="united states"
@@ -197,9 +198,9 @@ export default function MemoryOrderScreen() {
         </ScrollView>
 
         {/* Pay button */}
-        <View style={s.bottomBar}>
+        <View style={[s.bottomBar, { backgroundColor: colors.ivory, borderTopColor: colors.mist }]}>
           <TouchableOpacity
-            style={[s.payBtn, (!shippingValid || processing) && s.payBtnDisabled]}
+            style={[s.payBtn, { backgroundColor: colors.ink }, (!shippingValid || processing) && s.payBtnDisabled]}
             onPress={handlePurchase}
             activeOpacity={0.85}
             disabled={!shippingValid || processing}
@@ -209,13 +210,13 @@ export default function MemoryOrderScreen() {
             ) : (
               <>
                 <Feather name="credit-card" size={15} color={colors.pearl} />
-                <Text style={s.payBtnText}>pay {plan.price}</Text>
+                <Text style={[s.payBtnText, { color: colors.pearl }]}>pay {plan.price}</Text>
               </>
             )}
           </TouchableOpacity>
           <View style={s.secureRow}>
             <Feather name="lock" size={10} color={colors.sand} />
-            <Text variant="caption" style={s.secureText}>secure payment · cancel anytime</Text>
+            <Text variant="caption" style={{ fontSize: 10, color: colors.sand }}>secure payment · cancel anytime</Text>
           </View>
         </View>
       </Container>
@@ -223,13 +224,13 @@ export default function MemoryOrderScreen() {
   }
 
   return (
-    <Container>
+    <Container logo>
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
           <Feather name="chevron-left" size={20} color={colors.stone} />
         </TouchableOpacity>
-        <Text variant="eyebrow" style={s.headerLabel}>unlock your book</Text>
+        <Text variant="eyebrow" style={{ color: colors.stone }}>unlock your book</Text>
         <View style={{ width: 20 }} />
       </View>
 
@@ -239,11 +240,11 @@ export default function MemoryOrderScreen() {
       >
         {/* Hero */}
         <View style={s.hero}>
-          <View style={s.heroIcon}>
+          <View style={[s.heroIcon, { backgroundColor: colors.coral + "12" }]}>
             <Feather name="book-open" size={28} color={colors.coral} />
           </View>
-          <Text style={s.heroTitle}>{trip.title.toLowerCase()}</Text>
-          <Text variant="caption" style={s.heroSub}>
+          <Text style={[s.heroTitle, { color: colors.ink }]}>{trip.title.toLowerCase()}</Text>
+          <Text variant="caption" style={{ marginTop: 6, color: colors.stone, textAlign: "center" }}>
             your complete memory book is ready
           </Text>
         </View>
@@ -255,21 +256,22 @@ export default function MemoryOrderScreen() {
               key={p.id}
               style={({ pressed }) => [
                 s.planCard,
-                selected === p.id && s.planCardSelected,
+                { backgroundColor: colors.pearl, borderColor: colors.mist },
+                selected === p.id && { borderColor: colors.coral, backgroundColor: colors.coral + "06" },
                 pressed && { opacity: 0.85 },
               ]}
               onPress={() => setSelected(p.id)}
             >
               {p.tag && (
-                <View style={s.planTag}>
-                  <Text style={s.planTagText}>{p.tag}</Text>
+                <View style={[s.planTag, { backgroundColor: colors.coral }]}>
+                  <Text style={[s.planTagText, { color: colors.pearl }]}>{p.tag}</Text>
                 </View>
               )}
 
               {/* Radio */}
               <View style={s.planTop}>
-                <View style={s.planRadio}>
-                  {selected === p.id && <View style={s.planRadioInner} />}
+                <View style={[s.planRadio, { borderColor: colors.mist }]}>
+                  {selected === p.id && <View style={[s.planRadioInner, { backgroundColor: colors.coral }]} />}
                 </View>
                 <View style={s.planTitleRow}>
                   <Feather
@@ -277,11 +279,11 @@ export default function MemoryOrderScreen() {
                     size={16}
                     color={selected === p.id ? colors.coral : colors.stone}
                   />
-                  <Text style={[s.planTitle, selected === p.id && s.planTitleActive]}>
+                  <Text style={[s.planTitle, { color: colors.ink }, selected === p.id && { color: colors.coral }]}>
                     {p.title}
                   </Text>
                 </View>
-                <Text style={[s.planPrice, selected === p.id && s.planPriceActive]}>
+                <Text style={[s.planPrice, { color: colors.stone }, selected === p.id && { color: colors.coral }]}>
                   {p.price}
                 </Text>
               </View>
@@ -295,7 +297,7 @@ export default function MemoryOrderScreen() {
                       size={12}
                       color={selected === p.id ? colors.coral : colors.sand}
                     />
-                    <Text variant="caption" style={s.featureText}>{f}</Text>
+                    <Text variant="caption" style={{ color: colors.stone, fontSize: 12 }}>{f}</Text>
                   </View>
                 ))}
               </View>
@@ -305,7 +307,7 @@ export default function MemoryOrderScreen() {
 
         {/* What's included */}
         <View style={s.includesSection}>
-          <Text style={s.includesTitle}>what you get</Text>
+          <Text style={[s.includesTitle, { color: colors.ink }]}>what you get</Text>
           <View style={s.includesGrid}>
             {[
               { icon: "image" as const, label: "all your photos" },
@@ -314,10 +316,10 @@ export default function MemoryOrderScreen() {
               { icon: "bar-chart-2" as const, label: "trip stats" },
             ].map((item) => (
               <View key={item.label} style={s.includesItem}>
-                <View style={s.includesIconWrap}>
+                <View style={[s.includesIconWrap, { backgroundColor: colors.coral + "10" }]}>
                   <Feather name={item.icon} size={14} color={colors.coral} />
                 </View>
-                <Text variant="caption" style={s.includesLabel}>{item.label}</Text>
+                <Text variant="caption" style={{ fontSize: 10, color: colors.stone, textAlign: "center" }}>{item.label}</Text>
               </View>
             ))}
           </View>
@@ -327,9 +329,9 @@ export default function MemoryOrderScreen() {
       </ScrollView>
 
       {/* Bottom CTA */}
-      <View style={s.bottomBar}>
+      <View style={[s.bottomBar, { backgroundColor: colors.ivory, borderTopColor: colors.mist }]}>
         <TouchableOpacity
-          style={[s.payBtn, processing && s.payBtnDisabled]}
+          style={[s.payBtn, { backgroundColor: colors.ink }, processing && s.payBtnDisabled]}
           onPress={() => {
             if (needsShipping) {
               setShowShipping(true);
@@ -345,7 +347,7 @@ export default function MemoryOrderScreen() {
           ) : (
             <>
               <Feather name={needsShipping ? "truck" : "credit-card"} size={15} color={colors.pearl} />
-              <Text style={s.payBtnText}>
+              <Text style={[s.payBtnText, { color: colors.pearl }]}>
                 {needsShipping ? `continue · ${plan.price}` : `unlock · ${plan.price}`}
               </Text>
             </>
@@ -353,7 +355,7 @@ export default function MemoryOrderScreen() {
         </TouchableOpacity>
         <View style={s.secureRow}>
           <Feather name="lock" size={10} color={colors.sand} />
-          <Text variant="caption" style={s.secureText}>secure payment · cancel anytime</Text>
+          <Text variant="caption" style={{ fontSize: 10, color: colors.sand }}>secure payment · cancel anytime</Text>
         </View>
       </View>
     </Container>
@@ -372,7 +374,6 @@ const s = StyleSheet.create({
     marginTop: spacing.sm,
     marginBottom: spacing.md,
   },
-  headerLabel: { color: colors.stone },
   scroll: { paddingBottom: 40 },
 
   /* Hero */
@@ -381,7 +382,6 @@ const s = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: colors.coral + "12",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 14,
@@ -389,34 +389,21 @@ const s = StyleSheet.create({
   heroTitle: {
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 28,
-    color: colors.ink,
-    textAlign: "center",
-  },
-  heroSub: {
-    marginTop: 6,
-    color: colors.stone,
     textAlign: "center",
   },
 
   /* Plan cards */
   plansContainer: { gap: 12 },
   planCard: {
-    backgroundColor: colors.pearl,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: colors.mist,
     padding: 16,
     overflow: "hidden",
-  },
-  planCardSelected: {
-    borderColor: colors.coral,
-    backgroundColor: colors.coral + "06",
   },
   planTag: {
     position: "absolute",
     top: 0,
     right: 0,
-    backgroundColor: colors.coral,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderBottomLeftRadius: 8,
@@ -424,7 +411,6 @@ const s = StyleSheet.create({
   planTagText: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 9,
-    color: colors.pearl,
     letterSpacing: 0.5,
     textTransform: "uppercase",
   },
@@ -437,7 +423,6 @@ const s = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: colors.mist,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -446,7 +431,6 @@ const s = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: colors.coral,
   },
   planTitleRow: {
     flexDirection: "row",
@@ -457,15 +441,11 @@ const s = StyleSheet.create({
   planTitle: {
     fontFamily: "Inter_500Medium",
     fontSize: 15,
-    color: colors.ink,
   },
-  planTitleActive: { color: colors.coral },
   planPrice: {
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 26,
-    color: colors.stone,
   },
-  planPriceActive: { color: colors.coral },
   planFeatures: {
     marginTop: 12,
     marginLeft: 32,
@@ -476,7 +456,6 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  featureText: { color: colors.stone, fontSize: 12 },
 
   /* Includes */
   includesSection: {
@@ -486,7 +465,6 @@ const s = StyleSheet.create({
   includesTitle: {
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 18,
-    color: colors.ink,
     marginBottom: 16,
   },
   includesGrid: {
@@ -500,12 +478,10 @@ const s = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.coral + "10",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 6,
   },
-  includesLabel: { fontSize: 10, color: colors.stone, textAlign: "center" },
 
   /* Bottom bar */
   bottomBar: {
@@ -516,9 +492,7 @@ const s = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: 28,
     paddingTop: 12,
-    backgroundColor: colors.ivory,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.mist,
     alignItems: "center",
   },
   payBtn: {
@@ -526,7 +500,6 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: colors.ink,
     borderRadius: 999,
     paddingVertical: 15,
     paddingHorizontal: 32,
@@ -536,7 +509,6 @@ const s = StyleSheet.create({
   payBtnText: {
     fontFamily: "Inter_500Medium",
     fontSize: 14,
-    color: colors.pearl,
     letterSpacing: 0.3,
   },
   secureRow: {
@@ -545,7 +517,6 @@ const s = StyleSheet.create({
     gap: 4,
     marginTop: 8,
   },
-  secureText: { fontSize: 10, color: colors.sand },
 
   /* Shipping form */
   shippingScroll: { paddingBottom: 40 },
@@ -554,7 +525,6 @@ const s = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.coral + "12",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 14,
@@ -563,12 +533,10 @@ const s = StyleSheet.create({
   shippingTitle: {
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 24,
-    color: colors.ink,
     textAlign: "center",
   },
   shippingSub: {
     textAlign: "center",
-    color: colors.stone,
     marginBottom: spacing.xl,
     marginTop: 6,
   },
@@ -577,20 +545,16 @@ const s = StyleSheet.create({
   formLabel: {
     fontFamily: "Inter_500Medium",
     fontSize: 11,
-    color: colors.stone,
     letterSpacing: 0.5,
     textTransform: "uppercase",
     marginBottom: 6,
     marginLeft: 2,
   },
   formInput: {
-    backgroundColor: colors.pearl,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     padding: 14,
     fontFamily: "Inter_400Regular",
     fontSize: 14,
-    color: colors.ink,
   },
 });

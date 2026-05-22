@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { Text } from "../../features/design-system";
 import { useSubscriptionStore } from "../../features/subscription/store";
 import { PAID_PRICE } from "../../features/subscription/constants";
-import { colors } from "../../theme/colors";
+import { useColors } from "../../features/theme/ThemeProvider";
 import { spacing } from "../../theme/spacing";
 import { APP_NAME } from "../../theme/brand";
 
@@ -16,6 +16,7 @@ const FEATURES = [
 ];
 
 export default function PaywallScreen() {
+  const colors = useColors();
   const router = useRouter();
   const setTier = useSubscriptionStore((s) => s.setTier);
   const markPaywallSeen = useSubscriptionStore((s) => s.markPaywallSeen);
@@ -39,7 +40,7 @@ export default function PaywallScreen() {
 
   return (
     <ScrollView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.ivory }]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
@@ -48,7 +49,7 @@ export default function PaywallScreen() {
         <Text variant="display" style={styles.headline}>
           unlock everything
         </Text>
-        <Text variant="titleItalic" style={styles.subtitle}>
+        <Text variant="titleItalic" style={[styles.subtitle, { color: colors.stone }]}>
           plan beautifully, remember forever
         </Text>
       </View>
@@ -56,7 +57,7 @@ export default function PaywallScreen() {
       <View style={styles.features}>
         {FEATURES.map((f) => (
           <View key={f.title} style={styles.featureRow}>
-            <Text style={styles.featureIcon}>{f.icon}</Text>
+            <Text style={[styles.featureIcon, { color: colors.taupe }]}>{f.icon}</Text>
             <View style={styles.featureText}>
               <Text variant="body" style={styles.featureTitle}>
                 {f.title}
@@ -68,7 +69,7 @@ export default function PaywallScreen() {
       </View>
 
       <View style={styles.priceSection}>
-        <Text variant="title" style={styles.priceAmount}>
+        <Text variant="title" style={[styles.priceAmount, { color: colors.ink }]}>
           ${PAID_PRICE}
         </Text>
         <Text variant="caption" style={styles.priceLabel}>
@@ -76,7 +77,7 @@ export default function PaywallScreen() {
         </Text>
       </View>
 
-      <View style={styles.freeNote}>
+      <View style={[styles.freeNote, { backgroundColor: colors.mist }]}>
         <Text variant="caption" style={styles.freeNoteText}>
           the free plan includes 1 active trip, 10 activities per trip,{"\n"}
           and your most recent past trip — enough to start exploring.
@@ -84,27 +85,27 @@ export default function PaywallScreen() {
       </View>
 
       <TouchableOpacity
-        style={styles.unlockBtn}
+        style={[styles.unlockBtn, { backgroundColor: colors.ink }]}
         onPress={handleUnlock}
         activeOpacity={0.85}
       >
-        <Text variant="body" style={styles.unlockBtnText}>
+        <Text variant="body" style={[styles.unlockBtnText, { color: colors.ivory }]}>
           unlock — ${PAID_PRICE} once
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={styles.freeBtn}
+        style={[styles.freeBtn, { borderColor: colors.sand }]}
         onPress={handleStartFree}
         activeOpacity={0.85}
       >
-        <Text variant="body" style={styles.freeBtnText}>
+        <Text variant="body" style={[styles.freeBtnText, { color: colors.stone }]}>
           start free
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={handleRestore} activeOpacity={0.8}>
-        <Text variant="caption" style={styles.restore}>
+        <Text variant="caption" style={[styles.restore, { color: colors.stone }]}>
           restore purchases
         </Text>
       </TouchableOpacity>
@@ -115,7 +116,6 @@ export default function PaywallScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.ivory,
   },
   content: {
     paddingHorizontal: spacing.lg,
@@ -131,7 +131,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   subtitle: {
-    color: colors.stone,
     marginTop: spacing.xs,
     textAlign: "center",
   },
@@ -146,7 +145,6 @@ const styles = StyleSheet.create({
   },
   featureIcon: {
     fontSize: 18,
-    color: colors.taupe,
     width: 24,
     textAlign: "center",
     marginTop: 2,
@@ -164,13 +162,11 @@ const styles = StyleSheet.create({
   },
   priceAmount: {
     fontSize: 36,
-    color: colors.ink,
   },
   priceLabel: {
     marginTop: 4,
   },
   freeNote: {
-    backgroundColor: colors.mist,
     borderRadius: 10,
     padding: spacing.md,
     marginBottom: spacing.lg,
@@ -180,31 +176,26 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   unlockBtn: {
-    backgroundColor: colors.ink,
     borderRadius: 8,
     paddingVertical: 16,
     alignItems: "center",
     marginBottom: 12,
   },
   unlockBtnText: {
-    color: colors.ivory,
     fontFamily: "Inter_500Medium",
   },
   freeBtn: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.sand,
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
     marginBottom: spacing.lg,
   },
   freeBtnText: {
-    color: colors.stone,
     fontFamily: "Inter_500Medium",
   },
   restore: {
     textAlign: "center",
-    color: colors.stone,
     textDecorationLine: "underline",
   },
 });

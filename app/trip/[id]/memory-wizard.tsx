@@ -14,7 +14,7 @@ import { Image } from "expo-image";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../features/design-system";
 import { useTrip } from "../../../features/trips/hooks";
-import { colors } from "../../../theme/colors";
+import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
 
 const { width: SCREEN_W } = Dimensions.get("window");
@@ -33,9 +33,9 @@ const VIBES = [
 ];
 
 const COVERS = [
-  { id: "destination", label: "destination icon", desc: "illustrated cover with city name", preview: "🏛️" },
-  { id: "photo", label: "photo cover", desc: "your best photo, full bleed", preview: "📸" },
-  { id: "couple", label: "couple / romantic", desc: "names, date, elegant layout", preview: "💕" },
+  { id: "destination", label: "destination icon", desc: "illustrated cover with city name", preview: "\u{1F3DB}\u{FE0F}" },
+  { id: "photo", label: "photo cover", desc: "your best photo, full bleed", preview: "\u{1F4F8}" },
+  { id: "couple", label: "couple / romantic", desc: "names, date, elegant layout", preview: "\u{1F495}" },
 ];
 
 const STORIES = [
@@ -45,37 +45,11 @@ const STORIES = [
 ];
 
 /* ------------------------------------------------------------------ */
-/*  Selection chip                                                     */
-/* ------------------------------------------------------------------ */
-
-function Chip({
-  selected,
-  onPress,
-  children,
-}: {
-  selected: boolean;
-  onPress: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.chip,
-        selected && styles.chipSelected,
-        pressed && { opacity: 0.7 },
-      ]}
-      onPress={onPress}
-    >
-      {children}
-    </Pressable>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /*  Screen                                                             */
 /* ------------------------------------------------------------------ */
 
 export default function MemoryWizardScreen() {
+  const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { data: trip } = useTrip(id);
@@ -110,13 +84,13 @@ export default function MemoryWizardScreen() {
   if (!trip) return null;
 
   return (
-    <Container>
+    <Container logo>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
           <Feather name="chevron-left" size={20} color={colors.stone} />
         </TouchableOpacity>
-        <Text variant="eyebrow" style={styles.headerTitle}>create memory book</Text>
+        <Text variant="eyebrow" style={{ color: colors.stone }}>create memory book</Text>
         <View style={{ width: 20 }} />
       </View>
 
@@ -127,30 +101,39 @@ export default function MemoryWizardScreen() {
       >
         {/* Trip info */}
         <View style={styles.tripInfo}>
-          <Text style={styles.tripName}>{trip.title.toLowerCase()}</Text>
-          <Text variant="caption" style={styles.tripMeta}>
+          <Text style={[styles.tripName, { color: colors.ink }]}>{trip.title.toLowerCase()}</Text>
+          <Text variant="caption" style={{ marginTop: 6, color: colors.stone }}>
             {trip.trip_days.length} days · {trip.trip_days.flatMap((d) => d.trip_items).length} places
           </Text>
-          <Text style={styles.tripAiNote}>
+          <Text style={[styles.tripAiNote, { color: colors.stone }]}>
             AI will turn your photos, places & notes{"\n"}into a beautifully written memory book
           </Text>
         </View>
 
         {/* Step 1: Vibe */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.stepBadge}>
-              <Text style={styles.stepNum}>1</Text>
+          <View style={styles.sectionHeaderRow}>
+            <View style={[styles.stepBadge, { backgroundColor: colors.coral }]}>
+              <Text style={[styles.stepNum, { color: colors.pearl }]}>1</Text>
             </View>
-            <Text style={styles.sectionTitle}>choose your vibe</Text>
+            <Text style={[styles.sectionTitle, { color: colors.ink }]}>choose your vibe</Text>
           </View>
-          <Text variant="caption" style={styles.sectionHint}>
+          <Text variant="caption" style={[styles.sectionHint, { color: colors.stone }]}>
             this sets the overall aesthetic of your book
           </Text>
 
           <View style={styles.vibeGrid}>
             {VIBES.map((v) => (
-              <Chip key={v.id} selected={vibe === v.id} onPress={() => setVibe(v.id)}>
+              <Pressable
+                key={v.id}
+                style={({ pressed }) => [
+                  styles.chip,
+                  { backgroundColor: colors.pearl, borderColor: colors.mist },
+                  vibe === v.id && { borderColor: colors.coral, backgroundColor: colors.coral + "08" },
+                  pressed && { opacity: 0.7 },
+                ]}
+                onPress={() => setVibe(v.id)}
+              >
                 <View style={styles.vibeContent}>
                   <Feather
                     name={v.icon}
@@ -160,80 +143,93 @@ export default function MemoryWizardScreen() {
                   <Text
                     style={[
                       styles.vibeLabel,
-                      vibe === v.id && styles.vibeLabelSelected,
+                      { color: colors.ink },
+                      vibe === v.id && { color: colors.coral },
                     ]}
                   >
                     {v.label}
                   </Text>
-                  <Text variant="caption" style={styles.vibeDesc}>{v.desc}</Text>
+                  <Text variant="caption" style={{ fontSize: 11, color: colors.stone }}>{v.desc}</Text>
                 </View>
-              </Chip>
+              </Pressable>
             ))}
           </View>
         </View>
 
         {/* Step 2: Cover */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.stepBadge}>
-              <Text style={styles.stepNum}>2</Text>
+          <View style={styles.sectionHeaderRow}>
+            <View style={[styles.stepBadge, { backgroundColor: colors.coral }]}>
+              <Text style={[styles.stepNum, { color: colors.pearl }]}>2</Text>
             </View>
-            <Text style={styles.sectionTitle}>cover style</Text>
+            <Text style={[styles.sectionTitle, { color: colors.ink }]}>cover style</Text>
           </View>
 
           <View style={styles.coverGrid}>
             {COVERS.map((c) => (
-              <Chip key={c.id} selected={cover === c.id} onPress={() => setCover(c.id)}>
+              <Pressable
+                key={c.id}
+                style={({ pressed }) => [
+                  styles.chip,
+                  { backgroundColor: colors.pearl, borderColor: colors.mist },
+                  cover === c.id && { borderColor: colors.coral, backgroundColor: colors.coral + "08" },
+                  pressed && { opacity: 0.7 },
+                ]}
+                onPress={() => setCover(c.id)}
+              >
                 <View style={styles.coverContent}>
                   <Text style={styles.coverPreview}>{c.preview}</Text>
                   <Text
                     style={[
                       styles.coverLabel,
-                      cover === c.id && styles.coverLabelSelected,
+                      { color: colors.ink },
+                      cover === c.id && { color: colors.coral },
                     ]}
                   >
                     {c.label}
                   </Text>
-                  <Text variant="caption" style={styles.coverDesc}>{c.desc}</Text>
+                  <Text variant="caption" style={{ fontSize: 9, textAlign: "center", color: colors.stone }}>{c.desc}</Text>
                 </View>
-              </Chip>
+              </Pressable>
             ))}
           </View>
         </View>
 
         {/* Step 3: Story mode */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.stepBadge}>
-              <Text style={styles.stepNum}>3</Text>
+          <View style={styles.sectionHeaderRow}>
+            <View style={[styles.stepBadge, { backgroundColor: colors.coral }]}>
+              <Text style={[styles.stepNum, { color: colors.pearl }]}>3</Text>
             </View>
-            <Text style={styles.sectionTitle}>include stories?</Text>
+            <Text style={[styles.sectionTitle, { color: colors.ink }]}>include stories?</Text>
           </View>
 
           <View style={styles.storyList}>
-            {STORIES.map((s) => (
+            {STORIES.map((st) => (
               <Pressable
-                key={s.id}
+                key={st.id}
                 style={({ pressed }) => [
                   styles.storyRow,
-                  storyMode === s.id && styles.storyRowSelected,
+                  { backgroundColor: colors.pearl, borderColor: colors.mist },
+                  storyMode === st.id && { borderColor: colors.coral, backgroundColor: colors.coral + "08" },
                   pressed && { opacity: 0.7 },
                 ]}
-                onPress={() => setStoryMode(s.id)}
+                onPress={() => setStoryMode(st.id)}
               >
-                <View style={styles.storyRadio}>
-                  {storyMode === s.id && <View style={styles.storyRadioInner} />}
+                <View style={[styles.storyRadio, { borderColor: colors.mist }]}>
+                  {storyMode === st.id && <View style={[styles.storyRadioInner, { backgroundColor: colors.coral }]} />}
                 </View>
                 <View style={styles.storyText}>
                   <Text
                     style={[
                       styles.storyLabel,
-                      storyMode === s.id && styles.storyLabelSelected,
+                      { color: colors.ink },
+                      storyMode === st.id && { color: colors.coral },
                     ]}
                   >
-                    {s.label}
+                    {st.label}
                   </Text>
-                  <Text variant="caption">{s.desc}</Text>
+                  <Text variant="caption">{st.desc}</Text>
                 </View>
               </Pressable>
             ))}
@@ -242,18 +238,18 @@ export default function MemoryWizardScreen() {
 
         {/* Step 4: Notes */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.stepBadge}>
-              <Text style={styles.stepNum}>4</Text>
+          <View style={styles.sectionHeaderRow}>
+            <View style={[styles.stepBadge, { backgroundColor: colors.coral }]}>
+              <Text style={[styles.stepNum, { color: colors.pearl }]}>4</Text>
             </View>
-            <Text style={styles.sectionTitle}>any notes for AI?</Text>
+            <Text style={[styles.sectionTitle, { color: colors.ink }]}>any notes for AI?</Text>
           </View>
-          <Text variant="caption" style={styles.sectionHint}>
+          <Text variant="caption" style={[styles.sectionHint, { color: colors.stone }]}>
             optional — tell AI anything special to include
           </Text>
 
           <TextInput
-            style={styles.notesInput}
+            style={[styles.notesInput, { backgroundColor: colors.pearl, borderColor: colors.mist, color: colors.ink }]}
             placeholder="e.g. include our anniversary dinner on day 3, mention the surprise sunset proposal…"
             placeholderTextColor={colors.sand}
             value={notes}
@@ -265,12 +261,12 @@ export default function MemoryWizardScreen() {
 
         {/* Summary */}
         {canGenerate && (
-          <View style={styles.summaryCard}>
+          <View style={[styles.summaryCard, { backgroundColor: colors.coral + "0A", borderColor: colors.coral + "30" }]}>
             <Feather name="book" size={16} color={colors.coral} />
             <View style={styles.summaryText}>
-              <Text style={styles.summaryTitle}>your book</Text>
+              <Text style={[styles.summaryTitle, { color: colors.ink }]}>your book</Text>
               <Text variant="caption">
-                {VIBES.find((v) => v.id === vibe)?.label} · {COVERS.find((c) => c.id === cover)?.label} · {STORIES.find((s) => s.id === storyMode)?.label}
+                {VIBES.find((v) => v.id === vibe)?.label} · {COVERS.find((c) => c.id === cover)?.label} · {STORIES.find((st) => st.id === storyMode)?.label}
               </Text>
             </View>
           </View>
@@ -280,24 +276,24 @@ export default function MemoryWizardScreen() {
       </ScrollView>
 
       {/* Generate button */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { backgroundColor: colors.ivory, borderTopColor: colors.mist }]}>
         <TouchableOpacity
-          style={[styles.generateBtn, !canGenerate && styles.generateBtnDisabled]}
+          style={[styles.generateBtn, { backgroundColor: colors.ink }, !canGenerate && styles.generateBtnDisabled]}
           onPress={handleGenerate}
           activeOpacity={0.85}
           disabled={!canGenerate || generating}
         >
           {generating ? (
-            <Text style={styles.generateBtnText}>creating your book…</Text>
+            <Text style={[styles.generateBtnText, { color: colors.pearl }]}>creating your book…</Text>
           ) : (
             <>
               <Feather name="star" size={16} color={colors.pearl} />
-              <Text style={styles.generateBtnText}>generate memory book</Text>
+              <Text style={[styles.generateBtnText, { color: colors.pearl }]}>generate memory book</Text>
             </>
           )}
         </TouchableOpacity>
         {!canGenerate && (
-          <Text variant="caption" style={styles.bottomHint}>
+          <Text variant="caption" style={{ marginTop: 8, fontSize: 11, color: colors.sand }}>
             select vibe, cover & story mode to continue
           </Text>
         )}
@@ -318,9 +314,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     marginBottom: spacing.md,
   },
-  headerTitle: {
-    color: colors.stone,
-  },
   scrollContent: {
     paddingBottom: 40,
   },
@@ -334,18 +327,12 @@ const styles = StyleSheet.create({
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 32,
     lineHeight: 36,
-    color: colors.ink,
     textAlign: "center",
-  },
-  tripMeta: {
-    marginTop: 6,
-    color: colors.stone,
   },
   tripAiNote: {
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 15,
     lineHeight: 22,
-    color: colors.stone,
     textAlign: "center",
     marginTop: 14,
     paddingHorizontal: 20,
@@ -355,7 +342,7 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: spacing.xl,
   },
-  sectionHeader: {
+  sectionHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
@@ -365,37 +352,27 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: colors.coral,
     alignItems: "center",
     justifyContent: "center",
   },
   stepNum: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 11,
-    color: colors.pearl,
   },
   sectionTitle: {
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 20,
-    color: colors.ink,
   },
   sectionHint: {
-    color: colors.stone,
     marginBottom: 14,
     marginLeft: 32,
   },
 
   /* Chip */
   chip: {
-    backgroundColor: colors.pearl,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: colors.mist,
     overflow: "hidden",
-  },
-  chipSelected: {
-    borderColor: colors.coral,
-    backgroundColor: colors.coral + "08",
   },
 
   /* Vibe grid */
@@ -412,15 +389,7 @@ const styles = StyleSheet.create({
   vibeLabel: {
     fontFamily: "Inter_500Medium",
     fontSize: 13,
-    color: colors.ink,
     marginTop: 4,
-  },
-  vibeLabelSelected: {
-    color: colors.coral,
-  },
-  vibeDesc: {
-    fontSize: 11,
-    color: colors.stone,
   },
 
   /* Cover grid */
@@ -440,16 +409,7 @@ const styles = StyleSheet.create({
   coverLabel: {
     fontFamily: "Inter_500Medium",
     fontSize: 11,
-    color: colors.ink,
     textAlign: "center",
-  },
-  coverLabelSelected: {
-    color: colors.coral,
-  },
-  coverDesc: {
-    fontSize: 9,
-    textAlign: "center",
-    color: colors.stone,
   },
 
   /* Story rows */
@@ -460,22 +420,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: colors.pearl,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: colors.mist,
     padding: 14,
-  },
-  storyRowSelected: {
-    borderColor: colors.coral,
-    backgroundColor: colors.coral + "08",
   },
   storyRadio: {
     width: 20,
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: colors.mist,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -483,7 +436,6 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: colors.coral,
   },
   storyText: {
     flex: 1,
@@ -492,23 +444,16 @@ const styles = StyleSheet.create({
   storyLabel: {
     fontFamily: "Inter_500Medium",
     fontSize: 14,
-    color: colors.ink,
-  },
-  storyLabelSelected: {
-    color: colors.coral,
   },
 
   /* Notes */
   notesInput: {
-    backgroundColor: colors.pearl,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     padding: 14,
     minHeight: 90,
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 16,
-    color: colors.ink,
     lineHeight: 22,
   },
 
@@ -517,10 +462,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: colors.coral + "0A",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.coral + "30",
     padding: 14,
   },
   summaryText: {
@@ -530,7 +473,6 @@ const styles = StyleSheet.create({
   summaryTitle: {
     fontFamily: "Inter_500Medium",
     fontSize: 13,
-    color: colors.ink,
   },
 
   /* Bottom bar */
@@ -542,9 +484,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: 28,
     paddingTop: 12,
-    backgroundColor: colors.ivory,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.mist,
     alignItems: "center",
   },
   generateBtn: {
@@ -552,7 +492,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: colors.ink,
     borderRadius: 999,
     paddingVertical: 15,
     paddingHorizontal: 32,
@@ -564,12 +503,6 @@ const styles = StyleSheet.create({
   generateBtnText: {
     fontFamily: "Inter_500Medium",
     fontSize: 14,
-    color: colors.pearl,
     letterSpacing: 0.3,
-  },
-  bottomHint: {
-    marginTop: 8,
-    fontSize: 11,
-    color: colors.sand,
   },
 });

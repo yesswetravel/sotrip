@@ -1,7 +1,7 @@
 import { StyleSheet, View, TouchableOpacity, Dimensions } from "react-native";
 import { Image } from "expo-image";
 import { Text } from "../../design-system";
-import { colors } from "../../../theme/colors";
+import { useColors } from "../../theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
 import type { Photo } from "../../../types/photos";
 
@@ -17,18 +17,19 @@ interface Props {
 }
 
 export default function PhotoGrid({ photos, onPhotoPress, onAddPress }: Props) {
+  const colors = useColors();
   return (
     <View style={styles.section}>
       <View style={styles.header}>
         <Text variant="eyebrow">photos</Text>
         <TouchableOpacity onPress={onAddPress} activeOpacity={0.7}>
-          <Text variant="caption" style={styles.addLink}>+ add</Text>
+          <Text variant="caption" style={[styles.addLink, { color: colors.stone }]}>+ add</Text>
         </TouchableOpacity>
       </View>
 
       {photos.length === 0 ? (
-        <TouchableOpacity style={styles.empty} onPress={onAddPress} activeOpacity={0.8}>
-          <Text variant="titleItalic" style={styles.emptyText}>
+        <TouchableOpacity style={[styles.empty, { borderColor: colors.mist, backgroundColor: colors.pearl }]} onPress={onAddPress} activeOpacity={0.8}>
+          <Text variant="titleItalic" style={[styles.emptyText, { color: colors.stone }]}>
             tap to add photos
           </Text>
         </TouchableOpacity>
@@ -64,9 +65,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: spacing.sm,
   },
-  addLink: {
-    color: colors.stone,
-  },
+  addLink: {},
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -81,14 +80,11 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     borderStyle: "dashed",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.pearl,
   },
   emptyText: {
-    color: colors.stone,
     fontSize: 15,
   },
 });

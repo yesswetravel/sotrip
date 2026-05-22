@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Animated, StyleSheet, type ViewStyle } from "react-native";
-import { colors } from "../../theme/colors";
+import { useColors } from "../theme/ThemeProvider";
 
 interface SkeletonProps {
   width: number | string;
@@ -15,6 +15,7 @@ export default function Skeleton({
   borderRadius = 8,
   style,
 }: SkeletonProps) {
+  const colors = useColors();
   const pulse = useRef(new Animated.Value(0.3)).current;
 
   useEffect(() => {

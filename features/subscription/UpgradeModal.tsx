@@ -1,7 +1,7 @@
 import { Modal, StyleSheet, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Text } from "../design-system";
-import { colors } from "../../theme/colors";
+import { useColors } from "../theme/ThemeProvider";
 import { spacing } from "../../theme/spacing";
 import { PAID_PRICE } from "./constants";
 
@@ -22,6 +22,7 @@ export default function UpgradeModal({
   limitMessage,
   onClose,
 }: UpgradeModalProps) {
+  const colors = useColors();
   const router = useRouter();
 
   function handleUpgrade() {
@@ -32,22 +33,22 @@ export default function UpgradeModal({
   return (
     <Modal visible={visible} animationType="fade" transparent>
       <View style={styles.overlay}>
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.ivory }]}>
           <Text variant="title" style={styles.heading}>
             you've reached the limit
           </Text>
 
-          <Text variant="body" style={styles.message}>
+          <Text variant="body" style={[styles.message, { color: colors.stone }]}>
             {limitMessage}
           </Text>
 
           <View style={styles.benefits}>
             {BENEFITS.map((b) => (
               <View key={b} style={styles.benefitRow}>
-                <Text variant="body" style={styles.check}>
+                <Text variant="body" style={[styles.check, { color: colors.taupe }]}>
                   +
                 </Text>
-                <Text variant="body" style={styles.benefitText}>
+                <Text variant="body" style={[styles.benefitText, { color: colors.ink }]}>
                   {b}
                 </Text>
               </View>
@@ -59,17 +60,17 @@ export default function UpgradeModal({
           </Text>
 
           <TouchableOpacity
-            style={styles.upgradeBtn}
+            style={[styles.upgradeBtn, { backgroundColor: colors.ink }]}
             onPress={handleUpgrade}
             activeOpacity={0.85}
           >
-            <Text variant="body" style={styles.upgradeBtnText}>
+            <Text variant="body" style={[styles.upgradeBtnText, { color: colors.ivory }]}>
               upgrade
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={onClose} activeOpacity={0.8}>
-            <Text variant="caption" style={styles.later}>
+            <Text variant="caption" style={[styles.later, { color: colors.stone }]}>
               maybe later
             </Text>
           </TouchableOpacity>
@@ -88,7 +89,6 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   card: {
-    backgroundColor: colors.ivory,
     borderRadius: 16,
     padding: spacing.lg,
     width: "100%",
@@ -101,7 +101,6 @@ const styles = StyleSheet.create({
   },
   message: {
     textAlign: "center",
-    color: colors.stone,
     marginBottom: spacing.lg,
   },
   benefits: {
@@ -115,12 +114,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   check: {
-    color: colors.taupe,
     fontFamily: "Inter_500Medium",
     fontSize: 16,
   },
   benefitText: {
-    color: colors.ink,
     flex: 1,
   },
   price: {
@@ -128,7 +125,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   upgradeBtn: {
-    backgroundColor: colors.ink,
     borderRadius: 8,
     paddingVertical: 14,
     paddingHorizontal: spacing.xl,
@@ -137,11 +133,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   upgradeBtnText: {
-    color: colors.ivory,
     fontFamily: "Inter_500Medium",
   },
   later: {
-    color: colors.stone,
     paddingVertical: 8,
   },
 });

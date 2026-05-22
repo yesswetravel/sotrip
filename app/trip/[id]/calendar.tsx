@@ -16,7 +16,7 @@ import { Image } from "expo-image";
 import { Container, Text } from "../../../features/design-system";
 import { useTrip } from "../../../features/trips/hooks";
 import { useTripMembers } from "../../../features/couple/hooks";
-import { colors } from "../../../theme/colors";
+import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
 import type { TripItem } from "../../../types/database";
 
@@ -28,20 +28,6 @@ const ROLLER_PAD_H = (SCREEN_W - ROLLER_ITEM_W) / 2;
 /* ------------------------------------------------------------------ */
 /*  Category helpers                                                    */
 /* ------------------------------------------------------------------ */
-
-const CATEGORY_COLORS: Record<string, string> = {
-  food: colors.coral,
-  culture: colors.teal,
-  nature: colors.gold,
-  shopping: "#8B7BB5",
-  nightlife: colors.ink,
-  transport: colors.stone,
-};
-
-function getCategoryColor(cat: string | null): string {
-  if (!cat) return colors.stone;
-  return CATEGORY_COLORS[cat.toLowerCase()] ?? colors.stone;
-}
 
 function getTimeOfDay(time: string | null): "morning" | "afternoon" | "evening" {
   if (!time) return "morning";
@@ -70,13 +56,29 @@ function DayCard({
   items,
   isActive,
   onPress,
+  colors,
 }: {
   dayNumber: number;
   date: string;
   items: TripItem[];
   isActive: boolean;
   onPress: () => void;
+  colors: ReturnType<typeof useColors>;
 }) {
+  const CATEGORY_COLORS: Record<string, string> = {
+    food: colors.coral,
+    culture: colors.teal,
+    nature: colors.gold,
+    shopping: "#8B7BB5",
+    nightlife: colors.ink,
+    transport: colors.stone,
+  };
+
+  function getCategoryColor(cat: string | null): string {
+    if (!cat) return colors.stone;
+    return CATEGORY_COLORS[cat.toLowerCase()] ?? colors.stone;
+  }
+
   const d = new Date(date + "T00:00:00");
   const dateNum = d.getDate();
   const weekday = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][d.getDay()];
@@ -91,17 +93,21 @@ function DayCard({
 
   return (
     <TouchableOpacity
-      style={[styles.dayCard, isActive && styles.dayCardActive]}
+      style={[
+        styles.dayCard,
+        { borderColor: colors.mist, backgroundColor: colors.pearl },
+        isActive && { backgroundColor: colors.ink, borderColor: colors.ink },
+      ]}
       onPress={onPress}
       activeOpacity={0.7}
     >
       <Text
         variant="caption"
-        style={[styles.dayLabel, isActive && styles.dayLabelActive]}
+        style={[styles.dayLabel, { color: colors.stone }, isActive && { color: colors.sand }]}
       >
         day {dayNumber}
       </Text>
-      <Text style={[styles.dayNumber, isActive && styles.dayNumberActive]}>
+      <Text style={[styles.dayNumber, { color: colors.ink }, isActive && { color: colors.pearl }]}>
         {dateNum}
       </Text>
       <View style={styles.dayDots}>
@@ -120,7 +126,7 @@ function DayCard({
         ))}
       </View>
       <Text
-        style={[styles.dayWeekday, isActive && styles.dayWeekdayActive]}
+        style={[styles.dayWeekday, { color: colors.stone }, isActive && { color: "rgba(255,255,255,0.5)" }]}
       >
         {weekday}
       </Text>
@@ -136,26 +142,36 @@ function TimelineItem({
   item,
   isLast,
   members,
+  colors,
 }: {
   item: TripItem;
   isLast: boolean;
   members: { display_name: string; avatar_color: string }[];
+  colors: ReturnType<typeof useColors>;
 }) {
-  const catColor = getCategoryColor(item.category);
+  const CATEGORY_COLORS: Record<string, string> = {
+    food: colors.coral,
+    culture: colors.teal,
+    nature: colors.gold,
+    shopping: "#8B7BB5",
+    nightlife: colors.ink,
+    transport: colors.stone,
+  };
+  const catColor = CATEGORY_COLORS[item.category?.toLowerCase() ?? ""] ?? colors.stone;
 
   return (
     <View style={styles.timelineItem}>
       <View style={styles.timelineTrack}>
         <View style={[styles.timelineDot, { backgroundColor: catColor }]} />
-        {!isLast && <View style={styles.timelineLine} />}
+        {!isLast && <View style={[styles.timelineLine, { backgroundColor: colors.mist }]} />}
       </View>
-      <View style={styles.activityCard}>
+      <View style={[styles.activityCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
         {item.time && (
-          <Text style={styles.activityTime}>{formatTime12(item.time)}</Text>
+          <Text style={[styles.activityTime, { color: colors.stone }]}>{formatTime12(item.time)}</Text>
         )}
-        <Text style={styles.activityTitle}>{item.title}</Text>
+        <Text style={[styles.activityTitle, { color: colors.ink }]}>{item.title}</Text>
         {item.location_name && (
-          <Text style={styles.activityLocation}>{item.location_name}</Text>
+          <Text style={[styles.activityLocation, { color: colors.stone }]}>{item.location_name}</Text>
         )}
         {members.length > 0 && (
           <View style={styles.activityPeople}>
@@ -172,7 +188,7 @@ function TimelineItem({
                 </Text>
               </View>
             ))}
-            <Text style={styles.activityPeopleLabel}>
+            <Text style={[styles.activityPeopleLabel, { color: colors.stone }]}>
               {members.length === 1
                 ? members[0].display_name
                 : `${members.length} going`}
@@ -192,15 +208,17 @@ function TimeSection({
   label,
   items,
   allMembers,
+  colors,
 }: {
   label: string;
   items: TripItem[];
   allMembers: { id: string; display_name: string; avatar_color: string }[];
+  colors: ReturnType<typeof useColors>;
 }) {
   if (items.length === 0) return null;
   return (
     <View style={styles.timeSection}>
-      <Text style={styles.timeSectionLabel}>{label}</Text>
+      <Text style={[styles.timeSectionLabel, { color: colors.stone }]}>{label}</Text>
       {items.map((item, index) => {
         const tagged = (item.assigned_to ?? [])
           .map((mid) => allMembers.find((m) => m.id === mid))
@@ -211,6 +229,7 @@ function TimeSection({
             item={item}
             isLast={index === items.length - 1}
             members={tagged}
+            colors={colors}
           />
         );
       })}
@@ -226,10 +245,12 @@ function DateRoller({
   days,
   selectedIndex,
   onSelect,
+  colors,
 }: {
   days: { dayNumber: number; date: string }[];
   selectedIndex: number;
   onSelect: (dayNumber: number) => void;
+  colors: ReturnType<typeof useColors>;
 }) {
   const flatRef = useRef<FlatList>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -282,8 +303,8 @@ function DateRoller({
         <Animated.View
           style={[styles.rollerItem, { transform: [{ scale }], opacity }]}
         >
-          <Text style={styles.rollerDateNum}>{dateNum}</Text>
-          <Text style={styles.rollerWeekday}>{weekday}</Text>
+          <Text style={[styles.rollerDateNum, { color: colors.ink }]}>{dateNum}</Text>
+          <Text style={[styles.rollerWeekday, { color: colors.stone }]}>{weekday}</Text>
         </Animated.View>
       </TouchableOpacity>
     );
@@ -321,6 +342,7 @@ function DateRoller({
 /* ------------------------------------------------------------------ */
 
 export default function CalendarTimelineScreen() {
+  const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { data: trip } = useTrip(id);
@@ -381,7 +403,7 @@ export default function CalendarTimelineScreen() {
   if (!trip) return null;
 
   return (
-    <Container>
+    <Container logo>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
@@ -394,22 +416,22 @@ export default function CalendarTimelineScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Trip Info */}
         <View style={styles.tripInfo}>
-          <Text style={styles.tripName}>{trip.title}</Text>
-          <Text style={styles.tripDates}>
+          <Text style={[styles.tripName, { color: colors.ink }]}>{trip.title}</Text>
+          <Text style={[styles.tripDates, { color: colors.stone }]}>
             {formatDateRange(trip.start_date, trip.end_date)}
           </Text>
         </View>
 
         {/* Shared With */}
         <View style={styles.sharedBar}>
-          <Text style={styles.sharedLabel}>shared with</Text>
+          <Text style={[styles.sharedLabel, { color: colors.stone }]}>shared with</Text>
           <View style={styles.avatarStack}>
             {allMembers.map((m, i) => (
               <View
                 key={i}
                 style={[
                   styles.sharedAvatar,
-                  { backgroundColor: m.avatar_color, marginLeft: i > 0 ? -6 : 0 },
+                  { backgroundColor: m.avatar_color, marginLeft: i > 0 ? -6 : 0, borderColor: colors.ivory },
                 ]}
               >
                 <Text style={styles.sharedAvatarText}>
@@ -428,12 +450,13 @@ export default function CalendarTimelineScreen() {
           }))}
           selectedIndex={selectedDay - 1}
           onSelect={setSelectedDay}
+          colors={colors}
         />
 
         {/* Day Hero Card */}
-        <View style={styles.dayHero}>
+        <View style={[styles.dayHero, { backgroundColor: colors.ink }]}>
           <View style={styles.dayHeroOverlay}>
-            <Text style={styles.dayHeroTitle}>
+            <Text style={[styles.dayHeroTitle, { color: colors.pearl }]}>
               day {selectedDay}
               {selectedDayData?.title ? ` — ${selectedDayData.title}` : ""}
             </Text>
@@ -448,31 +471,31 @@ export default function CalendarTimelineScreen() {
 
         {/* Day Notes */}
         {selectedDayData?.notes && (
-          <View style={styles.dayNote}>
+          <View style={[styles.dayNote, { backgroundColor: colors.gold + "10", borderColor: colors.gold + "25" }]}>
             <Feather name="bookmark" size={14} color={colors.gold} />
-            <Text style={styles.dayNoteText}>{selectedDayData.notes}</Text>
+            <Text style={[styles.dayNoteText, { color: colors.stone }]}>{selectedDayData.notes}</Text>
           </View>
         )}
 
         {/* Timeline */}
         <View style={styles.timeline}>
-          <TimeSection label="morning" items={grouped.morning} allMembers={allMembers} />
-          <TimeSection label="afternoon" items={grouped.afternoon} allMembers={allMembers} />
-          <TimeSection label="evening" items={grouped.evening} allMembers={allMembers} />
+          <TimeSection label="morning" items={grouped.morning} allMembers={allMembers} colors={colors} />
+          <TimeSection label="afternoon" items={grouped.afternoon} allMembers={allMembers} colors={colors} />
+          <TimeSection label="evening" items={grouped.evening} allMembers={allMembers} colors={colors} />
         </View>
 
         {/* Empty state */}
         {totalItems === 0 && (
           <View style={styles.emptyState}>
             <Feather name="calendar" size={24} color={colors.sand} />
-            <Text style={styles.emptyText}>no activities planned yet</Text>
+            <Text style={[styles.emptyText, { color: colors.stone }]}>no activities planned yet</Text>
             <TouchableOpacity
-              style={styles.addBtn}
+              style={[styles.addBtn, { backgroundColor: colors.coral }]}
               onPress={() => router.push(`/trip/${id}/day/${selectedDay}`)}
               activeOpacity={0.7}
             >
               <Feather name="plus" size={14} color={colors.pearl} />
-              <Text style={styles.addBtnText}>add activities</Text>
+              <Text style={[styles.addBtnText, { color: colors.pearl }]}>add activities</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -504,11 +527,9 @@ const styles = StyleSheet.create({
   tripName: {
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 26,
-    color: colors.ink,
   },
   tripDates: {
     fontSize: 11,
-    color: colors.stone,
     marginTop: 4,
     letterSpacing: 0.3,
     fontFamily: "Inter_400Regular",
@@ -526,7 +547,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     textTransform: "uppercase",
     letterSpacing: 1.2,
-    color: colors.stone,
     fontFamily: "Inter_600SemiBold",
   },
   avatarStack: {
@@ -539,7 +559,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
-    borderColor: colors.ivory,
   },
   sharedAvatarText: {
     fontFamily: "Inter_600SemiBold",
@@ -560,31 +579,17 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: colors.mist,
-    backgroundColor: colors.pearl,
-  },
-  dayCardActive: {
-    backgroundColor: colors.ink,
-    borderColor: colors.ink,
   },
   dayLabel: {
     fontSize: 8,
     textTransform: "uppercase",
     letterSpacing: 0.8,
-    color: colors.stone,
     fontFamily: "Inter_600SemiBold",
-  },
-  dayLabelActive: {
-    color: colors.sand,
   },
   dayNumber: {
     fontFamily: "CormorantGaramond_500Medium",
     fontSize: 24,
-    color: colors.ink,
     marginVertical: 1,
-  },
-  dayNumberActive: {
-    color: colors.pearl,
   },
   dayDots: {
     flexDirection: "row",
@@ -601,11 +606,7 @@ const styles = StyleSheet.create({
     fontSize: 7,
     textTransform: "uppercase",
     letterSpacing: 0.6,
-    color: colors.stone,
     fontFamily: "Inter_400Regular",
-  },
-  dayWeekdayActive: {
-    color: "rgba(255,255,255,0.5)",
   },
 
   /* Day hero */
@@ -614,7 +615,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: "hidden",
     height: 100,
-    backgroundColor: colors.ink,
     justifyContent: "flex-end",
     marginBottom: spacing.md,
   },
@@ -625,7 +625,6 @@ const styles = StyleSheet.create({
   dayHeroTitle: {
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 20,
-    color: colors.pearl,
   },
   dayHeroDate: {
     fontSize: 10,
@@ -657,15 +656,12 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.lg,
     marginBottom: spacing.md,
     padding: 14,
-    backgroundColor: colors.gold + "10",
     borderWidth: 1,
-    borderColor: colors.gold + "25",
     borderRadius: 14,
   },
   dayNoteText: {
     flex: 1,
     fontSize: 12,
-    color: colors.stone,
     lineHeight: 18,
     fontStyle: "italic",
     fontFamily: "Inter_400Regular",
@@ -682,7 +678,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     textTransform: "uppercase",
     letterSpacing: 1.5,
-    color: colors.stone,
     fontFamily: "Inter_600SemiBold",
     paddingLeft: 28,
     marginBottom: 12,
@@ -707,23 +702,19 @@ const styles = StyleSheet.create({
   timelineLine: {
     width: 1.5,
     flex: 1,
-    backgroundColor: colors.mist,
     marginTop: 4,
   },
 
   /* Activity card */
   activityCard: {
     flex: 1,
-    backgroundColor: colors.pearl,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     borderRadius: 14,
     padding: 14,
     marginLeft: 10,
   },
   activityTime: {
     fontSize: 10,
-    color: colors.stone,
     fontFamily: "Inter_500Medium",
     letterSpacing: 0.5,
     marginBottom: 4,
@@ -731,12 +722,10 @@ const styles = StyleSheet.create({
   activityTitle: {
     fontFamily: "Inter_500Medium",
     fontSize: 14,
-    color: colors.ink,
     marginBottom: 2,
   },
   activityLocation: {
     fontSize: 11,
-    color: colors.stone,
     fontFamily: "Inter_400Regular",
   },
 
@@ -760,7 +749,6 @@ const styles = StyleSheet.create({
   },
   activityPeopleLabel: {
     fontSize: 9,
-    color: colors.stone,
     marginLeft: 6,
     fontFamily: "Inter_400Regular",
   },
@@ -773,14 +761,12 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 13,
-    color: colors.stone,
     fontFamily: "Inter_400Regular",
   },
   addBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: colors.coral,
     borderRadius: 999,
     paddingVertical: 10,
     paddingHorizontal: 18,
@@ -788,7 +774,6 @@ const styles = StyleSheet.create({
   },
   addBtnText: {
     fontSize: 12,
-    color: colors.pearl,
     fontFamily: "Inter_500Medium",
   },
 
@@ -806,14 +791,12 @@ const styles = StyleSheet.create({
   rollerDateNum: {
     fontFamily: "CormorantGaramond_500Medium",
     fontSize: 24,
-    color: colors.ink,
     lineHeight: 28,
   },
   rollerWeekday: {
     fontSize: 8,
     textTransform: "uppercase" as const,
     letterSpacing: 0.8,
-    color: colors.stone,
     fontFamily: "Inter_500Medium",
     marginTop: 2,
   },

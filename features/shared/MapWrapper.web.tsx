@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { StyleSheet, View } from "react-native";
 import { Text } from "../design-system";
-import { colors } from "../../theme/colors";
+import { useColors } from "../theme/ThemeProvider";
 
 const GMAP_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? "";
 
@@ -18,6 +18,7 @@ interface Props {
 }
 
 export default function MapWrapper({ pins }: Props) {
+  const colors = useColors();
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null);
 
@@ -108,7 +109,7 @@ export default function MapWrapper({ pins }: Props) {
   if (!GMAP_KEY) {
     return (
       <View style={styles.empty}>
-        <Text variant="titleItalic" style={styles.emptyText}>
+        <Text variant="titleItalic" style={[styles.emptyText, { color: colors.stone }]}>
           map requires API key
         </Text>
       </View>
@@ -118,10 +119,10 @@ export default function MapWrapper({ pins }: Props) {
   if (pins.length === 0) {
     return (
       <View style={styles.empty}>
-        <Text variant="titleItalic" style={styles.emptyText}>
+        <Text variant="titleItalic" style={[styles.emptyText, { color: colors.stone }]}>
           no locations yet
         </Text>
-        <Text variant="caption" style={styles.hint}>
+        <Text variant="caption" style={[styles.hint, { color: colors.taupe }]}>
           add locations to your plans and they'll appear here
         </Text>
       </View>
@@ -152,10 +153,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
   },
-  emptyText: {
-    color: colors.stone,
-  },
-  hint: {
-    color: colors.taupe,
-  },
+  emptyText: {},
+  hint: {},
 });

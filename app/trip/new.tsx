@@ -15,7 +15,7 @@ import { useToast } from "../../features/shared/toast-context";
 import { useCreateTrip, useTrips } from "../../features/trips/hooks";
 import { useSession } from "../../lib/use-session";
 import { useCanCreateTrip } from "../../features/subscription/hooks";
-import { colors } from "../../theme/colors";
+import { useColors } from "../../features/theme/ThemeProvider";
 import { spacing } from "../../theme/spacing";
 
 function formatDate(dateStr: string): string {
@@ -24,6 +24,7 @@ function formatDate(dateStr: string): string {
 }
 
 export default function NewTripScreen() {
+  const colors = useColors();
   const { session } = useSession();
   const router = useRouter();
   const createTrip = useCreateTrip();
@@ -116,7 +117,7 @@ export default function NewTripScreen() {
   }
 
   return (
-    <Container>
+    <Container logo>
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -124,7 +125,7 @@ export default function NewTripScreen() {
       >
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text variant="body" style={styles.cancel}>cancel</Text>
+            <Text variant="body" style={[styles.cancel, { color: colors.stone }]}>cancel</Text>
           </TouchableOpacity>
         </View>
 
@@ -132,7 +133,7 @@ export default function NewTripScreen() {
 
         <View style={styles.fields}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { borderColor: colors.sand, color: colors.ink, backgroundColor: colors.pearl }]}
             placeholder="where are you going?"
             placeholderTextColor={colors.stone}
             value={title}
@@ -140,20 +141,20 @@ export default function NewTripScreen() {
             autoFocus
           />
           <TextInput
-            style={styles.input}
+            style={[styles.input, { borderColor: colors.sand, color: colors.ink, backgroundColor: colors.pearl }]}
             placeholder="city or region"
             placeholderTextColor={colors.stone}
             value={destination}
             onChangeText={setDestination}
           />
           <TouchableOpacity
-            style={styles.dateButton}
+            style={[styles.dateButton, { borderColor: colors.sand, backgroundColor: colors.pearl }]}
             onPress={() => setShowCalendar(true)}
             activeOpacity={0.8}
           >
             <Text
               variant="body"
-              style={startDate ? styles.dateText : styles.datePlaceholder}
+              style={startDate ? { color: colors.ink } : { color: colors.stone }}
             >
               {startDate && endDate
                 ? `${formatDate(startDate)} — ${formatDate(endDate)}`
@@ -163,7 +164,7 @@ export default function NewTripScreen() {
         </View>
 
         <TouchableOpacity
-          style={[styles.save, !canSave && styles.saveDisabled]}
+          style={[styles.save, { backgroundColor: colors.ink }, !canSave && styles.saveDisabled]}
           onPress={handleSave}
           disabled={!canSave || createTrip.isPending}
           activeOpacity={0.8}
@@ -171,20 +172,20 @@ export default function NewTripScreen() {
           {createTrip.isPending ? (
             <ActivityIndicator color={colors.ivory} size="small" />
           ) : (
-            <Text variant="body" style={styles.saveText}>save trip</Text>
+            <Text variant="body" style={[styles.saveText, { color: colors.ivory }]}>save trip</Text>
           )}
         </TouchableOpacity>
       </ScrollView>
 
       <Modal visible={showCalendar} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.calendarSheet}>
+          <View style={[styles.calendarSheet, { backgroundColor: colors.ivory }]}>
             <View style={styles.calendarHeader}>
               <Text variant="eyebrow">
                 {pickingStart ? "select start date" : "select end date"}
               </Text>
               <TouchableOpacity onPress={() => { setShowCalendar(false); setPickingStart(true); }}>
-                <Text variant="body" style={styles.cancel}>done</Text>
+                <Text variant="body" style={[styles.cancel, { color: colors.stone }]}>done</Text>
               </TouchableOpacity>
             </View>
             <Calendar
@@ -227,7 +228,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   cancel: {
-    color: colors.stone,
   },
   title: {
     marginBottom: spacing.xl,
@@ -238,31 +238,19 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.sand,
     borderRadius: 8,
     paddingHorizontal: spacing.md,
     paddingVertical: 14,
     fontFamily: "Inter_400Regular",
     fontSize: 15,
-    color: colors.ink,
-    backgroundColor: colors.pearl,
   },
   dateButton: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.sand,
     borderRadius: 8,
     paddingHorizontal: spacing.md,
     paddingVertical: 14,
-    backgroundColor: colors.pearl,
-  },
-  dateText: {
-    color: colors.ink,
-  },
-  datePlaceholder: {
-    color: colors.stone,
   },
   save: {
-    backgroundColor: colors.ink,
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
@@ -271,7 +259,6 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   saveText: {
-    color: colors.ivory,
     fontFamily: "Inter_500Medium",
   },
   modalOverlay: {
@@ -280,7 +267,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.3)",
   },
   calendarSheet: {
-    backgroundColor: colors.ivory,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     paddingTop: spacing.md,

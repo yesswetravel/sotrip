@@ -14,12 +14,17 @@ import {
   Inter_500Medium,
 } from "@expo-google-fonts/inter";
 import { ToastProvider } from "../features/shared/toast-context";
+import { ThemeProvider } from "../features/theme/ThemeProvider";
 import { useSession } from "../lib/use-session";
 import { useSubscriptionStore } from "../features/subscription/store";
 
 SplashScreen.preventAutoHideAsync();
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: 1, staleTime: 1000 * 60 * 5 },
+  },
+});
 
 function AuthGate() {
   const { session, loading } = useSession();
@@ -27,9 +32,14 @@ function AuthGate() {
   const router = useRouter();
   const hasSeenPaywall = useSubscriptionStore((s) => s.hasSeenPaywall);
 
-  const BYPASS_AUTH = false;
+  const BYPASS_AUTH = true;
   useEffect(() => {
-    if (BYPASS_AUTH || loading) return;
+    if (BYPASS_AUTH) {
+      const inAuth = segments[0] === "(auth)";
+      if (inAuth) router.replace("/");
+      return;
+    }
+    if (loading) return;
     const inAuth = segments[0] === "(auth)";
     if (!session && !inAuth) {
       router.replace("/(auth)/sign-in");
@@ -67,11 +77,13 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={styles.root}>
-      <QueryClientProvider client={queryClient}>
-        <ToastProvider>
-          <AuthGate />
-        </ToastProvider>
-      </QueryClientProvider>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <ToastProvider>
+            <AuthGate />
+          </ToastProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }

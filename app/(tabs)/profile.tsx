@@ -16,7 +16,7 @@ import { useSession } from "../../lib/use-session";
 import { useSubscription } from "../../features/subscription/hooks";
 import { useSubscriptionStore } from "../../features/subscription/store";
 import { PAID_PRICE } from "../../features/subscription/constants";
-import { colors } from "../../theme/colors";
+import { useColors } from "../../features/theme/ThemeProvider";
 import { spacing } from "../../theme/spacing";
 
 /* ------------------------------------------------------------------ */
@@ -36,6 +36,7 @@ function SettingRow({
   onPress: () => void;
   danger?: boolean;
 }) {
+  const colors = useColors();
   return (
     <TouchableOpacity
       style={styles.row}
@@ -55,13 +56,13 @@ function SettingRow({
         />
       </View>
       <Text
-        style={[styles.rowLabel, danger && { color: colors.coral }]}
+        style={[styles.rowLabel, { color: colors.ink }, danger && { color: colors.coral }]}
         numberOfLines={1}
       >
         {label}
       </Text>
       {value ? (
-        <Text style={styles.rowValue} numberOfLines={1}>
+        <Text style={[styles.rowValue, { color: colors.stone }]} numberOfLines={1}>
           {value}
         </Text>
       ) : null}
@@ -75,7 +76,8 @@ function SettingRow({
 /* ------------------------------------------------------------------ */
 
 function SectionHeader({ title }: { title: string }) {
-  return <Text style={styles.sectionTitle}>{title}</Text>;
+  const colors = useColors();
+  return <Text style={[styles.sectionTitle, { color: colors.sand }]}>{title}</Text>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -91,29 +93,31 @@ type MemoryOrder = {
   shipping: { name: string; address: string; city: string; zip: string; country: string } | null;
 };
 
-const STATUS_CONFIG: Record<string, { color: string; label: string; icon: keyof typeof Feather.glyphMap }> = {
-  complete: { color: colors.teal, label: "digital ready", icon: "check-circle" },
-  processing: { color: colors.coral, label: "processing", icon: "loader" },
-  printing: { color: colors.gold, label: "printing", icon: "printer" },
-  shipped: { color: colors.teal, label: "shipped", icon: "truck" },
-  delivered: { color: colors.teal, label: "delivered", icon: "package" },
+const STATUS_LABELS: Record<string, { colorKey: "teal" | "coral" | "gold"; label: string; icon: keyof typeof Feather.glyphMap }> = {
+  complete: { colorKey: "teal", label: "digital ready", icon: "check-circle" },
+  processing: { colorKey: "coral", label: "processing", icon: "loader" },
+  printing: { colorKey: "gold", label: "printing", icon: "printer" },
+  shipped: { colorKey: "teal", label: "shipped", icon: "truck" },
+  delivered: { colorKey: "teal", label: "delivered", icon: "package" },
 };
 
 function BookCard({ order, onPress }: { order: MemoryOrder; onPress: () => void }) {
-  const status = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.complete;
+  const colors = useColors();
+  const statusCfg = STATUS_LABELS[order.status] ?? STATUS_LABELS.complete;
+  const status = { ...statusCfg, color: colors[statusCfg.colorKey] };
   const date = new Date(order.orderedAt);
   const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
   return (
     <TouchableOpacity style={styles.bookCard} onPress={onPress} activeOpacity={0.7}>
-      <View style={styles.bookCover}>
+      <View style={[styles.bookCover, { backgroundColor: colors.coral + "12" }]}>
         <Feather name="book" size={20} color={colors.coral} />
       </View>
       <View style={styles.bookInfo}>
-        <Text style={styles.bookTitle}>
+        <Text style={[styles.bookTitle, { color: colors.ink }]}>
           {order.plan === "print" ? "printed + digital" : "digital book"}
         </Text>
-        <Text variant="caption" style={styles.bookDate}>{dateStr}</Text>
+        <Text variant="caption" style={[styles.bookDate, { color: colors.stone }]}>{dateStr}</Text>
       </View>
       <View style={[styles.bookStatus, { backgroundColor: status.color + "14" }]}>
         <Feather name={status.icon} size={10} color={status.color} />
@@ -124,6 +128,7 @@ function BookCard({ order, onPress }: { order: MemoryOrder; onPress: () => void 
 }
 
 export default function ProfileScreen() {
+  const colors = useColors();
   const { session } = useSession();
   const router = useRouter();
   const email = session?.user.email ?? "";
@@ -164,31 +169,31 @@ export default function ProfileScreen() {
   }
 
   return (
-    <Container safe>
+    <Container safe logo>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
       >
         {/* ---- Avatar & name ---- */}
         <View style={styles.header}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarLetter}>{initial}</Text>
+          <View style={[styles.avatar, { backgroundColor: colors.coral }]}>
+            <Text style={[styles.avatarLetter, { color: colors.pearl }]}>{initial}</Text>
           </View>
           <Text variant="title" style={styles.displayName}>
             {email.split("@")[0]}
           </Text>
-          <Text variant="caption" style={styles.email}>
+          <Text variant="caption" style={[styles.email, { color: colors.stone }]}>
             {email}
           </Text>
         </View>
 
         {/* ---- Plan section (subscription) ---- */}
         <SectionHeader title="your plan" />
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.pearl }]}>
           <View style={styles.planInner}>
             <View style={styles.planRow}>
-              <View style={[styles.planBadge, isPaid && styles.planBadgePaid]}>
-                <Text variant="body" style={[styles.planBadgeText, isPaid && styles.planBadgeTextPaid]}>
+              <View style={[styles.planBadge, { backgroundColor: colors.mist }, isPaid && { backgroundColor: colors.ink }]}>
+                <Text variant="body" style={[styles.planBadgeText, { color: colors.stone }, isPaid && { color: colors.ivory }]}>
                   {isPaid ? "paid" : "free"}
                 </Text>
               </View>
@@ -205,11 +210,11 @@ export default function ProfileScreen() {
 
             {!isPaid && (
               <TouchableOpacity
-                style={styles.upgradeBtn}
+                style={[styles.upgradeBtn, { backgroundColor: colors.ink }]}
                 onPress={() => router.push("/(auth)/paywall")}
                 activeOpacity={0.85}
               >
-                <Text variant="body" style={styles.upgradeBtnText}>
+                <Text variant="body" style={[styles.upgradeBtnText, { color: colors.ivory }]}>
                   upgrade — ${PAID_PRICE} once
                 </Text>
               </TouchableOpacity>
@@ -217,7 +222,7 @@ export default function ProfileScreen() {
 
             {isPaid && (
               <TouchableOpacity style={styles.manageLink} activeOpacity={0.8}>
-                <Text variant="caption" style={styles.manageLinkText}>
+                <Text variant="caption" style={[styles.manageLinkText, { color: colors.stone }]}>
                   manage purchase
                 </Text>
               </TouchableOpacity>
@@ -229,10 +234,10 @@ export default function ProfileScreen() {
         {orders.length > 0 && (
           <>
             <SectionHeader title="my books" />
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: colors.pearl }]}>
               {orders.map((order, i) => (
                 <View key={i}>
-                  {i > 0 && <View style={styles.separator} />}
+                  {i > 0 && <View style={[styles.separator, { backgroundColor: colors.mist }]} />}
                   <BookCard
                     order={order}
                     onPress={() => {
@@ -251,19 +256,19 @@ export default function ProfileScreen() {
 
         {/* ---- Account ---- */}
         <SectionHeader title="account" />
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.pearl }]}>
           <SettingRow
             icon="user"
             label="edit profile"
             onPress={() => comingSoon("edit profile")}
           />
-          <View style={styles.separator} />
+          <View style={[styles.separator, { backgroundColor: colors.mist }]} />
           <SettingRow
             icon="lock"
             label="change password"
             onPress={() => comingSoon("change password")}
           />
-          <View style={styles.separator} />
+          <View style={[styles.separator, { backgroundColor: colors.mist }]} />
           <SettingRow
             icon="mail"
             label="email"
@@ -274,20 +279,20 @@ export default function ProfileScreen() {
 
         {/* ---- Preferences ---- */}
         <SectionHeader title="preferences" />
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.pearl }]}>
           <SettingRow
             icon="bell"
             label="notifications"
             onPress={() => comingSoon("notifications")}
           />
-          <View style={styles.separator} />
+          <View style={[styles.separator, { backgroundColor: colors.mist }]} />
           <SettingRow
             icon="globe"
             label="language"
             value="english"
             onPress={() => comingSoon("language settings")}
           />
-          <View style={styles.separator} />
+          <View style={[styles.separator, { backgroundColor: colors.mist }]} />
           <SettingRow
             icon="moon"
             label="appearance"
@@ -298,19 +303,19 @@ export default function ProfileScreen() {
 
         {/* ---- Support ---- */}
         <SectionHeader title="support" />
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.pearl }]}>
           <SettingRow
             icon="help-circle"
             label="help & feedback"
             onPress={() => comingSoon("help & feedback")}
           />
-          <View style={styles.separator} />
+          <View style={[styles.separator, { backgroundColor: colors.mist }]} />
           <SettingRow
             icon="star"
             label="rate the app"
             onPress={() => comingSoon("rate the app")}
           />
-          <View style={styles.separator} />
+          <View style={[styles.separator, { backgroundColor: colors.mist }]} />
           <SettingRow
             icon="share-2"
             label="share with friends"
@@ -320,19 +325,19 @@ export default function ProfileScreen() {
 
         {/* ---- Legal ---- */}
         <SectionHeader title="legal" />
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.pearl }]}>
           <SettingRow
             icon="file-text"
             label="terms of service"
             onPress={() => comingSoon("terms of service")}
           />
-          <View style={styles.separator} />
+          <View style={[styles.separator, { backgroundColor: colors.mist }]} />
           <SettingRow
             icon="shield"
             label="privacy policy"
             onPress={() => comingSoon("privacy policy")}
           />
-          <View style={styles.separator} />
+          <View style={[styles.separator, { backgroundColor: colors.mist }]} />
           <SettingRow
             icon="info"
             label="cookie policy"
@@ -342,13 +347,13 @@ export default function ProfileScreen() {
 
         {/* ---- Data & Security ---- */}
         <SectionHeader title="data & security" />
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.pearl }]}>
           <SettingRow
             icon="download"
             label="export my data"
             onPress={() => comingSoon("data export")}
           />
-          <View style={styles.separator} />
+          <View style={[styles.separator, { backgroundColor: colors.mist }]} />
           <SettingRow
             icon="trash-2"
             label="delete account"
@@ -372,12 +377,12 @@ export default function ProfileScreen() {
 
         {/* ---- Sign out ---- */}
         <TouchableOpacity
-          style={styles.signOut}
+          style={[styles.signOut, { borderColor: colors.mist }]}
           onPress={handleSignOut}
           activeOpacity={0.8}
         >
           <Feather name="log-out" size={14} color={colors.stone} />
-          <Text variant="body" style={styles.signOutText}>
+          <Text variant="body" style={[styles.signOutText, { color: colors.stone }]}>
             sign out
           </Text>
         </TouchableOpacity>
@@ -397,7 +402,7 @@ export default function ProfileScreen() {
           }}
           activeOpacity={1}
         >
-          <Text style={styles.version}>sotrip v1.0.0</Text>
+          <Text style={[styles.version, { color: colors.sand }]}>sotrip v1.0.0</Text>
         </TouchableOpacity>
 
         {devTaps >= 3 && (
@@ -407,7 +412,7 @@ export default function ProfileScreen() {
             activeOpacity={0.8}
           >
             <Feather name="zap" size={12} color={colors.coral} />
-            <Text style={styles.seedLinkText}>seed demo trip</Text>
+            <Text style={[styles.seedLinkText, { color: colors.coral }]}>seed demo trip</Text>
           </TouchableOpacity>
         )}
 
@@ -430,7 +435,6 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: colors.coral,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: spacing.md,
@@ -438,10 +442,9 @@ const styles = StyleSheet.create({
   avatarLetter: {
     fontFamily: "CormorantGaramond_500Medium",
     fontSize: 30,
-    color: colors.pearl,
   },
   displayName: { fontSize: 20, marginBottom: 4 },
-  email: { color: colors.stone },
+  email: {},
 
   /* Plan section */
   planInner: {
@@ -454,30 +457,20 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   planBadge: {
-    backgroundColor: colors.mist,
     borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  planBadgePaid: {
-    backgroundColor: colors.ink,
-  },
   planBadgeText: {
     fontFamily: "Inter_500Medium",
     fontSize: 12,
-    color: colors.stone,
-  },
-  planBadgeTextPaid: {
-    color: colors.ivory,
   },
   upgradeBtn: {
-    backgroundColor: colors.ink,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",
   },
   upgradeBtnText: {
-    color: colors.ivory,
     fontFamily: "Inter_500Medium",
   },
   manageLink: {
@@ -485,7 +478,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   manageLinkText: {
-    color: colors.stone,
     textDecorationLine: "underline",
   },
 
@@ -494,7 +486,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     textTransform: "uppercase" as const,
     letterSpacing: 1.5,
-    color: colors.sand,
     fontFamily: "Inter_600SemiBold",
     paddingHorizontal: spacing.lg,
     marginTop: spacing.lg,
@@ -504,13 +495,11 @@ const styles = StyleSheet.create({
   /* Card group */
   card: {
     marginHorizontal: spacing.lg,
-    backgroundColor: colors.pearl,
     borderRadius: 14,
     overflow: "hidden",
   },
   separator: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.mist,
     marginLeft: 50,
   },
 
@@ -533,11 +522,9 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    color: colors.ink,
   },
   rowValue: {
     fontSize: 12,
-    color: colors.stone,
     fontFamily: "Inter_400Regular",
     maxWidth: 120,
   },
@@ -554,7 +541,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 8,
-    backgroundColor: colors.coral + "12",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -562,9 +548,8 @@ const styles = StyleSheet.create({
   bookTitle: {
     fontFamily: "Inter_500Medium",
     fontSize: 13,
-    color: colors.ink,
   },
-  bookDate: { fontSize: 11, color: colors.stone },
+  bookDate: { fontSize: 11 },
   bookStatus: {
     flexDirection: "row",
     alignItems: "center",
@@ -588,11 +573,10 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
     marginHorizontal: spacing.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.mist,
     borderRadius: 12,
     paddingVertical: 14,
   },
-  signOutText: { color: colors.stone, fontSize: 14 },
+  signOutText: { fontSize: 14 },
 
   /* Dev toggle & Version */
   devTrigger: {
@@ -603,7 +587,6 @@ const styles = StyleSheet.create({
   version: {
     textAlign: "center",
     fontSize: 10,
-    color: colors.sand,
     marginTop: spacing.md,
     fontFamily: "Inter_400Regular",
   },
@@ -616,7 +599,6 @@ const styles = StyleSheet.create({
   },
   seedLinkText: {
     fontSize: 11,
-    color: colors.coral,
     fontFamily: "Inter_500Medium",
   },
 });
