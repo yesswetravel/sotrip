@@ -399,7 +399,7 @@ export default function PlaceDetailScreen() {
               <Image
                 source={{ uri: linkPreview.thumbnailUrl }}
                 style={styles.linkThumb}
-                contentFit="cover"
+                contentFit="contain"
                 transition={200}
               />
             ) : null}
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
 
   /* Hero */
   hero: {
-    height: SCREEN_W * 1,
+    height: SCREEN_W * 0.65,
     position: "relative",
     overflow: "hidden",
   },
@@ -615,7 +615,8 @@ const styles = StyleSheet.create({
   },
   linkThumb: {
     width: "100%",
-    aspectRatio: 1,
+    height: 200,
+    backgroundColor: "#f5f0e4",
   },
   linkInfo: {
     paddingHorizontal: 14,
