@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   StyleSheet,
   View,
@@ -10,9 +10,12 @@ import {
   Platform,
   Linking,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Text } from "../../design-system";
 import { LocationPicker, TimePicker, CategoryPicker } from "../../shared";
 import { useToast } from "../../shared/toast-context";
@@ -27,8 +30,33 @@ interface ItemSheetProps {
   dayId: string;
   item: TripItem | null;
   currentItemCount?: number;
+  /** When provided, enables the outfit tab and auto-assigns outfits to this day */
+  dayNumber?: number;
   onClose: () => void;
+  /** Called when outfits change so the parent can refresh its display */
+  onOutfitsChanged?: () => void;
 }
+
+/* ------------------------------------------------------------------ */
+/*  Outfit type & helpers                                               */
+/* ------------------------------------------------------------------ */
+
+interface Outfit {
+  id: string;
+  photoUri: string;
+  name: string;
+  notes: string;
+  dayNumber: number | null;
+  createdAt: string;
+}
+
+function outfitStorageKey(tripId: string) {
+  return `outfits_${tripId}`;
+}
+
+const SCREEN_W = Dimensions.get("window").width;
+const OUTFIT_TILE_GAP = 10;
+const OUTFIT_TILE_W = (SCREEN_W - spacing.lg * 2 - OUTFIT_TILE_GAP * 2) / 3;
 
 /* ------------------------------------------------------------------ */
 /*  Link preview via oEmbed APIs                                        */
@@ -117,16 +145,148 @@ function FieldLabel({ label, icon }: { label: string; icon: keyof typeof Feather
 }
 
 /* ------------------------------------------------------------------ */
+/*  Outfit Tab Content                                                  */
+/* ------------------------------------------------------------------ */
+
+function OutfitTabContent({
+  tripId,
+  dayNumber,
+  onOutfitsChanged,
+}: {
+  tripId: string;
+  dayNumber: number;
+  onOutfitsChanged?: () => void;
+}) {
+  const colors = useColors();
+  const { show } = useToast();
+  const [outfits, setOutfits] = useState<Outfit[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  const loadOutfits = useCallback(() => {
+    AsyncStorage.getItem(outfitStorageKey(tripId)).then((raw) => {
+      if (raw) setOutfits(JSON.parse(raw));
+      setLoaded(true);
+    });
+  }, [tripId]);
+
+  useEffect(() => { loadOutfits(); }, [loadOutfits]);
+
+  const dayOutfits = outfits.filter((o) => o.dayNumber === dayNumber);
+
+  function persist(next: Outfit[]) {
+    setOutfits(next);
+    AsyncStorage.setItem(outfitStorageKey(tripId), JSON.stringify(next));
+    onOutfitsChanged?.();
+  }
+
+  async function handleAddOutfit() {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        quality: 0.8,
+        allowsMultipleSelection: true,
+        selectionLimit: 6,
+      });
+      if (result.canceled || result.assets.length === 0) return;
+
+      const newOutfits = result.assets.map((asset, idx) => ({
+        id: `${Date.now()}_${idx}`,
+        photoUri: asset.uri,
+        name: "",
+        notes: "",
+        dayNumber,
+        createdAt: new Date().toISOString(),
+      }));
+      persist([...outfits, ...newOutfits]);
+    } catch {
+      show("couldn't add outfit");
+    }
+  }
+
+  function handleDeleteOutfit(outfitId: string) {
+    persist(outfits.filter((o) => o.id !== outfitId));
+  }
+
+  return (
+    <View>
+      {/* Outfit grid */}
+      {dayOutfits.length > 0 && (
+        <View style={styles.outfitGrid}>
+          {dayOutfits.map((outfit) => (
+            <View key={outfit.id} style={[styles.outfitTile, { borderColor: colors.mist }]}>
+              <Image
+                source={{ uri: outfit.photoUri }}
+                style={styles.outfitImage}
+                contentFit="cover"
+                transition={200}
+              />
+              <TouchableOpacity
+                style={[styles.outfitDeleteBtn, { backgroundColor: colors.pearl }]}
+                onPress={() => handleDeleteOutfit(outfit.id)}
+                activeOpacity={0.7}
+                hitSlop={8}
+              >
+                <Feather name="x" size={10} color={colors.stone} />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Empty state + add button */}
+      {dayOutfits.length === 0 ? (
+        <View style={styles.outfitEmpty}>
+          <View style={[styles.outfitEmptyIcon, { backgroundColor: colors.coral + "14" }]}>
+            <Feather name="scissors" size={22} color={colors.coral} />
+          </View>
+          <Text variant="titleItalic" style={{ color: colors.stone }}>
+            no outfit yet
+          </Text>
+          <TouchableOpacity
+            style={[styles.outfitAddBtn, { backgroundColor: colors.ink }]}
+            onPress={handleAddOutfit}
+            activeOpacity={0.85}
+          >
+            <Feather name="plus" size={14} color={colors.ivory} />
+            <Text style={[styles.outfitAddBtnText, { color: colors.ivory }]}>choose from photos</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <TouchableOpacity
+          style={[styles.outfitAddBtn, { backgroundColor: colors.ink, marginTop: spacing.md }]}
+          onPress={handleAddOutfit}
+          activeOpacity={0.85}
+        >
+          <Feather name="plus" size={14} color={colors.ivory} />
+          <Text style={[styles.outfitAddBtnText, { color: colors.ivory }]}>add more</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Main component                                                      */
 /* ------------------------------------------------------------------ */
 
-export default function ItemSheet({ tripId, dayId, item, currentItemCount = 0, onClose }: ItemSheetProps) {
+export default function ItemSheet({
+  tripId,
+  dayId,
+  item,
+  currentItemCount = 0,
+  dayNumber,
+  onClose,
+  onOutfitsChanged,
+}: ItemSheetProps) {
   const colors = useColors();
   const isEditing = !!item;
+  const hasOutfitTab = dayNumber !== undefined && !isEditing;
   const { show } = useToast();
   const createItem = useCreateItem(tripId);
   const updateItem = useUpdateItem(tripId);
   const deleteItem = useDeleteItem(tripId);
+
+  const [activeTab, setActiveTab] = useState<"plan" | "outfit">("plan");
 
   const [title, setTitle] = useState(item?.title ?? "");
   const [time, setTime] = useState(item?.time ?? "");
@@ -236,11 +396,40 @@ export default function ItemSheet({ tripId, dayId, item, currentItemCount = 0, o
         <View style={[styles.sheet, { backgroundColor: colors.ivory }]}>
           <View style={[styles.handle, { backgroundColor: colors.mist }]} />
 
-          {/* Header with close button */}
+          {/* Header with tabs and close button */}
           <View style={styles.sheetHeader}>
             <Text variant="title" style={styles.sheetTitle}>
-              {isEditing ? "edit plan" : "add plan"}
+              {isEditing ? "edit plan" : hasOutfitTab ? (activeTab === "plan" ? "add plan" : "add outfit") : "add plan"}
             </Text>
+
+            {/* Tab pills (only when dayNumber is provided and not editing) */}
+            {hasOutfitTab && (
+              <View style={[styles.tabRow, { backgroundColor: colors.mist + "80" }]}>
+                <TouchableOpacity
+                  style={[
+                    styles.tabPill,
+                    activeTab === "plan" && [styles.tabPillActive, { backgroundColor: colors.pearl }],
+                  ]}
+                  onPress={() => setActiveTab("plan")}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="map-pin" size={11} color={activeTab === "plan" ? colors.ink : colors.stone} />
+                  <Text style={[styles.tabPillText, { color: activeTab === "plan" ? colors.ink : colors.stone }]}>plan</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.tabPill,
+                    activeTab === "outfit" && [styles.tabPillActive, { backgroundColor: colors.pearl }],
+                  ]}
+                  onPress={() => setActiveTab("outfit")}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="scissors" size={11} color={activeTab === "outfit" ? colors.ink : colors.stone} />
+                  <Text style={[styles.tabPillText, { color: activeTab === "outfit" ? colors.ink : colors.stone }]}>outfit</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             <TouchableOpacity
               style={[styles.closeBtn, { backgroundColor: colors.mist }]}
               onPress={onClose}
@@ -257,150 +446,163 @@ export default function ItemSheet({ tripId, dayId, item, currentItemCount = 0, o
             bounces
             contentContainerStyle={styles.scrollContent}
           >
+            {/* ============ Plan Tab ============ */}
+            {activeTab === "plan" && (
+              <>
+                {/* Location (primary field) */}
+                <FieldLabel label="location" icon="map-pin" />
+                <LocationPicker
+                  value={locationName}
+                  placeholder="search a place..."
+                  onSelect={(place) => {
+                    setLocationName(place.name);
+                    setLocationLat(place.lat);
+                    setLocationLng(place.lng);
+                    if (place.photo_uri) setPhotoUri(place.photo_uri);
+                  }}
+                  onClear={() => {
+                    setLocationName("");
+                    setLocationLat(0);
+                    setLocationLng(0);
+                    setPhotoUri("");
+                  }}
+                />
+                {locationName.trim().length > 0 && locationLat !== 0 && (
+                  <TouchableOpacity
+                    style={styles.mapLink}
+                    onPress={handleOpenMap}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name="navigation" size={12} color={colors.teal} />
+                    <Text style={[styles.mapLinkText, { color: colors.teal }]}>open in maps</Text>
+                  </TouchableOpacity>
+                )}
 
-            {/* Location (primary field) */}
-            <FieldLabel label="location" icon="map-pin" />
-            <LocationPicker
-              value={locationName}
-              placeholder="search a place..."
-              onSelect={(place) => {
-                setLocationName(place.name);
-                setLocationLat(place.lat);
-                setLocationLng(place.lng);
-                if (place.photo_uri) setPhotoUri(place.photo_uri);
-              }}
-              onClear={() => {
-                setLocationName("");
-                setLocationLat(0);
-                setLocationLng(0);
-                setPhotoUri("");
-              }}
-            />
-            {locationName.trim().length > 0 && locationLat !== 0 && (
-              <TouchableOpacity
-                style={styles.mapLink}
-                onPress={handleOpenMap}
-                activeOpacity={0.7}
-              >
-                <Feather name="navigation" size={12} color={colors.teal} />
-                <Text style={[styles.mapLinkText, { color: colors.teal }]}>open in maps</Text>
-              </TouchableOpacity>
-            )}
+                {/* Category */}
+                <FieldLabel label="category" icon="tag" />
+                <CategoryPicker value={category} onChange={setCategory} />
 
-            {/* Category */}
-            <FieldLabel label="category" icon="tag" />
-            <CategoryPicker value={category} onChange={setCategory} />
+                {/* Time */}
+                <FieldLabel label="time" icon="clock" />
+                <TimePicker
+                  value={time}
+                  onChange={setTime}
+                  onClear={() => setTime("")}
+                  placeholder="set time"
+                />
 
-            {/* Time */}
-            <FieldLabel label="time" icon="clock" />
-            <TimePicker
-              value={time}
-              onChange={setTime}
-              onClear={() => setTime("")}
-              placeholder="set time"
-            />
+                {/* Plan name (optional — location is used if empty) */}
+                <FieldLabel label="plan name (optional)" icon="edit-3" />
+                <TextInput
+                  style={[styles.input, { borderColor: colors.sand, color: colors.ink, backgroundColor: colors.pearl }]}
+                  placeholder="e.g. sunset visit, morning coffee..."
+                  placeholderTextColor={colors.stone}
+                  value={title}
+                  onChangeText={setTitle}
+                />
 
-            {/* Plan name (optional — location is used if empty) */}
-            <FieldLabel label="plan name (optional)" icon="edit-3" />
-            <TextInput
-              style={[styles.input, { borderColor: colors.sand, color: colors.ink, backgroundColor: colors.pearl }]}
-              placeholder="e.g. sunset visit, morning coffee..."
-              placeholderTextColor={colors.stone}
-              value={title}
-              onChangeText={setTitle}
-            />
+                {/* Note */}
+                <FieldLabel label="note" icon="file-text" />
+                <TextInput
+                  style={[styles.input, styles.notesInput, { borderColor: colors.sand, color: colors.ink, backgroundColor: colors.pearl }]}
+                  placeholder="any details or reminders..."
+                  placeholderTextColor={colors.stone}
+                  value={notes}
+                  onChangeText={setNotes}
+                  multiline
+                />
 
-            {/* Note */}
-            <FieldLabel label="note" icon="file-text" />
-            <TextInput
-              style={[styles.input, styles.notesInput, { borderColor: colors.sand, color: colors.ink, backgroundColor: colors.pearl }]}
-              placeholder="any details or reminders..."
-              placeholderTextColor={colors.stone}
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-            />
+                {/* Link */}
+                <FieldLabel label="link or reference" icon="link" />
+                <View style={[styles.linkRow, { borderColor: colors.sand, backgroundColor: colors.pearl }]}>
+                  <TextInput
+                    style={[styles.linkInput, { color: colors.ink }]}
+                    placeholder="paste a URL (booking, article, etc.)"
+                    placeholderTextColor={colors.stone}
+                    value={link}
+                    onChangeText={handleLinkChange}
+                    keyboardType="url"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  {linkLoading && <ActivityIndicator size="small" color={colors.coral} />}
+                </View>
 
-            {/* Link */}
-            <FieldLabel label="link or reference" icon="link" />
-            <View style={[styles.linkRow, { borderColor: colors.sand, backgroundColor: colors.pearl }]}>
-              <TextInput
-                style={[styles.linkInput, { color: colors.ink }]}
-                placeholder="paste a URL (booking, article, etc.)"
-                placeholderTextColor={colors.stone}
-                value={link}
-                onChangeText={handleLinkChange}
-                keyboardType="url"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              {linkLoading && <ActivityIndicator size="small" color={colors.coral} />}
-            </View>
-
-            {/* Link preview card */}
-            {linkPreview && (
-              <View style={[styles.previewCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
-                {linkPreview.thumbnailUrl ? (
-                  <Image source={{ uri: linkPreview.thumbnailUrl }} style={styles.previewImage} contentFit="cover" transition={200} />
-                ) : (
-                  <View style={[styles.previewImagePlaceholder, { backgroundColor: colors.gold + "20" }]}>
-                    <Feather name="image" size={20} color={colors.sand} />
+                {/* Link preview card */}
+                {linkPreview && (
+                  <View style={[styles.previewCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
+                    {linkPreview.thumbnailUrl ? (
+                      <Image source={{ uri: linkPreview.thumbnailUrl }} style={styles.previewImage} contentFit="cover" transition={200} />
+                    ) : (
+                      <View style={[styles.previewImagePlaceholder, { backgroundColor: colors.gold + "20" }]}>
+                        <Feather name="image" size={20} color={colors.sand} />
+                      </View>
+                    )}
+                    <View style={styles.previewBody}>
+                      <Text style={[styles.previewTitle, { color: colors.ink }]} numberOfLines={2}>{linkPreview.title}</Text>
+                      <Text variant="caption" style={{ color: colors.stone }}>{linkPreview.author}</Text>
+                      <View style={[styles.previewBadge, { backgroundColor: colors.stone + "10" }]}>
+                        <Feather
+                          name={linkPreview.source === "instagram" ? "instagram" : linkPreview.source === "pinterest" ? "heart" : "link"}
+                          size={9}
+                          color={colors.stone}
+                        />
+                        <Text style={[styles.previewBadgeText, { color: colors.stone }]}>{linkPreview.source}</Text>
+                      </View>
+                    </View>
                   </View>
                 )}
-                <View style={styles.previewBody}>
-                  <Text style={[styles.previewTitle, { color: colors.ink }]} numberOfLines={2}>{linkPreview.title}</Text>
-                  <Text variant="caption" style={{ color: colors.stone }}>{linkPreview.author}</Text>
-                  <View style={[styles.previewBadge, { backgroundColor: colors.stone + "10" }]}>
-                    <Feather
-                      name={linkPreview.source === "instagram" ? "instagram" : linkPreview.source === "pinterest" ? "heart" : "link"}
-                      size={9}
-                      color={colors.stone}
-                    />
-                    <Text style={[styles.previewBadgeText, { color: colors.stone }]}>{linkPreview.source}</Text>
-                  </View>
+
+                {link.trim().length > 0 && !linkPreview && (
+                  <TouchableOpacity
+                    style={styles.mapLink}
+                    onPress={() => {
+                      const url = link.startsWith("http") ? link : `https://${link}`;
+                      Linking.openURL(url).catch(() => show("couldn't open link"));
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name="external-link" size={12} color={colors.teal} />
+                    <Text style={[styles.mapLinkText, { color: colors.teal }]}>open link</Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* Save / Cancel / Delete */}
+                <View style={styles.actions}>
+                  <TouchableOpacity
+                    style={[styles.saveBtn, { backgroundColor: colors.ink }, !canSave && styles.saveBtnDisabled]}
+                    onPress={handleSave}
+                    disabled={!canSave}
+                    activeOpacity={0.8}
+                  >
+                    <Text variant="body" style={[styles.saveBtnText, { color: colors.ivory }]}>
+                      {isEditing ? "save changes" : "add plan"}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {isEditing && (
+                    <TouchableOpacity
+                      style={styles.deleteLink}
+                      onPress={handleDelete}
+                      activeOpacity={0.8}
+                    >
+                      <Text variant="caption" style={styles.deleteLinkText}>
+                        {confirmDelete ? "tap again to confirm delete" : "delete this plan"}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
-              </View>
+              </>
             )}
 
-            {link.trim().length > 0 && !linkPreview && (
-              <TouchableOpacity
-                style={styles.mapLink}
-                onPress={() => {
-                  const url = link.startsWith("http") ? link : `https://${link}`;
-                  Linking.openURL(url).catch(() => show("couldn't open link"));
-                }}
-                activeOpacity={0.7}
-              >
-                <Feather name="external-link" size={12} color={colors.teal} />
-                <Text style={[styles.mapLinkText, { color: colors.teal }]}>open link</Text>
-              </TouchableOpacity>
+            {/* ============ Outfit Tab ============ */}
+            {activeTab === "outfit" && dayNumber !== undefined && (
+              <OutfitTabContent
+                tripId={tripId}
+                dayNumber={dayNumber}
+                onOutfitsChanged={onOutfitsChanged}
+              />
             )}
-
-            {/* Save / Cancel / Delete */}
-            <View style={styles.actions}>
-              <TouchableOpacity
-                style={[styles.saveBtn, { backgroundColor: colors.ink }, !canSave && styles.saveBtnDisabled]}
-                onPress={handleSave}
-                disabled={!canSave}
-                activeOpacity={0.8}
-              >
-                <Text variant="body" style={[styles.saveBtnText, { color: colors.ivory }]}>
-                  {isEditing ? "save changes" : "add plan"}
-                </Text>
-              </TouchableOpacity>
-
-              {isEditing && (
-                <TouchableOpacity
-                  style={styles.deleteLink}
-                  onPress={handleDelete}
-                  activeOpacity={0.8}
-                >
-                  <Text variant="caption" style={styles.deleteLinkText}>
-                    {confirmDelete ? "tap again to confirm delete" : "delete this plan"}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
@@ -445,6 +647,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+
+  /* Tab pills */
+  tabRow: {
+    flexDirection: "row",
+    borderRadius: 8,
+    padding: 3,
+  },
+  tabPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  tabPillActive: {},
+  tabPillText: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    letterSpacing: 0.3,
+  },
+
   scrollContent: {
     paddingBottom: spacing.md,
   },
@@ -572,5 +796,60 @@ const styles = StyleSheet.create({
   },
   deleteLinkText: {
     color: "#C44",
+  },
+
+  /* Outfit tab */
+  outfitGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: OUTFIT_TILE_GAP,
+    marginTop: spacing.sm,
+  },
+  outfitTile: {
+    width: OUTFIT_TILE_W,
+    borderRadius: 10,
+    overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+    position: "relative",
+  },
+  outfitImage: {
+    width: "100%",
+    aspectRatio: 3 / 4,
+  },
+  outfitDeleteBtn: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  outfitEmpty: {
+    alignItems: "center",
+    paddingVertical: spacing.xl,
+    gap: 10,
+  },
+  outfitEmptyIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.xs,
+  },
+  outfitAddBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignSelf: "stretch",
+  },
+  outfitAddBtnText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 14,
   },
 });

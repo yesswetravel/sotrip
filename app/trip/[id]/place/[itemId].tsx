@@ -15,7 +15,7 @@ import { Image } from "expo-image";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../../features/design-system";
 import ItemSheet from "../../../../features/trips/components/ItemSheet";
-import { useTrip, useDeleteItem } from "../../../../features/trips/hooks";
+import { useTrip } from "../../../../features/trips/hooks";
 import { getCategoryForItem } from "../../../../theme/categories";
 import { useColors } from "../../../../features/theme/ThemeProvider";
 import { spacing } from "../../../../theme/spacing";
@@ -145,11 +145,6 @@ async function fetchPlacePhoto(placeName: string): Promise<string | null> {
 interface PlaceMeta {
   whySaved: string;
   source: string;
-  hours: string;
-  admission: string;
-  howToGet: string;
-  timeNeeded: string;
-  bestFor: string;
   savedBy: string[];
 }
 
@@ -175,23 +170,14 @@ export default function PlaceDetailScreen() {
   const [meta, setMeta] = useState<PlaceMeta>({
     whySaved: "",
     source: "",
-    hours: "",
-    admission: "",
-    howToGet: "",
-    timeNeeded: "",
-    bestFor: "",
     savedBy: ["self"],
   });
   const [loaded, setLoaded] = useState(false);
-  const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(true);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [linkPreview, setLinkPreview] = useState<LinkPreview | null>(null);
   const [linkLoading, setLinkLoading] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [showEditSheet, setShowEditSheet] = useState(false);
-
-  const deleteItem = useDeleteItem(id ?? "");
 
   const { item, day } = useMemo(() => {
     if (!trip) return { item: null, day: null };
@@ -243,24 +229,6 @@ export default function PlaceDetailScreen() {
   function toggleSaved() {
     setSaved(!saved);
   }
-
-  function handleDelete() {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
-    deleteItem.mutate(itemId, {
-      onSuccess: () => router.back(),
-    });
-  }
-
-  const quickFacts = [
-    { key: "hours", label: "hours", value: meta.hours },
-    { key: "admission", label: "admission", value: meta.admission },
-    { key: "how to get", label: "how to get", value: meta.howToGet },
-    { key: "time needed", label: "time needed", value: meta.timeNeeded },
-    { key: "best for", label: "best for", value: meta.bestFor },
-  ].filter((f) => editing || f.value);
 
   if (!trip || !item) return null;
 
@@ -398,94 +366,22 @@ export default function PlaceDetailScreen() {
           </TouchableOpacity>
         ) : null}
 
-        {/* Why we saved it */}
+        {/* Why we saved it — always editable, auto-saves on blur */}
         <View style={[styles.whySavedCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
           <Text variant="eyebrow" style={[styles.whySavedLabel, { color: colors.coral }]}>
             why we saved it
           </Text>
-          {editing ? (
-            <TextInput
-              style={[styles.whySavedInput, { color: colors.ink }]}
-              placeholder="what drew you to this place..."
-              placeholderTextColor={colors.sand}
-              value={meta.whySaved}
-              onChangeText={(t) => setMeta({ ...meta, whySaved: t })}
-              multiline
-            />
-          ) : meta.whySaved ? (
-            <Text style={[styles.whySavedText, { color: colors.ink }]}>"{meta.whySaved}"</Text>
-          ) : (
-            <TouchableOpacity onPress={() => setEditing(true)} activeOpacity={0.7}>
-              <Text style={[styles.whySavedPlaceholder, { color: colors.sand }]}>
-                tap to add why you saved this place
-              </Text>
-            </TouchableOpacity>
-          )}
-          {meta.source && !editing ? (
-            <Text variant="caption" style={styles.whySavedSource}>
-              — {meta.source}
-            </Text>
-          ) : null}
+          <TextInput
+            style={[styles.whySavedInput, { color: colors.ink }]}
+            placeholder="what drew you to this place..."
+            placeholderTextColor={colors.sand}
+            value={meta.whySaved}
+            onChangeText={(t) => setMeta({ ...meta, whySaved: t })}
+            onBlur={() => persistMeta({ ...meta })}
+            multiline
+          />
         </View>
 
-        {/* Quick facts */}
-        <View style={styles.factsSection}>
-          {quickFacts.length > 0 || editing ? (
-            <>
-              {(editing
-                ? [
-                    { key: "hours", label: "hours", value: meta.hours },
-                    { key: "admission", label: "admission", value: meta.admission },
-                    { key: "how to get", label: "how to get", value: meta.howToGet },
-                    { key: "time needed", label: "time needed", value: meta.timeNeeded },
-                    { key: "best for", label: "best for", value: meta.bestFor },
-                  ]
-                : quickFacts
-              ).map((fact) => (
-                <View key={fact.key} style={[styles.factRow, { borderTopColor: colors.mist }]}>
-                  <Text variant="eyebrow" style={styles.factLabel}>
-                    {fact.label}
-                  </Text>
-                  {editing ? (
-                    <TextInput
-                      style={[styles.factInput, { color: colors.ink }]}
-                      placeholder={`add ${fact.label}...`}
-                      placeholderTextColor={colors.sand}
-                      value={fact.value}
-                      onChangeText={(t) =>
-                        setMeta({
-                          ...meta,
-                          [fact.key === "how to get"
-                            ? "howToGet"
-                            : fact.key === "time needed"
-                            ? "timeNeeded"
-                            : fact.key === "best for"
-                            ? "bestFor"
-                            : fact.key]: t,
-                        })
-                      }
-                    />
-                  ) : (
-                    <Text variant="body" style={[styles.factValue, { color: colors.ink }]}>
-                      {fact.value}
-                    </Text>
-                  )}
-                </View>
-              ))}
-            </>
-          ) : (
-            <TouchableOpacity
-              style={styles.addFactsBtn}
-              onPress={() => setEditing(true)}
-              activeOpacity={0.7}
-            >
-              <Feather name="plus" size={12} color={colors.stone} />
-              <Text variant="caption" style={{ color: colors.stone }}>
-                add details like hours, admission, tips
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
 
         {/* Notes from the item */}
         {item.notes && (
@@ -498,60 +394,16 @@ export default function PlaceDetailScreen() {
         <View style={{ height: 120 }} />
       </ScrollView>
 
-      {/* Bottom actions */}
+      {/* Bottom action */}
       <View style={[styles.bottomBar, { backgroundColor: colors.ivory, borderTopColor: colors.mist }]}>
-        {editing ? (
-          <TouchableOpacity
-            style={[styles.primaryBtn, { backgroundColor: colors.ink }]}
-            onPress={() => {
-              persistMeta(meta);
-              setEditing(false);
-            }}
-            activeOpacity={0.85}
-          >
-            <Text variant="body" style={[styles.primaryBtnText, { color: colors.pearl }]}>save details</Text>
-          </TouchableOpacity>
-        ) : (
-          <>
-            <TouchableOpacity
-              style={[styles.coralBtn, { backgroundColor: colors.coral }]}
-              onPress={() => router.back()}
-              activeOpacity={0.85}
-            >
-              <Feather name="check" size={14} color={colors.pearl} />
-              <Text variant="body" style={[styles.coralBtnText, { color: colors.pearl }]}>
-                on day {String(day?.day_number ?? 1).padStart(2, "0")}
-              </Text>
-            </TouchableOpacity>
-            <View style={[styles.btnRow, { marginTop: 8 }]}>
-              <TouchableOpacity
-                style={[styles.editPlanBtn, { backgroundColor: colors.ink }]}
-                onPress={() => setShowEditSheet(true)}
-                activeOpacity={0.85}
-              >
-                <Feather name="edit-2" size={13} color={colors.pearl} style={{ marginRight: 6 }} />
-                <Text variant="body" style={[styles.primaryBtnText, { color: colors.pearl }]}>edit plan</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.ghostBtn, { borderColor: colors.mist }]}
-                onPress={() => setEditing(true)}
-                activeOpacity={0.85}
-              >
-                <Text variant="body" style={[styles.ghostBtnText, { color: colors.stone }]}>edit details</Text>
-              </TouchableOpacity>
-            </View>
-            <TouchableOpacity
-              style={styles.deleteLink}
-              onPress={handleDelete}
-              activeOpacity={0.8}
-            >
-              <Feather name="trash-2" size={12} color="#C44" />
-              <Text variant="caption" style={styles.deleteLinkText}>
-                {confirmDelete ? "tap again to confirm delete" : "delete this plan"}
-              </Text>
-            </TouchableOpacity>
-          </>
-        )}
+        <TouchableOpacity
+          style={[styles.editPlanBtn, { backgroundColor: colors.ink }]}
+          onPress={() => setShowEditSheet(true)}
+          activeOpacity={0.85}
+        >
+          <Feather name="edit-2" size={13} color={colors.pearl} style={{ marginRight: 6 }} />
+          <Text variant="body" style={[styles.primaryBtnText, { color: colors.pearl }]}>edit plan</Text>
+        </TouchableOpacity>
       </View>
 
       {showEditSheet && day && (
@@ -736,60 +588,12 @@ const styles = StyleSheet.create({
   whySavedLabel: {
     marginBottom: 10,
   },
-  whySavedText: {
-    fontFamily: "CormorantGaramond_400Regular_Italic",
-    fontSize: 19,
-    lineHeight: 28,
-  },
-  whySavedPlaceholder: {
-    fontFamily: "CormorantGaramond_500Medium_Italic",
-    fontSize: 17,
-    lineHeight: 26,
-  },
   whySavedInput: {
     fontFamily: "CormorantGaramond_500Medium_Italic",
     fontSize: 17,
     lineHeight: 26,
     minHeight: 60,
     textAlignVertical: "top",
-  },
-  whySavedSource: {
-    fontSize: 10,
-    marginTop: 10,
-  },
-
-  /* Quick facts */
-  factsSection: {
-    paddingHorizontal: spacing.lg,
-    marginTop: spacing.sm,
-  },
-  factRow: {
-    flexDirection: "row",
-    paddingVertical: 14,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    gap: 14,
-  },
-  factLabel: {
-    width: 80,
-    fontSize: 9,
-    paddingTop: 3,
-  },
-  factValue: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  factInput: {
-    flex: 1,
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    paddingVertical: 0,
-  },
-  addFactsBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingVertical: spacing.md,
   },
 
   /* Notes */
@@ -816,63 +620,15 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  primaryBtn: {
-    borderRadius: 999,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
   primaryBtnText: {
     fontFamily: "Inter_500Medium",
     fontSize: 13,
   },
-  btnRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  coralBtn: {
-    flex: 1,
-    borderRadius: 999,
-    paddingVertical: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  coralBtnText: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 13,
-  },
   editPlanBtn: {
-    flex: 1,
-    borderRadius: 999,
+    borderRadius: 10,
     paddingVertical: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-  },
-  ghostBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  ghostBtnText: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 13,
-  },
-  deleteLink: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    marginTop: 10,
-    paddingVertical: 6,
-  },
-  deleteLinkText: {
-    color: "#C44",
-    fontSize: 11,
-    fontFamily: "Inter_500Medium",
   },
 });

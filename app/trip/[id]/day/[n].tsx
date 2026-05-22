@@ -3,7 +3,6 @@ import {
   StyleSheet,
   View,
   ScrollView,
-  TextInput,
   TouchableOpacity,
   Pressable,
   Animated,
@@ -12,25 +11,20 @@ import {
   NativeScrollEvent,
   Dimensions,
   Linking,
-  Platform,
   RefreshControl,
 } from "react-native";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Container, Text, Card } from "../../../../features/design-system";
+import { Container, Text } from "../../../../features/design-system";
 import { getCategoryForItem } from "../../../../theme/categories";
 import { useToast } from "../../../../features/shared/toast-context";
 import ItemSheet from "../../../../features/trips/components/ItemSheet";
 import ItemDetailSheet from "../../../../features/trips/components/ItemDetailSheet";
-import { UploadProgressBanner, PhotoGrid } from "../../../../features/photos/components";
-import { usePhotosByDay } from "../../../../features/photos/hooks";
-import { pickPhotos, uploadPhotos } from "../../../../features/photos/pipeline";
 import {
   useTrip,
   useDeleteItem,
-  useUpdateDayNotes,
   useTripRealtime,
 } from "../../../../features/trips/hooks";
 import { useCanAddItem, useSubscription } from "../../../../features/subscription/hooks";
@@ -38,7 +32,6 @@ import UpgradeModal from "../../../../features/subscription/UpgradeModal";
 import { useColors } from "../../../../features/theme/ThemeProvider";
 import { spacing } from "../../../../theme/spacing";
 import type { TripItem } from "../../../../types/database";
-import type { Photo, PhotoUploadJob } from "../../../../types/photos";
 
 function formatTime12h(time24: string): string {
   const [hStr, mStr] = time24.split(":");
@@ -118,7 +111,6 @@ function TimelineItem({
                 </Text>
               </View>
             )}
-            {null}
           </View>
 
           {/* Mini map thumbnail — tap to open Google Maps */}
@@ -279,7 +271,6 @@ export default function DayViewScreen() {
   const { data: trip, refetch: refetchTrip } = useTrip(id);
   useTripRealtime(id);
   const deleteItemMutation = useDeleteItem(id);
-  const updateNotesMutation = useUpdateDayNotes(id);
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
@@ -288,14 +279,12 @@ export default function DayViewScreen() {
     setRefreshing(false);
   }, [refetchTrip]);
 
-  const [uploadJobs, setUploadJobs] = useState<PhotoUploadJob[]>([]);
-
   const [sheetVisible, setSheetVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<TripItem | null>(null);
   const [viewingItem, setViewingItem] = useState<TripItem | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
 
-  // Outfit for this day
+  // Outfits for this day
   const [dayOutfits, setDayOutfits] = useState<{ id: string; photoUri: string; name: string }[]>([]);
   const loadOutfits = useCallback(() => {
     AsyncStorage.getItem(`outfits_${id}`).then((raw) => {
@@ -310,24 +299,6 @@ export default function DayViewScreen() {
     () => trip?.trip_days.find((d) => d.day_number === dayNumber),
     [trip, dayNumber]
   );
-
-  const { data: photos = [] } = usePhotosByDay(currentDay?.id);
-
-  async function handleAddPhotos() {
-    if (!trip || !currentDay) return;
-    try {
-      const uris = await pickPhotos();
-      if (uris.length === 0) return;
-      await uploadPhotos(uris, trip.id, currentDay.id, trip.owner_id, setUploadJobs);
-      setTimeout(() => setUploadJobs([]), 3000);
-    } catch (err) {
-      show(err instanceof Error ? err.message : "couldn't add photos");
-    }
-  }
-
-  function handlePhotoPress(photo: Photo) {
-    router.push(`/trip/${id}/photo/${photo.id}`);
-  }
 
   const items = useMemo(() => {
     if (!currentDay) return [];
@@ -362,35 +333,6 @@ export default function DayViewScreen() {
     return items[0];
   }, [isToday, items]);
 
-  // Shared notes thread (stored locally)
-  const [noteThread, setNoteThread] = useState<
-    { id: string; author: "self" | "partner"; text: string; time: string }[]
-  >([]);
-  const [newNoteText, setNewNoteText] = useState("");
-
-  useEffect(() => {
-    if (!currentDay) return;
-    AsyncStorage.getItem(`thread_${id}_${dayNumber}`).then((raw) => {
-      if (raw) setNoteThread(JSON.parse(raw));
-    });
-  }, [id, dayNumber, currentDay]);
-
-  function addThreadNote() {
-    if (!newNoteText.trim()) return;
-    const next = [
-      ...noteThread,
-      {
-        id: Date.now().toString(),
-        author: "self" as const,
-        text: newNoteText.trim(),
-        time: new Date().toISOString(),
-      },
-    ];
-    setNoteThread(next);
-    setNewNoteText("");
-    AsyncStorage.setItem(`thread_${id}_${dayNumber}`, JSON.stringify(next));
-  }
-
   const calendarDays = useMemo(
     () =>
       trip?.trip_days.map((d) => ({
@@ -404,18 +346,6 @@ export default function DayViewScreen() {
     () => calendarDays.findIndex((d) => d.dayNumber === dayNumber),
     [calendarDays, dayNumber]
   );
-
-  const [localNotes, setLocalNotes] = useState<string | null>(null);
-  const notesValue = localNotes ?? currentDay?.notes ?? "";
-
-  const handleNotesBlur = useCallback(() => {
-    if (!currentDay || localNotes === null) return;
-    updateNotesMutation.mutate(
-      { dayId: currentDay.id, notes: localNotes },
-      { onError: () => show("couldn't save notes") }
-    );
-    setLocalNotes(null);
-  }, [currentDay, localNotes]);
 
   function handleDeleteItem(itemId: string) {
     deleteItemMutation.mutate(itemId, {
@@ -435,11 +365,6 @@ export default function DayViewScreen() {
   }
 
   function handleAddItem() {
-    // TODO: re-enable limit check when Supabase is live
-    // if (!canAdd) {
-    //   setShowUpgrade(true);
-    //   return;
-    // }
     setEditingItem(null);
     setSheetVisible(true);
   }
@@ -539,7 +464,7 @@ export default function DayViewScreen() {
         )}
 
         {/* Items */}
-        {items.length === 0 ? (
+        {items.length === 0 && dayOutfits.length === 0 ? (
           <View style={styles.emptyItems}>
             <View style={[styles.emptyIcon, { backgroundColor: colors.teal + "14" }]}>
               <Feather name="compass" size={24} color={colors.teal} />
@@ -547,17 +472,6 @@ export default function DayViewScreen() {
             <Text variant="titleItalic" style={[styles.emptyText, { color: colors.stone }]}>
               nothing planned yet
             </Text>
-            <Text variant="caption" style={[styles.emptyHint, { color: colors.taupe }]}>
-              add places from search, links, or manually
-            </Text>
-            <TouchableOpacity
-              style={[styles.emptyAddBtn, { backgroundColor: colors.teal }]}
-              onPress={handleAddItem}
-              activeOpacity={0.85}
-            >
-              <Feather name="plus" size={14} color={colors.pearl} />
-              <Text style={[styles.emptyAddText, { color: colors.pearl }]}>add a plan</Text>
-            </TouchableOpacity>
           </View>
         ) : (
           items.map((item, idx) => (
@@ -571,40 +485,16 @@ export default function DayViewScreen() {
           ))
         )}
 
-        {/* Day outfits — private to you */}
-        <View style={styles.outfitSection}>
-          <Pressable
-            style={({ pressed }) => [styles.outfitHeader, pressed && { opacity: 0.5, backgroundColor: colors.mist }]}
-            onPress={() => router.push(`/trip/${id}/day-look/${dayNumber}`)}
-          >
-            <View style={styles.outfitHeaderLeft}>
-              <Feather name="camera" size={12} color={colors.taupe} />
-              <Text variant="eyebrow" style={[styles.outfitLabel, { color: colors.taupe }]}>
-                day {String(dayNumber).padStart(2, "0")} look
-              </Text>
+        {/* Outfits for this day */}
+        {dayOutfits.length > 0 && (
+          <View style={styles.outfitSection}>
+            <View style={styles.outfitSectionHeader}>
+              <Feather name="scissors" size={11} color={colors.taupe} />
+              <Text style={[styles.outfitSectionLabel, { color: colors.taupe }]}>outfit</Text>
             </View>
-            <View style={styles.outfitHeaderRight}>
-              <View style={styles.outfitPrivacy}>
-                <View style={[styles.outfitPrivacyDot, { backgroundColor: colors.coral }]} />
-                <Text variant="caption" style={[styles.outfitPrivacyText, { color: colors.stone }]}>only you</Text>
-              </View>
-              <Feather name="chevron-right" size={14} color={colors.sand} />
-            </View>
-          </Pressable>
-
-          {dayOutfits.length > 0 ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.outfitScroll}
-            >
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.outfitScroll}>
               {dayOutfits.map((outfit) => (
-                <TouchableOpacity
-                  key={outfit.id}
-                  style={[styles.outfitCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}
-                  onPress={() => router.push(`/trip/${id}/day-look/${dayNumber}`)}
-                  activeOpacity={0.85}
-                >
+                <View key={outfit.id} style={[styles.outfitCard, { borderColor: colors.mist }]}>
                   <Image
                     source={{ uri: outfit.photoUri }}
                     style={styles.outfitThumb}
@@ -612,120 +502,18 @@ export default function DayViewScreen() {
                     transition={200}
                   />
                   {outfit.name ? (
-                    <Text variant="caption" style={[styles.outfitName, { color: colors.ink }]} numberOfLines={1}>
+                    <Text style={[styles.outfitName, { color: colors.ink }]} numberOfLines={1}>
                       {outfit.name}
                     </Text>
                   ) : null}
-                </TouchableOpacity>
+                </View>
               ))}
             </ScrollView>
-          ) : null}
-        </View>
-
-        {/* Notes */}
-        <View style={styles.notesSection}>
-          <Text variant="eyebrow" style={styles.notesLabel}>notes</Text>
-          <TextInput
-            style={[styles.notesInput, { backgroundColor: colors.pearl, borderColor: colors.mist, color: colors.ink }]}
-            placeholder="notes for the day…"
-            placeholderTextColor={colors.stone}
-            value={notesValue}
-            onChangeText={setLocalNotes}
-            onBlur={handleNotesBlur}
-            multiline
-          />
-        </View>
-
-        {/* Photos */}
-        <PhotoGrid
-          photos={photos}
-          onPhotoPress={handlePhotoPress}
-          onAddPress={handleAddPhotos}
-        />
-        <View style={styles.memoryHint}>
-          <Feather name="book-open" size={10} color={colors.sand} />
-          <Text variant="caption" style={[styles.memoryHintText, { color: colors.sand }]}>
-            included in your memory book
-          </Text>
-        </View>
-
-        {/* Shared notes thread */}
-        <View style={[styles.threadSection, { borderTopColor: colors.mist }]}>
-          <View style={styles.threadHeader}>
-            <Text variant="eyebrow">notes from today</Text>
-            <View style={styles.threadPrivacy}>
-              <View style={[styles.threadPrivacyDot, { backgroundColor: colors.coral }]} />
-              <Text variant="caption" style={styles.threadPrivacyText}>
-                only the two of you
-              </Text>
-            </View>
           </View>
-          <View style={styles.memoryHint}>
-            <Feather name="book-open" size={10} color={colors.sand} />
-            <Text variant="caption" style={[styles.memoryHintText, { color: colors.sand }]}>
-              these notes may appear in your memory book
-            </Text>
-          </View>
-
-          {noteThread.map((note) => (
-            <View key={note.id} style={styles.threadBubble}>
-              <View
-                style={[
-                  styles.threadAvatar,
-                  {
-                    backgroundColor:
-                      note.author === "self" ? colors.coral : colors.teal,
-                  },
-                ]}
-              >
-                <Text style={[styles.threadAvatarText, { color: colors.pearl }]}>
-                  {note.author === "self" ? "P" : "L"}
-                </Text>
-              </View>
-              <View style={styles.threadContent}>
-                <Text style={[styles.threadText, { color: colors.ink }]}>{note.text}</Text>
-                <Text variant="caption" style={styles.threadTime}>
-                  {note.author === "self" ? "piggie" : "leo"} ·{" "}
-                  {new Date(note.time).toLocaleTimeString("en-US", {
-                    hour: "numeric",
-                    minute: "2-digit",
-                  }).toLowerCase()}
-                </Text>
-              </View>
-            </View>
-          ))}
-
-          {/* Compose */}
-          <View style={[styles.threadCompose, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
-            <View style={[styles.threadAvatar, { backgroundColor: colors.coral }]}>
-              <Text style={[styles.threadAvatarText, { color: colors.pearl }]}>P</Text>
-            </View>
-            <TextInput
-              style={[styles.threadInput, { color: colors.ink }]}
-              placeholder="something small worth remembering…"
-              placeholderTextColor={colors.sand}
-              value={newNoteText}
-              onChangeText={setNewNoteText}
-              onSubmitEditing={addThreadNote}
-              returnKeyType="send"
-            />
-            {newNoteText.trim().length > 0 && (
-              <TouchableOpacity onPress={addThreadNote} activeOpacity={0.7} hitSlop={8}>
-                <Feather name="send" size={14} color={colors.coral} />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
+        )}
 
         <View style={{ height: 100 }} />
       </ScrollView>
-
-      {/* Upload progress banner */}
-      {uploadJobs.length > 0 && (
-        <View style={styles.bannerWrap}>
-          <UploadProgressBanner jobs={uploadJobs} />
-        </View>
-      )}
 
       {/* Add button */}
       <View style={styles.addArea}>
@@ -751,9 +539,12 @@ export default function DayViewScreen() {
           dayId={currentDay.id}
           item={editingItem}
           currentItemCount={totalItemsInTrip}
+          dayNumber={dayNumber}
+          onOutfitsChanged={loadOutfits}
           onClose={() => {
             setSheetVisible(false);
             setEditingItem(null);
+            loadOutfits();
           }}
         />
       )}
@@ -795,6 +586,7 @@ const styles = StyleSheet.create({
   rollerWrap: {
     height: 72,
     marginBottom: spacing.sm,
+    marginHorizontal: -spacing.lg,
   },
   rollerItem: {
     width: ROLLER_ITEM_W,
@@ -831,22 +623,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   emptyText: {},
-  emptyHint: {
-    textAlign: "center",
-  },
-  emptyAddBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: 999,
-    paddingHorizontal: 20,
-    paddingVertical: 11,
-    marginTop: spacing.xs,
-  },
-  emptyAddText: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 13,
-  },
   timelineRow: {
     flexDirection: "row",
     minHeight: 56,
@@ -913,16 +689,6 @@ const styles = StyleSheet.create({
   itemLocation: {
     fontSize: 11,
   },
-  linkRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginTop: 4,
-  },
-  itemLinkText: {
-    fontSize: 11,
-    fontFamily: "Inter_500Medium",
-  },
   deleteLink: {
     flexDirection: "row",
     alignItems: "center",
@@ -932,94 +698,6 @@ const styles = StyleSheet.create({
   deleteLinkText: {
     color: "#C44",
     fontSize: 11,
-  },
-  outfitSection: {
-    marginTop: spacing.lg,
-    marginBottom: spacing.sm,
-  },
-  outfitHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 10,
-    paddingVertical: 4,
-    paddingHorizontal: 2,
-    borderRadius: 6,
-  },
-  outfitHeaderLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  outfitLabel: {
-    fontSize: 10,
-  },
-  outfitHeaderRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  outfitPrivacy: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  outfitPrivacyDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-  },
-  outfitPrivacyText: {
-    fontSize: 9,
-    fontFamily: "Inter_500Medium",
-  },
-  outfitScroll: {
-    gap: 8,
-    paddingRight: spacing.lg,
-  },
-  outfitCard: {
-    width: 72,
-    borderRadius: 10,
-    overflow: "hidden",
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  outfitThumb: {
-    width: 72,
-    height: 92,
-  },
-  outfitName: {
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    fontSize: 9,
-    fontFamily: "Inter_500Medium",
-  },
-  notesSection: {
-    marginTop: spacing.lg,
-  },
-  notesLabel: {
-    marginBottom: spacing.sm,
-  },
-  notesInput: {
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: spacing.md,
-    minHeight: 80,
-    fontFamily: "CormorantGaramond_500Medium_Italic",
-    fontSize: 16,
-    textAlignVertical: "top",
-  },
-  /* Memory book hint */
-  memoryHint: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  memoryHintText: {
-    fontSize: 10,
-    fontFamily: "Inter_400Regular",
   },
 
   /* NOW card */
@@ -1095,87 +773,49 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
 
-  /* Shared notes thread */
-  threadSection: {
-    marginTop: spacing.lg,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: spacing.lg,
+  /* Outfit section */
+  outfitSection: {
+    marginBottom: spacing.lg,
   },
-  threadHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 14,
-  },
-  threadPrivacy: {
+  outfitSectionHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    marginBottom: 10,
   },
-  threadPrivacyDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-  },
-  threadPrivacyText: {
+  outfitSectionLabel: {
     fontSize: 10,
-  },
-  threadBubble: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 14,
-  },
-  threadAvatar: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  threadAvatarText: {
-    fontSize: 9,
+    textTransform: "uppercase" as const,
+    letterSpacing: 1.2,
     fontFamily: "Inter_600SemiBold",
   },
-  threadContent: {
-    flex: 1,
+  outfitScroll: {
+    gap: 8,
   },
-  threadText: {
-    fontFamily: "CormorantGaramond_500Medium_Italic",
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  threadTime: {
-    fontSize: 10,
-    marginTop: 3,
-  },
-  threadCompose: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    borderRadius: 12,
+  outfitCard: {
+    width: 72,
+    borderRadius: 10,
+    overflow: "hidden",
     borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
   },
-  threadInput: {
-    flex: 1,
-    fontFamily: "CormorantGaramond_500Medium_Italic",
-    fontSize: 16,
+  outfitThumb: {
+    width: 72,
+    height: 92,
+  },
+  outfitName: {
+    paddingHorizontal: 6,
     paddingVertical: 4,
+    fontSize: 9,
+    fontFamily: "Inter_500Medium",
   },
 
-  /* Add button area with counter */
+  /* Add button area */
   addArea: {
     position: "absolute",
     bottom: 24,
     left: spacing.lg,
     right: spacing.lg,
     alignItems: "center",
-    gap: 6,
-  },
-  itemCounter: {
-    fontSize: 10,
   },
   addButton: {
     borderRadius: 10,
@@ -1187,11 +827,5 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontFamily: "Inter_500Medium",
-  },
-  bannerWrap: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
   },
 });
