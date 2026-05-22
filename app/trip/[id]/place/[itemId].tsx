@@ -117,7 +117,7 @@ async function tryNoembedProxy(url: string): Promise<LinkPreview | null> {
     return {
       title: d.title || (isIg ? "instagram post" : domain),
       author: d.author_name ? `@${d.author_name}` : domain,
-      thumbnailUrl: d.thumbnail_url || d.url,
+      thumbnailUrl: (d.thumbnail_url || d.url),
       source: isIg ? "instagram" : domain.replace(/\.com$/, ""),
     };
   } catch {}
@@ -139,7 +139,7 @@ async function tryMicrolink(url: string): Promise<LinkPreview | null> {
     return {
       title: d.title || (isIg ? "instagram post" : domain),
       author: d.publisher || domain,
-      thumbnailUrl: d.image?.url || d.logo?.url,
+      thumbnailUrl: d.image?.url || d.logo?.url || "",
       source: isIg ? "instagram" : domain.replace(/\.com$/, ""),
     };
   } catch {}
@@ -169,7 +169,7 @@ async function fetchLinkPreview(url: string): Promise<LinkPreview | null> {
     return {
       title: og.title || (isIg ? "instagram post" : domain),
       author: isIg ? "instagram" : domain,
-      thumbnailUrl: og.image,
+      thumbnailUrl: (og.image),
       source: isIg ? "instagram" : domain,
     };
   }
@@ -399,7 +399,7 @@ export default function PlaceDetailScreen() {
               <Image
                 source={{ uri: linkPreview.thumbnailUrl }}
                 style={styles.linkThumb}
-                contentFit="contain"
+                contentFit="cover"
                 transition={200}
               />
             ) : null}
@@ -614,8 +614,8 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   linkThumb: {
-    width: 80,
-    height: 80,
+    width: 90,
+    height: 110,
     backgroundColor: "#f5f0e4",
   },
   linkInfo: {
