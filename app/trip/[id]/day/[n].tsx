@@ -12,6 +12,7 @@ import {
   Dimensions,
   Linking,
   RefreshControl,
+  Modal,
 } from "react-native";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -286,6 +287,7 @@ export default function DayViewScreen() {
 
   // Outfits for this day
   const [dayOutfits, setDayOutfits] = useState<{ id: string; photoUri: string; name: string }[]>([]);
+  const [fullScreenOutfit, setFullScreenOutfit] = useState<string | null>(null);
   const loadOutfits = useCallback(() => {
     AsyncStorage.getItem(`outfits_${id}`).then((raw) => {
       if (!raw) { setDayOutfits([]); return; }
@@ -485,35 +487,44 @@ export default function DayViewScreen() {
           ))
         )}
 
-        {/* Outfits for this day */}
-        {dayOutfits.length > 0 && (
-          <View style={styles.outfitSection}>
-            <View style={styles.outfitSectionHeader}>
-              <Feather name="scissors" size={11} color={colors.taupe} />
-              <Text style={[styles.outfitSectionLabel, { color: colors.taupe }]}>outfit</Text>
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.outfitScroll}>
-              {dayOutfits.map((outfit) => (
-                <View key={outfit.id} style={[styles.outfitCard, { borderColor: colors.mist }]}>
-                  <Image
-                    source={{ uri: outfit.photoUri }}
-                    style={styles.outfitThumb}
-                    contentFit="cover"
-                    transition={200}
-                  />
-                  {outfit.name ? (
-                    <Text style={[styles.outfitName, { color: colors.ink }]} numberOfLines={1}>
-                      {outfit.name}
-                    </Text>
-                  ) : null}
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-
-        <View style={{ height: 100 }} />
+        <View style={{ height: dayOutfits.length > 0 ? 170 : 100 }} />
       </ScrollView>
+
+      {/* Sticky outfit strip at bottom */}
+      {dayOutfits.length > 0 && (
+        <View style={[styles.outfitStrip, { backgroundColor: colors.ivory, borderTopColor: colors.mist }]}>
+          <View style={styles.outfitStripHeader}>
+            <Feather name="scissors" size={10} color={colors.taupe} />
+            <Text style={[styles.outfitStripLabel, { color: colors.taupe }]}>outfit</Text>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.outfitStripScroll}
+          >
+            {dayOutfits.map((outfit) => (
+              <TouchableOpacity
+                key={outfit.id}
+                style={[styles.outfitStripCard, { borderColor: colors.mist }]}
+                onPress={() => setFullScreenOutfit(outfit.photoUri)}
+                activeOpacity={0.85}
+              >
+                <Image
+                  source={{ uri: outfit.photoUri }}
+                  style={styles.outfitStripThumb}
+                  contentFit="cover"
+                  transition={200}
+                />
+                {outfit.name ? (
+                  <Text style={[styles.outfitStripName, { color: colors.ink }]} numberOfLines={1}>
+                    {outfit.name}
+                  </Text>
+                ) : null}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
       {/* Add button */}
       <View style={styles.addArea}>
@@ -554,6 +565,37 @@ export default function DayViewScreen() {
         limitMessage={`the free plan allows ${itemLimit} activities per trip. upgrade for unlimited planning.`}
         onClose={() => setShowUpgrade(false)}
       />
+
+      {/* Fullscreen outfit viewer */}
+      <Modal
+        visible={!!fullScreenOutfit}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFullScreenOutfit(null)}
+      >
+        <Pressable
+          style={styles.fullscreenOverlay}
+          onPress={() => setFullScreenOutfit(null)}
+        >
+          <View style={styles.fullscreenContainer}>
+            {fullScreenOutfit && (
+              <Image
+                source={{ uri: fullScreenOutfit }}
+                style={styles.fullscreenImage}
+                contentFit="contain"
+                transition={200}
+              />
+            )}
+          </View>
+          <TouchableOpacity
+            style={styles.fullscreenClose}
+            onPress={() => setFullScreenOutfit(null)}
+            activeOpacity={0.8}
+          >
+            <Feather name="x" size={22} color="#fff" />
+          </TouchableOpacity>
+        </Pressable>
+      </Modal>
     </Container>
   );
 }
@@ -773,40 +815,75 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
 
-  /* Outfit section */
-  outfitSection: {
-    marginBottom: spacing.lg,
+  /* Sticky outfit strip */
+  outfitStrip: {
+    position: "absolute",
+    bottom: 76,
+    left: 0,
+    right: 0,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: 8,
+    paddingBottom: 10,
   },
-  outfitSectionHeader: {
+  outfitStripHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginBottom: 10,
+    gap: 5,
+    paddingHorizontal: spacing.lg,
+    marginBottom: 6,
   },
-  outfitSectionLabel: {
-    fontSize: 10,
+  outfitStripLabel: {
+    fontSize: 9,
     textTransform: "uppercase" as const,
     letterSpacing: 1.2,
     fontFamily: "Inter_600SemiBold",
   },
-  outfitScroll: {
+  outfitStripScroll: {
+    paddingHorizontal: spacing.lg,
     gap: 8,
   },
-  outfitCard: {
-    width: 72,
+  outfitStripCard: {
+    width: 64,
     borderRadius: 10,
     overflow: "hidden",
     borderWidth: StyleSheet.hairlineWidth,
   },
-  outfitThumb: {
-    width: 72,
-    height: 92,
+  outfitStripThumb: {
+    width: 64,
+    height: 82,
   },
-  outfitName: {
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    fontSize: 9,
+  outfitStripName: {
+    paddingHorizontal: 5,
+    paddingVertical: 3,
+    fontSize: 8,
     fontFamily: "Inter_500Medium",
+  },
+
+  /* Fullscreen outfit viewer */
+  fullscreenOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.92)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fullscreenContainer: {
+    width: SCREEN_W,
+    height: SCREEN_W * 1.4,
+  },
+  fullscreenImage: {
+    width: "100%",
+    height: "100%",
+  },
+  fullscreenClose: {
+    position: "absolute",
+    top: 56,
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   /* Add button area */

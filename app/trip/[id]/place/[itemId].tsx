@@ -331,7 +331,7 @@ export default function PlaceDetailScreen() {
           )}
         </View>
 
-        {/* Link preview card — only shown when oEmbed succeeds */}
+        {/* Link preview card — shown when oEmbed succeeds */}
         {linkPreview ? (
           <TouchableOpacity
             style={[styles.linkCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}
@@ -363,6 +363,21 @@ export default function PlaceDetailScreen() {
               </Text>
             </View>
             <Feather name="external-link" size={14} color={colors.stone} style={{ marginRight: 14 }} />
+          </TouchableOpacity>
+        ) : null}
+
+        {/* Fallback link row — when item has a link but oEmbed didn't produce a preview */}
+        {item.link && !linkPreview && !linkLoading ? (
+          <TouchableOpacity
+            style={[styles.linkRow, { borderColor: colors.mist }]}
+            onPress={() => Linking.openURL(item.link!)}
+            activeOpacity={0.8}
+          >
+            <Feather name="link" size={13} color={colors.coral} />
+            <Text variant="caption" style={[styles.linkRowText, { color: colors.ink }]} numberOfLines={1}>
+              {item.link.replace(/^https?:\/\/(www\.)?/, "").split("?")[0]}
+            </Text>
+            <Feather name="external-link" size={12} color={colors.stone} />
           </TouchableOpacity>
         ) : null}
 
@@ -594,6 +609,24 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     minHeight: 60,
     textAlignVertical: "top",
+  },
+
+  /* Link fallback row */
+  linkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.sm,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  linkRowText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
   },
 
   /* Notes */
