@@ -155,7 +155,7 @@ function TimelineItem({
 /* ------------------------------------------------------------------ */
 
 const ROLLER_ITEM_W = 56;
-const SCREEN_W = Dimensions.get("window").width;
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 const ROLLER_PAD_H = (SCREEN_W - ROLLER_ITEM_W) / 2;
 
 function DateRoller({
@@ -602,6 +602,7 @@ export default function DayViewScreen() {
             showsHorizontalScrollIndicator={false}
             keyExtractor={(item) => item.id}
             initialScrollIndex={fullScreenIndex ?? 0}
+            style={styles.galleryList}
             getItemLayout={(_, index) => ({
               length: SCREEN_W,
               offset: SCREEN_W * index,
@@ -940,16 +941,20 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
     letterSpacing: 1,
   },
+  galleryList: {
+    flex: 1,
+  },
   gallerySlide: {
     width: SCREEN_W,
-    flex: 1,
+    height: SCREEN_H - 140,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 16,
   },
   galleryImage: {
     width: SCREEN_W - 32,
-    height: "75%",
+    height: SCREEN_H - 200,
+    borderRadius: 6,
   },
   galleryName: {
     color: "rgba(255,255,255,0.6)",
