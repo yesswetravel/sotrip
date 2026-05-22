@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
 
   /* Hero */
   hero: {
-    height: SCREEN_W * 0.65,
+    height: SCREEN_W * 1,
     position: "relative",
     overflow: "hidden",
   },
