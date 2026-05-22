@@ -388,30 +388,45 @@ export default function PlaceDetailScreen() {
           )}
         </View>
 
-        {/* Link preview card — shown when oEmbed succeeds */}
+        {/* Link preview card */}
         {linkPreview ? (
           <TouchableOpacity
             style={[styles.linkCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}
             onPress={() => item.link && Linking.openURL(item.link)}
             activeOpacity={0.8}
           >
+            {/* Image banner */}
             {linkPreview.thumbnailUrl ? (
-              <Image
-                source={{ uri: linkPreview.thumbnailUrl }}
-                style={styles.linkThumb}
-                contentFit="cover"
-                transition={200}
-              />
-            ) : null}
-            <View style={styles.linkInfo}>
-              <View style={[styles.sourceBadge, {
-                backgroundColor: linkPreview.source === "instagram" ? "#E1306C"
-                  : linkPreview.source === "pinterest" ? "#E60023"
-                  : linkPreview.source === "tiktok" ? "#010101"
-                  : colors.stone,
-              }]}>
-                <Text style={styles.sourceBadgeText}>{linkPreview.source}</Text>
+              <View style={styles.linkImageWrap}>
+                <Image
+                  source={{ uri: linkPreview.thumbnailUrl }}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="cover"
+                  transition={200}
+                />
+                {/* Gradient overlay at bottom */}
+                <View style={styles.linkImageGradient} />
+                {/* Source badge on image */}
+                <View style={[styles.sourceBadge, {
+                  position: "absolute",
+                  top: 10,
+                  left: 10,
+                  backgroundColor: linkPreview.source === "instagram" ? "#E1306C"
+                    : linkPreview.source === "pinterest" ? "#E60023"
+                    : linkPreview.source === "tiktok" ? "#010101"
+                    : colors.stone,
+                }]}>
+                  <Text style={styles.sourceBadgeText}>{linkPreview.source}</Text>
+                </View>
+                {/* View prompt */}
+                <View style={styles.linkViewPrompt}>
+                  <Feather name="external-link" size={10} color="#fff" />
+                  <Text style={styles.linkViewText}>view post</Text>
+                </View>
               </View>
+            ) : null}
+            {/* Info row */}
+            <View style={styles.linkInfo}>
               <Text variant="body" style={[styles.linkTitle, { color: colors.ink }]} numberOfLines={2}>
                 {linkPreview.title}
               </Text>
@@ -419,7 +434,6 @@ export default function PlaceDetailScreen() {
                 {linkPreview.author}
               </Text>
             </View>
-            <Feather name="external-link" size={14} color={colors.stone} style={{ marginRight: 14 }} />
           </TouchableOpacity>
         ) : null}
 
@@ -606,20 +620,43 @@ const styles = StyleSheet.create({
   /* Link preview */
   linkCard: {
     marginHorizontal: spacing.lg,
-    marginTop: spacing.sm,
-    borderRadius: 12,
+    marginTop: spacing.md,
+    borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
-    flexDirection: "row",
-    alignItems: "center",
     overflow: "hidden",
   },
-  linkThumb: {
-    width: 90,
-    height: 110,
-    backgroundColor: "#f5f0e4",
+  linkImageWrap: {
+    width: "100%",
+    height: 180,
+    position: "relative",
+  },
+  linkImageGradient: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 50,
+    backgroundColor: "rgba(0,0,0,0.25)",
+  },
+  linkViewPrompt: {
+    position: "absolute",
+    bottom: 10,
+    right: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  linkViewText: {
+    color: "#fff",
+    fontSize: 9,
+    fontFamily: "Inter_500Medium",
+    letterSpacing: 0.5,
   },
   linkInfo: {
-    flex: 1,
     paddingHorizontal: 14,
     paddingVertical: 12,
     gap: 4,
