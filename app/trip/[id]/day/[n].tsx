@@ -287,7 +287,8 @@ export default function DayViewScreen() {
 
   // Outfits for this day
   const [dayOutfits, setDayOutfits] = useState<{ id: string; photoUri: string; name: string }[]>([]);
-  const [fullScreenOutfit, setFullScreenOutfit] = useState<string | null>(null);
+  const [fullScreenIndex, setFullScreenIndex] = useState<number | null>(null);
+  const galleryRef = useRef<FlatList>(null);
   const loadOutfits = useCallback(() => {
     AsyncStorage.getItem(`outfits_${id}`).then((raw) => {
       if (!raw) { setDayOutfits([]); return; }
@@ -506,7 +507,7 @@ export default function DayViewScreen() {
               <TouchableOpacity
                 key={outfit.id}
                 style={[styles.outfitStripCard, { borderColor: colors.mist }]}
-                onPress={() => setFullScreenOutfit(outfit.photoUri)}
+                onPress={() => setFullScreenIndex(dayOutfits.indexOf(outfit))}
                 activeOpacity={0.85}
               >
                 <Image
@@ -566,35 +567,83 @@ export default function DayViewScreen() {
         onClose={() => setShowUpgrade(false)}
       />
 
-      {/* Fullscreen outfit viewer */}
+      {/* Fullscreen outfit gallery — swipeable */}
       <Modal
-        visible={!!fullScreenOutfit}
+        visible={fullScreenIndex !== null}
         transparent
         animationType="fade"
-        onRequestClose={() => setFullScreenOutfit(null)}
+        onRequestClose={() => setFullScreenIndex(null)}
       >
-        <Pressable
-          style={styles.fullscreenOverlay}
-          onPress={() => setFullScreenOutfit(null)}
-        >
-          <View style={styles.fullscreenContainer}>
-            {fullScreenOutfit && (
-              <Image
-                source={{ uri: fullScreenOutfit }}
-                style={styles.fullscreenImage}
-                contentFit="contain"
-                transition={200}
-              />
-            )}
-          </View>
+        <View style={styles.galleryOverlay}>
+          {/* Close button */}
           <TouchableOpacity
-            style={styles.fullscreenClose}
-            onPress={() => setFullScreenOutfit(null)}
+            style={styles.galleryClose}
+            onPress={() => setFullScreenIndex(null)}
             activeOpacity={0.8}
           >
-            <Feather name="x" size={22} color="#fff" />
+            <Feather name="x" size={20} color="rgba(255,255,255,0.7)" />
           </TouchableOpacity>
-        </Pressable>
+
+          {/* Page indicator */}
+          {dayOutfits.length > 1 && fullScreenIndex !== null && (
+            <View style={styles.galleryCounter}>
+              <Text style={styles.galleryCounterText}>
+                {(fullScreenIndex ?? 0) + 1} / {dayOutfits.length}
+              </Text>
+            </View>
+          )}
+
+          {/* Swipeable photos */}
+          <FlatList
+            ref={galleryRef}
+            data={dayOutfits}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item) => item.id}
+            initialScrollIndex={fullScreenIndex ?? 0}
+            getItemLayout={(_, index) => ({
+              length: SCREEN_W,
+              offset: SCREEN_W * index,
+              index,
+            })}
+            onMomentumScrollEnd={(e) => {
+              const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
+              setFullScreenIndex(idx);
+            }}
+            renderItem={({ item }) => (
+              <Pressable
+                style={styles.gallerySlide}
+                onPress={() => setFullScreenIndex(null)}
+              >
+                <Image
+                  source={{ uri: item.photoUri }}
+                  style={styles.galleryImage}
+                  contentFit="contain"
+                  transition={200}
+                />
+                {item.name ? (
+                  <Text style={styles.galleryName}>{item.name}</Text>
+                ) : null}
+              </Pressable>
+            )}
+          />
+
+          {/* Dot indicators */}
+          {dayOutfits.length > 1 && (
+            <View style={styles.galleryDots}>
+              {dayOutfits.map((_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.galleryDot,
+                    i === (fullScreenIndex ?? 0) && styles.galleryDotActive,
+                  ]}
+                />
+              ))}
+            </View>
+          )}
+        </View>
       </Modal>
     </Container>
   );
@@ -859,31 +908,76 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
   },
 
-  /* Fullscreen outfit viewer */
-  fullscreenOverlay: {
+  /* Fullscreen outfit gallery */
+  galleryOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.92)",
+    backgroundColor: "#000",
     justifyContent: "center",
-    alignItems: "center",
   },
-  fullscreenContainer: {
-    width: SCREEN_W,
-    height: SCREEN_W * 1.4,
-  },
-  fullscreenImage: {
-    width: "100%",
-    height: "100%",
-  },
-  fullscreenClose: {
+  galleryClose: {
     position: "absolute",
-    top: 56,
-    right: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.15)",
+    top: 54,
+    right: 18,
+    zIndex: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.1)",
     alignItems: "center",
     justifyContent: "center",
+  },
+  galleryCounter: {
+    position: "absolute",
+    top: 60,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    alignItems: "center",
+  },
+  galleryCounterText: {
+    color: "rgba(255,255,255,0.5)",
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    letterSpacing: 1,
+  },
+  gallerySlide: {
+    width: SCREEN_W,
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 16,
+  },
+  galleryImage: {
+    width: SCREEN_W - 32,
+    height: "75%",
+  },
+  galleryName: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    marginTop: 16,
+    letterSpacing: 0.3,
+  },
+  galleryDots: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 6,
+    position: "absolute",
+    bottom: 50,
+    left: 0,
+    right: 0,
+  },
+  galleryDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "rgba(255,255,255,0.25)",
+  },
+  galleryDotActive: {
+    backgroundColor: "rgba(255,255,255,0.8)",
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
 
   /* Add button area */
