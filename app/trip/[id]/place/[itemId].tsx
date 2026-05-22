@@ -47,10 +47,11 @@ async function scrapeOgImage(url: string): Promise<{ image?: string; title?: str
   return {};
 }
 
-async function fetchLinkPreview(url: string): Promise<LinkPreview | null> {
-  if (!url.trim()) return null;
-  try {
-    if (url.includes("instagram.com") || url.includes("instagr.am")) {
+/** Try multiple oEmbed/proxy services to get a link preview */
+async function tryOembed(url: string): Promise<LinkPreview | null> {
+  // 1. Try native oEmbed endpoints
+  if (url.includes("instagram.com") || url.includes("instagr.am")) {
+    try {
       const res = await fetch(
         `https://api.instagram.com/oembed?url=${encodeURIComponent(url)}&omitscript=true`
       );
@@ -65,17 +66,10 @@ async function fetchLinkPreview(url: string): Promise<LinkPreview | null> {
           };
         }
       }
-      const og = await scrapeOgImage(url);
-      if (og.image) {
-        return {
-          title: og.title || "instagram post",
-          author: "instagram",
-          thumbnailUrl: og.image,
-          source: "instagram",
-        };
-      }
-    }
-    if (url.includes("pinterest.com") || url.includes("pin.it")) {
+    } catch {}
+  }
+  if (url.includes("pinterest.com") || url.includes("pin.it")) {
+    try {
       const res = await fetch(
         `https://www.pinterest.com/oembed.json?url=${encodeURIComponent(url)}`
       );
@@ -88,8 +82,10 @@ async function fetchLinkPreview(url: string): Promise<LinkPreview | null> {
           source: "pinterest",
         };
       }
-    }
-    if (url.includes("tiktok.com")) {
+    } catch {}
+  }
+  if (url.includes("tiktok.com")) {
+    try {
       const res = await fetch(
         `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`
       );
@@ -102,18 +98,82 @@ async function fetchLinkPreview(url: string): Promise<LinkPreview | null> {
           source: "tiktok",
         };
       }
-    }
-    const og = await scrapeOgImage(url);
-    if (og.image) {
-      const domain = url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
-      return {
-        title: og.title || domain,
-        author: domain,
-        thumbnailUrl: og.image,
-        source: domain,
-      };
-    }
+    } catch {}
+  }
+  return null;
+}
+
+/** Free proxy oEmbed — works for Instagram, YouTube, etc. without auth */
+async function tryNoembedProxy(url: string): Promise<LinkPreview | null> {
+  try {
+    const res = await fetch(
+      `https://noembed.com/embed?url=${encodeURIComponent(url)}`
+    );
+    if (!res.ok) return null;
+    const d = await res.json();
+    if (d.error) return null;
+    const isIg = url.includes("instagram.com") || url.includes("instagr.am");
+    const domain = url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
+    return {
+      title: d.title || (isIg ? "instagram post" : domain),
+      author: d.author_name ? `@${d.author_name}` : domain,
+      thumbnailUrl: d.thumbnail_url || d.url,
+      source: isIg ? "instagram" : domain.replace(/\.com$/, ""),
+    };
   } catch {}
+  return null;
+}
+
+/** Try Microlink as a last resort — extracts og:image from any URL */
+async function tryMicrolink(url: string): Promise<LinkPreview | null> {
+  try {
+    const res = await fetch(
+      `https://api.microlink.io/?url=${encodeURIComponent(url)}`
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    const d = json.data;
+    if (!d) return null;
+    const isIg = url.includes("instagram.com") || url.includes("instagr.am");
+    const domain = url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
+    return {
+      title: d.title || (isIg ? "instagram post" : domain),
+      author: d.publisher || domain,
+      thumbnailUrl: d.image?.url || d.logo?.url,
+      source: isIg ? "instagram" : domain.replace(/\.com$/, ""),
+    };
+  } catch {}
+  return null;
+}
+
+async function fetchLinkPreview(url: string): Promise<LinkPreview | null> {
+  if (!url.trim()) return null;
+
+  // Try native oEmbed first
+  const native = await tryOembed(url);
+  if (native?.thumbnailUrl) return native;
+
+  // Try noembed.com proxy (free, no auth)
+  const proxy = await tryNoembedProxy(url);
+  if (proxy?.thumbnailUrl) return proxy;
+
+  // Try microlink (free tier)
+  const micro = await tryMicrolink(url);
+  if (micro?.thumbnailUrl) return micro;
+
+  // Try scraping og:image directly
+  const og = await scrapeOgImage(url);
+  if (og.image) {
+    const isIg = url.includes("instagram.com") || url.includes("instagr.am");
+    const domain = url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
+    return {
+      title: og.title || (isIg ? "instagram post" : domain),
+      author: isIg ? "instagram" : domain,
+      thumbnailUrl: og.image,
+      source: isIg ? "instagram" : domain,
+    };
+  }
+
   return null;
 }
 
