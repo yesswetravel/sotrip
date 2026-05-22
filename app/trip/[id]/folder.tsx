@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: spacing.lg,
-    paddingTop: 56,
+    paddingTop: spacing.xs,
     paddingBottom: spacing.sm,
   },
   titleBlock: {

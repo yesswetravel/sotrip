@@ -14,8 +14,9 @@ export default function Container({ safe = true, logo = false, style, children, 
   const insets = useSafeAreaInsets();
   const Wrapper = safe ? SafeAreaView : View;
 
-  /* When safe={false} the logo must clear the status bar on its own */
-  const logoTopPad = safe ? spacing.sm : Math.max(insets.top, Platform.OS === "android" ? 44 : 50);
+  /* safe=true: SafeAreaView handles the inset, we just add a small gap.
+     safe=false: we replicate the same total distance from screen top. */
+  const logoTopPad = safe ? spacing.sm : insets.top + spacing.sm;
 
   return (
     <Wrapper

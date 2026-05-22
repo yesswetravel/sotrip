@@ -180,7 +180,7 @@ const AVATAR_SIZE = 64;
 
 const styles = StyleSheet.create({
   scroll: {
-    paddingTop: spacing.xl,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.xxl,
   },
 

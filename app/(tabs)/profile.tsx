@@ -427,7 +427,7 @@ export default function ProfileScreen() {
 /* ------------------------------------------------------------------ */
 
 const styles = StyleSheet.create({
-  scroll: { paddingTop: spacing.xl + 20 },
+  scroll: { paddingTop: spacing.sm },
 
   /* Header */
   header: { alignItems: "center", marginBottom: spacing.xl },
