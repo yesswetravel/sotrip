@@ -55,11 +55,13 @@ function daysUntilLabel(dateStr: string | null): string {
 /*  Cairn Navigation Hub                                                */
 /* ------------------------------------------------------------------ */
 
-/* Matches the original cairn SVG mark: r=6, r=9, r=17, r=30 (×2.8 scale) */
-const DOT_SIZES = [17, 25, 48, 84];
-const DOT_ICON_SIZES = [0, 12, 20, 34];
+/* Matches the original cairn SVG mark: r=6, r=9, r=17, r=30 (scaled for touch) */
+const DOT_SIZES = [24, 30, 48, 84];
+const DOT_ICON_SIZES = [0, 13, 20, 34];
 const DOT_ICONS: (keyof typeof Feather.glyphMap)[] = ["users", "folder", "map", "calendar"];
 const DOT_GAPS = [0, 4, 8, 12];
+const LABEL_SIZES = [7, 8, 9, 9];
+const LABEL_SPACING = [1.2, 1.5, 2, 2];
 
 function CairnHub({
   tripId,
@@ -136,7 +138,7 @@ function CairnHub({
             ]}
           >
             {DOT_ICON_SIZES[i] > 0 && (
-              <View style={{ opacity: 0.45 }}>
+              <View style={{ opacity: 0.2 }}>
                 <Feather
                   name={DOT_ICONS[i]}
                   size={DOT_ICON_SIZES[i]}
@@ -148,7 +150,11 @@ function CairnHub({
           <Animated.Text
             style={[
               styles.cairnLabel,
-              { color: colors.stone },
+              {
+                color: colors.stone,
+                fontSize: LABEL_SIZES[i],
+                letterSpacing: LABEL_SPACING[i],
+              },
               makeDotStyle(dv),
             ]}
           >

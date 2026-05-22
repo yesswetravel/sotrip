@@ -1,5 +1,5 @@
-import { View, ViewProps, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { View, ViewProps, StyleSheet, Platform } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { spacing } from "../../theme/spacing";
 import { useTheme } from "../theme/ThemeProvider";
 import { Cairn } from "./Cairn";
@@ -11,7 +11,11 @@ interface ContainerProps extends ViewProps {
 
 export default function Container({ safe = true, logo = false, style, children, ...props }: ContainerProps) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const Wrapper = safe ? SafeAreaView : View;
+
+  /* When safe={false} the logo must clear the status bar on its own */
+  const logoTopPad = safe ? spacing.sm : Math.max(insets.top, Platform.OS === "android" ? 44 : 50);
 
   return (
     <Wrapper
@@ -19,7 +23,7 @@ export default function Container({ safe = true, logo = false, style, children, 
       {...props}
     >
       {logo && (
-        <View style={styles.logoBar}>
+        <View style={[styles.logoBar, { paddingTop: logoTopPad }]}>
           <Cairn size="sm" layout="horizontal" animate={false} />
         </View>
       )}
@@ -37,7 +41,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingTop: spacing.sm,
     paddingBottom: spacing.md,
   },
 });
