@@ -578,8 +578,9 @@ const styles = StyleSheet.create({
   },
   inviteCodeText: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 28,
-    letterSpacing: 6,
+    fontSize: 26,
+    letterSpacing: 4,
+    paddingRight: 4,
     marginBottom: 6,
   },
   shareBtn: {

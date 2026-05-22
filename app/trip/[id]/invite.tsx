@@ -372,6 +372,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     fontSize: 26,
     letterSpacing: 3,
+    paddingRight: 3,
     marginVertical: 8,
     textAlign: "center",
   },

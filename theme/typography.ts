@@ -34,6 +34,7 @@ export const typography = {
     fontFamily: "Inter_500Medium",
     fontSize: 10,
     letterSpacing: 2,
+    paddingRight: 2,
     textTransform: "uppercase" as const,
     color: colors.stone,
   },

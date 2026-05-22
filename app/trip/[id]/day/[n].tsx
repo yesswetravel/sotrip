@@ -1058,6 +1058,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontFamily: "Inter_500Medium",
     letterSpacing: 2,
+    paddingRight: 2,
     textTransform: "uppercase",
   },
   nowBody: {

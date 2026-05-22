@@ -560,7 +560,7 @@ const s = StyleSheet.create({
   },
   coverLine: { width: 40, height: 2, marginVertical: 14 },
   coverYear: {
-    fontFamily: "Inter_500Medium", fontSize: 14, letterSpacing: 6, color: "rgba(255,255,255,0.7)",
+    fontFamily: "Inter_500Medium", fontSize: 14, letterSpacing: 6, paddingRight: 6, color: "rgba(255,255,255,0.7)",
   },
   coverBottom: { alignItems: "center", gap: 4 },
   coverNames: { fontFamily: "CormorantGaramond_500Medium", fontSize: 18, color: "rgba(255,255,255,0.9)" },

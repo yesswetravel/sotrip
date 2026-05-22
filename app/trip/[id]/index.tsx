@@ -393,9 +393,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   cairnLabel: {
-    fontSize: 9,
     fontFamily: "Inter_500Medium",
-    letterSpacing: 2,
     textTransform: "uppercase",
   },
 

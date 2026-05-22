@@ -154,6 +154,7 @@ export function Cairn({
           fontFamily: "Inter_400Regular",
           fontSize: s.sub,
           letterSpacing: 4,
+          paddingRight: 4,
           textTransform: "uppercase" as const,
           color: inkColor,
           marginTop: 8,
