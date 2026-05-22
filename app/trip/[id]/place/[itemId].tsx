@@ -252,21 +252,18 @@ export default function PlaceDetailScreen() {
 
   useEffect(() => {
     const name = item?.location_name || item?.title;
-    if (item?.link) {
-      setLinkLoading(true);
-      fetchLinkPreview(item.link).then(async (preview) => {
-        setLinkPreview(preview);
-        if (preview?.thumbnailUrl) {
-          setPhotoUrl(preview.thumbnailUrl);
-        } else if (name) {
-          const url = await fetchPlacePhoto(name);
-          if (url) setPhotoUrl(url);
-        }
-        setLinkLoading(false);
-      });
-    } else if (name) {
+    // Hero photo always from Google Places only
+    if (name) {
       fetchPlacePhoto(name).then((url) => {
         if (url) setPhotoUrl(url);
+      });
+    }
+    // Link preview separately
+    if (item?.link) {
+      setLinkLoading(true);
+      fetchLinkPreview(item.link).then((preview) => {
+        setLinkPreview(preview);
+        setLinkLoading(false);
       });
     }
   }, [item?.link, item?.location_name, item?.title]);
