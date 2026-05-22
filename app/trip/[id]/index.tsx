@@ -55,12 +55,12 @@ function daysUntilLabel(dateStr: string | null): string {
 /*  Cairn Navigation Hub                                                */
 /* ------------------------------------------------------------------ */
 
-/* Matches the original cairn SVG mark: r=6, r=9, r=17, r=30 (scaled for touch) */
-const DOT_SIZES = [24, 30, 48, 84];
-const DOT_ICON_SIZES = [0, 13, 20, 34];
+/* Matches the original cairn SVG mark: r=6, r=9, r=17, r=30 (scaled 1.3× for mobile) */
+const DOT_SIZES = [31, 39, 62, 109];
+const DOT_ICON_SIZES = [0, 17, 26, 44];
 const DOT_ICONS: (keyof typeof Feather.glyphMap)[] = ["users", "folder", "map", "calendar"];
-const DOT_GAPS = [0, 4, 8, 12];
-const LABEL_SIZES = [7, 8, 9, 9];
+const DOT_GAPS = [0, 5, 10, 16];
+const LABEL_SIZES = [8, 9, 10, 10];
 const LABEL_SPACING = [1.2, 1.5, 2, 2];
 
 function CairnHub({
