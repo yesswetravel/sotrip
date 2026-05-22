@@ -912,7 +912,7 @@ const styles = StyleSheet.create({
   /* Fullscreen outfit gallery */
   galleryOverlay: {
     flex: 1,
-    backgroundColor: "rgba(30,42,58,0.88)",
+    backgroundColor: "rgba(30,42,58,0.7)",
     justifyContent: "center",
   },
   galleryClose: {
