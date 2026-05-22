@@ -319,7 +319,7 @@ export default function TripOverviewScreen() {
           <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
             <Feather name="chevron-left" size={20} color={colors.ink} />
           </TouchableOpacity>
-          <Text variant="eyebrow">{trip.title}</Text>
+          <Text variant="eyebrow">trip overview</Text>
           <View style={{ width: 20 }} />
         </View>
 
