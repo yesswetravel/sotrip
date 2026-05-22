@@ -404,13 +404,16 @@ export default function PlaceDetailScreen() {
               />
             ) : null}
             <View style={styles.linkInfo}>
-              <View style={[styles.sourceBadge, {
-                backgroundColor: linkPreview.source === "instagram" ? "#E1306C"
-                  : linkPreview.source === "pinterest" ? "#E60023"
-                  : linkPreview.source === "tiktok" ? "#010101"
-                  : colors.stone,
-              }]}>
-                <Text style={styles.sourceBadgeText}>{linkPreview.source}</Text>
+              <View style={styles.linkInfoRow}>
+                <View style={[styles.sourceBadge, {
+                  backgroundColor: linkPreview.source === "instagram" ? "#E1306C"
+                    : linkPreview.source === "pinterest" ? "#E60023"
+                    : linkPreview.source === "tiktok" ? "#010101"
+                    : colors.stone,
+                }]}>
+                  <Text style={styles.sourceBadgeText}>{linkPreview.source}</Text>
+                </View>
+                <Feather name="external-link" size={12} color={colors.stone} />
               </View>
               <Text variant="body" style={[styles.linkTitle, { color: colors.ink }]} numberOfLines={2}>
                 {linkPreview.title}
@@ -419,7 +422,6 @@ export default function PlaceDetailScreen() {
                 {linkPreview.author}
               </Text>
             </View>
-            <Feather name="external-link" size={14} color={colors.stone} style={{ marginRight: 14 }} />
           </TouchableOpacity>
         ) : null}
 
@@ -609,20 +611,22 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    flexDirection: "row",
-    alignItems: "center",
     overflow: "hidden",
   },
   linkThumb: {
-    width: 72,
-    height: 72,
+    width: "100%",
+    aspectRatio: 1,
   },
   linkInfo: {
-    flex: 1,
     paddingHorizontal: 14,
     paddingVertical: 12,
     gap: 4,
-    flexDirection: "column",
+  },
+  linkInfoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 2,
   },
   linkTitle: {
     fontSize: 13,
