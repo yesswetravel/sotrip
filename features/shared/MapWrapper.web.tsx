@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { StyleSheet, View } from "react-native";
 import { Text } from "../design-system";
 import { useColors } from "../theme/ThemeProvider";
+import { MAP_STYLE } from "../../theme/mapStyle";
 
 const GMAP_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? "";
 
@@ -50,19 +51,7 @@ export default function MapWrapper({ pins }: Props) {
         zoom: 13,
         disableDefaultUI: true,
         zoomControl: true,
-        styles: [
-          { featureType: "all", stylers: [{ saturation: -40 }, { lightness: 10 }] },
-          { featureType: "poi", stylers: [{ visibility: "off" }] },
-          { featureType: "transit", stylers: [{ visibility: "off" }] },
-          {
-            featureType: "water",
-            stylers: [{ color: "#c8d7d4" }],
-          },
-          {
-            featureType: "landscape",
-            stylers: [{ color: "#f0ebe0" }],
-          },
-        ],
+        styles: MAP_STYLE,
       });
 
       map.fitBounds(bounds, 60);

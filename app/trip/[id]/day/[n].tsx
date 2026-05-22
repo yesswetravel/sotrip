@@ -53,7 +53,7 @@ const GMAP_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? "";
 
 function getStaticMapUrl(place: string, size = 120): string {
   const encoded = encodeURIComponent(place);
-  return `https://maps.googleapis.com/maps/api/staticmap?center=${encoded}&zoom=15&size=${size}x${size}&scale=2&maptype=roadmap&style=feature:all|saturation:-60|lightness:10&style=feature:poi|visibility:off&style=feature:transit|visibility:off&markers=color:0xD87560|${encoded}&key=${GMAP_KEY}`;
+  return `https://maps.googleapis.com/maps/api/staticmap?center=${encoded}&zoom=15&size=${size}x${size}&scale=2&maptype=roadmap&style=feature:all|saturation:-60|lightness:5&style=feature:water|color:0xc4d4d1&style=feature:landscape|color:0xece6d6&style=feature:road|element:geometry|color:0xded7c5&style=feature:poi|visibility:off&style=feature:transit|visibility:off&markers=color:0xD87560|${encoded}&key=${GMAP_KEY}`;
 }
 
 function TimelineItem({

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { StyleSheet } from "react-native";
 import RNMapView, { Marker } from "react-native-maps";
+import { MAP_STYLE } from "../../theme/mapStyle";
 
 interface MapPin {
   id: string;
@@ -34,7 +35,7 @@ export default function MapWrapper({ pins }: Props) {
   if (!region) return null;
 
   return (
-    <RNMapView style={styles.map} initialRegion={region}>
+    <RNMapView style={styles.map} initialRegion={region} customMapStyle={MAP_STYLE}>
       {pins.map((pin) => (
         <Marker
           key={pin.id}
