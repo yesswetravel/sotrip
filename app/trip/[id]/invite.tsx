@@ -122,7 +122,13 @@ export default function TripInviteScreen() {
         {/* Trip code box */}
         <View style={[styles.codeBox, { backgroundColor: colors.pearl, borderColor: colors.sand }]}>
           <Text variant="eyebrow" style={[styles.codeEyebrow, { color: colors.stone }]}>trip code</Text>
-          <Text style={[styles.codeText, { color: colors.ink }]}>{tripCode}</Text>
+          <Text
+            style={[styles.codeText, { color: colors.ink }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
+            {tripCode}
+          </Text>
           <Text variant="caption" style={{ fontSize: 11, color: colors.stone }}>
             share this code — they can join from the app
           </Text>
@@ -364,9 +370,10 @@ const styles = StyleSheet.create({
   },
   codeText: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 28,
-    letterSpacing: 4,
+    fontSize: 26,
+    letterSpacing: 3,
     marginVertical: 8,
+    textAlign: "center",
   },
 
   /* Copy button */
