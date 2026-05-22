@@ -319,12 +319,11 @@ export default function TripOverviewScreen() {
           <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
             <Feather name="chevron-left" size={20} color={colors.ink} />
           </TouchableOpacity>
+          <Text variant="eyebrow">{trip.title}</Text>
+          <View style={{ width: 20 }} />
         </View>
 
         <View style={styles.titleBlock}>
-          <Text variant="display" style={[styles.tripTitle, { color: colors.ink }]}>
-            {trip.title}
-          </Text>
           <Text variant="eyebrow" style={{ color: colors.stone }}>
             {formatDateRange(trip.start_date, trip.end_date)}
           </Text>
@@ -363,19 +362,16 @@ const styles = StyleSheet.create({
   /* Header */
   header: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
     paddingTop: spacing.xs,
     paddingBottom: spacing.sm,
   },
   titleBlock: {
     alignItems: "center",
-    paddingTop: spacing.lg,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
     gap: 6,
-  },
-  tripTitle: {
-    fontSize: 30,
-    textAlign: "center",
   },
   countdown: {
     marginTop: 2,
