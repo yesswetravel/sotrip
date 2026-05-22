@@ -912,7 +912,7 @@ const styles = StyleSheet.create({
   /* Fullscreen outfit gallery */
   galleryOverlay: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: "rgba(30,42,58,0.88)",
     justifyContent: "center",
   },
   galleryClose: {
@@ -923,7 +923,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(255,255,255,0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -936,7 +936,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   galleryCounterText: {
-    color: "rgba(255,255,255,0.5)",
+    color: "rgba(255,255,255,0.6)",
     fontSize: 12,
     fontFamily: "Inter_500Medium",
     letterSpacing: 1,
