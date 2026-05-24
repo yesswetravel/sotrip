@@ -10,7 +10,7 @@ import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { Container, Text } from "../../features/design-system";
 import { Skeleton } from "../../features/shared";
-import { useTrips } from "../../features/trips/hooks";
+import { useTrips, usePrefetchTrips } from "../../features/trips/hooks";
 import { useSession } from "../../lib/use-session";
 import {
   useSubscription,
@@ -86,7 +86,8 @@ export default function HomeScreen() {
   const colors = useColors();
   const { session } = useSession();
   const router = useRouter();
-  const { data: trips, isLoading, refetch, isRefetching } = useTrips(session?.user.id);
+  const { data: trips, isLoading, isError, refetch, isRefetching } = useTrips(session?.user.id);
+  usePrefetchTrips(trips); // warm cache so trip detail loads instantly
   const { tier, isPaid } = useSubscription();
   const [showUpgrade, setShowUpgrade] = useState(false);
 
@@ -123,6 +124,27 @@ export default function HomeScreen() {
       <Container logo>
         <Text variant="display" style={styles.greeting}>Hey, {firstName}</Text>
         <LoadingSkeleton />
+      </Container>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Container logo>
+        <Text variant="display" style={styles.greeting}>Hey, {firstName}</Text>
+        <View style={styles.empty}>
+          <Feather name="wifi-off" size={28} color={colors.stone} />
+          <Text variant="titleItalic" style={[styles.emptyTitle, { color: colors.stone }]}>
+            couldn't load trips
+          </Text>
+          <TouchableOpacity
+            style={[styles.newButton, { backgroundColor: colors.coral }]}
+            onPress={() => refetch()}
+            activeOpacity={0.85}
+          >
+            <Text variant="body" style={[styles.newButtonText, { color: colors.pearl }]}>try again</Text>
+          </TouchableOpacity>
+        </View>
       </Container>
     );
   }

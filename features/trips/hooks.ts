@@ -11,6 +11,7 @@ import {
   updateItem,
   deleteItem,
   reorderItems,
+  updateTripDates,
   updateDayNotes,
   DEMO_MODE,
 } from "./api";
@@ -36,6 +37,21 @@ export function useTrip(tripId: string | undefined) {
     queryFn: () => fetchTrip(tripId!),
     enabled: !!tripId,
   });
+}
+
+/** Prefetch full trip detail so the next screen loads instantly */
+export function usePrefetchTrips(trips: Trip[] | undefined) {
+  const qc = useQueryClient();
+  useEffect(() => {
+    if (!trips) return;
+    trips.forEach((trip) => {
+      qc.prefetchQuery({
+        queryKey: ["trip", trip.id],
+        queryFn: () => fetchTrip(trip.id),
+        staleTime: 1000 * 60 * 5,
+      });
+    });
+  }, [trips, qc]);
 }
 
 export function useCreateTrip() {
@@ -70,6 +86,18 @@ export function useUpdateTrip() {
         );
         return;
       }
+      qc.invalidateQueries({ queryKey: ["trip", tripId] });
+      qc.invalidateQueries({ queryKey: ["trips"] });
+    },
+  });
+}
+
+export function useUpdateTripDates() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ tripId, startDate, endDate }: { tripId: string; startDate: string; endDate: string }) =>
+      updateTripDates(tripId, startDate, endDate),
+    onSuccess: (_, { tripId }) => {
       qc.invalidateQueries({ queryKey: ["trip", tripId] });
       qc.invalidateQueries({ queryKey: ["trips"] });
     },
@@ -289,7 +317,12 @@ export function useTripRealtime(tripId: string | undefined) {
           qc.invalidateQueries({ queryKey: ["trips"] });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        // Silently ignore subscription errors — data still loads via REST
+        if (status === "CHANNEL_ERROR") {
+          supabase.removeChannel(channel);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);

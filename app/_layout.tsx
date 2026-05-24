@@ -22,11 +22,18 @@ import { useSession } from "../lib/use-session";
 import { useSubscriptionStore } from "../features/subscription/store";
 import { DEMO_MODE } from "../features/trips/api";
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: 1, staleTime: 1000 * 60 * 5 },
+    queries: {
+      retry: 2,
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
+      staleTime: 1000 * 60 * 5,
+    },
+    mutations: {
+      retry: 1,
+    },
   },
 });
 
@@ -78,7 +85,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch(() => {});
     }
   }, [fontsLoaded, fontError]);
 

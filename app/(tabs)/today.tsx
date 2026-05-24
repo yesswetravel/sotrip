@@ -9,7 +9,7 @@ import {
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { Container, Text } from "../../features/design-system";
-import { useTrips, useTrip } from "../../features/trips/hooks";
+import { useTrips, useTrip, usePrefetchTrips } from "../../features/trips/hooks";
 import { useSession } from "../../lib/use-session";
 import { useColors } from "../../features/theme/ThemeProvider";
 import { spacing } from "../../theme/spacing";
@@ -255,7 +255,8 @@ export default function TodayScreen() {
   const colors = useColors();
   const router = useRouter();
   const { session } = useSession();
-  const { data: trips = [] } = useTrips(session?.user.id);
+  const { data: trips = [], isError, refetch } = useTrips(session?.user.id);
+  usePrefetchTrips(trips);
   const today = getToday();
 
   const activeTrip = useMemo(
@@ -278,6 +279,30 @@ export default function TodayScreen() {
 
   function handleOpenTrip(tripId: string) {
     router.push(`/trip/${tripId}`);
+  }
+
+  /* ---------- Error state ---------- */
+  if (isError) {
+    return (
+      <Container logo>
+        <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
+          <Text variant="display" style={styles.title}>today</Text>
+          <View style={styles.emptyWrap}>
+            <Feather name="wifi-off" size={28} color={colors.stone} />
+            <Text variant="titleItalic" style={[styles.emptySubtitle, { color: colors.stone }]}>
+              couldn't load trips
+            </Text>
+            <TouchableOpacity
+              style={{ marginTop: spacing.md, paddingVertical: 10, paddingHorizontal: 20, backgroundColor: colors.coral, borderRadius: 999 }}
+              onPress={() => refetch()}
+              activeOpacity={0.85}
+            >
+              <Text variant="body" style={{ color: colors.pearl, fontFamily: "InstrumentSans_500Medium", fontSize: 13 }}>try again</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </Container>
+    );
   }
 
   /* ---------- Active trip today: show itinerary ---------- */

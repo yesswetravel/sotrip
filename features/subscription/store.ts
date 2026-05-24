@@ -66,18 +66,27 @@ export const useSubscriptionStore = create<SubscriptionState>()((set, get) => ({
       set({ demoSignedIn: true });
     }
 
-    const { data } = await supabase
-      .from("users")
-      .select("subscription_tier, subscription_status")
-      .eq("id", userId)
-      .single();
+    // Try to load subscription from Supabase (table may not exist yet)
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("subscription_tier, subscription_status")
+        .eq("id", userId)
+        .single();
 
-    if (data) {
-      get()._persist({
-        tier: (data.subscription_tier as SubscriptionTier) ?? "free",
-        status: data.subscription_status ?? "active",
-      });
-    } else if (persisted.tier) {
+      if (data && !error) {
+        get()._persist({
+          tier: (data.subscription_tier as SubscriptionTier) ?? "free",
+          status: data.subscription_status ?? "active",
+        });
+        return;
+      }
+    } catch {
+      // Table doesn't exist yet or network error — use local data
+    }
+
+    // Fallback: use persisted tier from AsyncStorage
+    if (persisted.tier) {
       set({ tier: persisted.tier, status: persisted.status ?? "active" });
     }
   },

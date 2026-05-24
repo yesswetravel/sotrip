@@ -54,6 +54,9 @@ export function useSession() {
         hydrate(data.session.user.id);
       }
       setLoading(false);
+    }).catch(() => {
+      // Network or auth error — stop loading so the app renders sign-in
+      setLoading(false);
     });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);

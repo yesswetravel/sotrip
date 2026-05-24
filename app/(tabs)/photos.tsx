@@ -3,6 +3,7 @@ import {
   StyleSheet,
   View,
   ScrollView,
+  TouchableOpacity,
   useWindowDimensions,
 } from "react-native";
 import { Image } from "expo-image";
@@ -78,8 +79,9 @@ function TripPhotoSection({ trip, tileSize }: { trip: Trip; tileSize: number }) 
 }
 
 export default function PhotosScreen() {
+  const colors = useColors();
   const { session } = useSession();
-  const { data: trips, isLoading } = useTrips(session?.user.id);
+  const { data: trips, isLoading, isError, refetch } = useTrips(session?.user.id);
   const { width: screenWidth } = useWindowDimensions();
 
   const tileSize =
@@ -95,7 +97,21 @@ export default function PhotosScreen() {
           photos
         </Text>
 
-        {isLoading || tripList.length === 0 ? (
+        {isError ? (
+          <View style={styles.emptyWrap}>
+            <Feather name="wifi-off" size={28} color={colors.stone} />
+            <Text variant="titleItalic" style={[styles.emptyTitle, { color: colors.stone }]}>
+              couldn't load photos
+            </Text>
+            <TouchableOpacity
+              style={{ marginTop: spacing.md, paddingVertical: 10, paddingHorizontal: 20, backgroundColor: colors.coral, borderRadius: 999 }}
+              onPress={() => refetch()}
+              activeOpacity={0.85}
+            >
+              <Text variant="body" style={{ color: colors.pearl, fontFamily: "InstrumentSans_500Medium", fontSize: 13 }}>try again</Text>
+            </TouchableOpacity>
+          </View>
+        ) : isLoading || tripList.length === 0 ? (
           <EmptyState />
         ) : (
           <View style={styles.sectionList}>
