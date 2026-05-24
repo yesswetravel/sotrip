@@ -14,6 +14,12 @@ import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
 import type { TripItem } from "../../../types/database";
 
+const GMAP_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? "";
+
+function getStaticMapUrl(place: string, size = 120): string {
+  return `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(place)}&zoom=15&size=${size}x${size}&scale=2&maptype=roadmap&key=${GMAP_KEY}`;
+}
+
 export default function TripMapScreen() {
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -76,7 +82,7 @@ export default function TripMapScreen() {
             subtitle: `day ${String(day.day_number).padStart(2, "0")}${item.time ? ` · ${formatTime(item.time)}` : ""}`,
             lat: item.location_lat,
             lng: item.location_lng,
-            photoUri: item.photo_uri,
+            photoUri: item.photo_uri || (item.location_name && GMAP_KEY ? getStaticMapUrl(item.location_name, 80) : undefined),
             category: item.category,
             dayLabel: `day ${day.day_number}`,
           });
