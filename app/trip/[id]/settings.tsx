@@ -5,22 +5,18 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Share,
-  Alert,
   ActivityIndicator,
   Modal,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { Calendar, type DateData } from "react-native-calendars";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../features/design-system";
 import { goBack } from "../../../lib/go-back";
+import { useToast } from "../../../features/shared/toast-context";
 import { useTrip, useUpdateTrip, useUpdateTripDates, useDeleteTrip } from "../../../features/trips/hooks";
-import { useTripMembers } from "../../../features/couple/hooks";
 import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
-import type { MemberRole } from "../../../types/database";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -32,12 +28,6 @@ function formatDate(dateStr: string | null): string {
   return d
     .toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
     .toLowerCase();
-}
-
-function roleLabel(role: MemberRole): string {
-  if (role === "owner") return "owner";
-  if (role === "editor") return "member";
-  return "viewer";
 }
 
 /* ------------------------------------------------------------------ */
@@ -113,14 +103,13 @@ function SettingsRow({
 
 export default function TripSettingsScreen() {
   const colors = useColors();
+  const { show } = useToast();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { data: trip } = useTrip(id);
   const updateTrip = useUpdateTrip();
   const updateTripDates = useUpdateTripDates();
   const deleteTrip = useDeleteTrip();
-  const { members, pendingInvites, createInvite, removeMember, cancelInvite } =
-    useTripMembers(id);
 
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
@@ -133,24 +122,6 @@ export default function TripSettingsScreen() {
   const [pickingStart, setPickingStart] = useState(true);
   const [draftStart, setDraftStart] = useState("");
   const [draftEnd, setDraftEnd] = useState("");
-
-  // Get or create invite code for sharing
-  const [inviteCode, setInviteCode] = useState<string | null>(null);
-  useState(() => {
-    AsyncStorage.getItem(`@trip:${id}:invite_code`).then((code) => {
-      if (code) {
-        setInviteCode(code);
-      } else {
-        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-        let newCode = "";
-        for (let i = 0; i < 6; i++) {
-          newCode += chars[Math.floor(Math.random() * chars.length)];
-        }
-        setInviteCode(newCode);
-        AsyncStorage.setItem(`@trip:${id}:invite_code`, newCode);
-      }
-    });
-  });
 
   function openDatePicker() {
     setDraftStart(trip?.start_date ?? "");
@@ -176,11 +147,26 @@ export default function TripSettingsScreen() {
     }
   }
 
+  const [dateSaving, setDateSaving] = useState(false);
+
   function handleSaveDates() {
-    if (!trip || !draftStart || !draftEnd) return;
-    updateTripDates.mutate({ tripId: trip.id, startDate: draftStart, endDate: draftEnd });
-    setShowCalendar(false);
-    setPickingStart(true);
+    if (!trip || !draftStart || !draftEnd || dateSaving) return;
+    setDateSaving(true);
+    updateTripDates.mutate(
+      { tripId: trip.id, startDate: draftStart, endDate: draftEnd },
+      {
+        onSuccess: () => {
+          setDateSaving(false);
+          setShowCalendar(false);
+          setPickingStart(true);
+          show("dates updated");
+        },
+        onError: (err: any) => {
+          setDateSaving(false);
+          show(err?.message || "couldn't save dates");
+        },
+      }
+    );
   }
 
   function getMarkedDates() {
@@ -224,29 +210,14 @@ export default function TripSettingsScreen() {
     );
   }, [trip]);
 
-  async function handleShareInvite() {
-    if (!inviteCode || !trip) return;
-    try {
-      await Share.share({
-        message: `join my trip "${trip.title}"! use invite code: ${inviteCode}`,
-      });
-    } catch {
-      // user cancelled
-    }
-  }
-
-  function handleLeaveTrip() {
+  function handleDeleteTrip() {
     if (!confirmLeave) {
       setConfirmLeave(true);
       return;
     }
-    if (members.length === 0) {
-      deleteTrip.mutate(trip!.id, {
-        onSuccess: () => router.replace("/(tabs)"),
-      });
-    } else {
-      handleArchive();
-    }
+    deleteTrip.mutate(trip!.id, {
+      onSuccess: () => router.replace("/(tabs)"),
+    });
   }
 
   if (!trip) return <Container logo><ActivityIndicator size="small" style={{ marginTop: 40 }} /></Container>;
@@ -360,92 +331,6 @@ export default function TripSettingsScreen() {
           />
         </View>
 
-        {/* ============ Members ============ */}
-        <SectionHeader label="members" colors={colors} />
-        <View style={[styles.card, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
-          {/* Owner (you) */}
-          <View style={[styles.memberRow, { borderBottomColor: colors.mist }]}>
-            <View style={[styles.memberAvatar, { backgroundColor: colors.coral }]}>
-              <Text style={[styles.memberAvatarText, { color: colors.pearl }]}>P</Text>
-            </View>
-            <View style={styles.memberInfo}>
-              <Text variant="body" style={[styles.memberName, { color: colors.ink }]}>you</Text>
-              <Text variant="caption" style={[styles.memberRole, { color: colors.stone }]}>owner</Text>
-            </View>
-          </View>
-
-          {/* Other members */}
-          {members.map((m) => (
-            <View key={m.id} style={[styles.memberRow, { borderBottomColor: colors.mist }]}>
-              <View
-                style={[styles.memberAvatar, { backgroundColor: m.avatar_color }]}
-              >
-                <Text style={[styles.memberAvatarText, { color: colors.pearl }]}>
-                  {m.display_name.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-              <View style={styles.memberInfo}>
-                <Text variant="body" style={[styles.memberName, { color: colors.ink }]}>
-                  {m.display_name}
-                </Text>
-                <Text variant="caption" style={[styles.memberRole, { color: colors.stone }]}>
-                  {roleLabel(m.role)}
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => removeMember(m.id)}
-                activeOpacity={0.7}
-                style={styles.memberAction}
-              >
-                <Feather name="x" size={12} color={colors.stone} />
-              </TouchableOpacity>
-            </View>
-          ))}
-
-          {/* Pending invites */}
-          {pendingInvites.map((inv) => (
-            <View key={inv.id} style={[styles.memberRow, { borderBottomColor: colors.mist }]}>
-              <View style={[styles.memberAvatar, styles.memberAvatarPending, { borderColor: colors.sand }]}>
-                <Feather name="clock" size={12} color={colors.stone} />
-              </View>
-              <View style={styles.memberInfo}>
-                <Text variant="body" style={[styles.memberName, { color: colors.ink }]}>
-                  {inv.invitee_email ?? "invite sent"}
-                </Text>
-                <Text variant="caption" style={[styles.memberRole, { color: colors.stone }]}>pending</Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => cancelInvite(inv.id)}
-                activeOpacity={0.7}
-                style={styles.memberAction}
-              >
-                <Feather name="x" size={12} color={colors.stone} />
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
-
-        {/* ============ Invite Code ============ */}
-        <SectionHeader label="invite code" colors={colors} />
-        <View style={[styles.card, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
-          <View style={styles.inviteCodeSection}>
-            <Text style={[styles.inviteCodeText, { color: colors.ink }]}>{inviteCode ?? "..."}</Text>
-            <Text variant="caption" style={{ fontSize: 11, color: colors.stone, textAlign: "center" }}>
-              share this code with anyone to join your trip
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.shareBtn, { backgroundColor: colors.ink }]}
-            onPress={handleShareInvite}
-            activeOpacity={0.8}
-          >
-            <Feather name="share" size={14} color={colors.pearl} />
-            <Text variant="body" style={[styles.shareBtnText, { color: colors.pearl }]}>
-              share invite
-            </Text>
-          </TouchableOpacity>
-        </View>
-
         {/* ============ Preferences ============ */}
         <SectionHeader label="preferences" colors={colors} />
         <View style={[styles.card, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
@@ -475,22 +360,20 @@ export default function TripSettingsScreen() {
           />
           <TouchableOpacity
             style={styles.leaveRow}
-            onPress={handleLeaveTrip}
+            onPress={handleDeleteTrip}
             activeOpacity={0.7}
           >
             <View style={[styles.rowIcon, { backgroundColor: "#C4444414" }]}>
-              <Feather name="log-out" size={14} color="#C44" />
+              <Feather name="trash-2" size={14} color="#C44" />
             </View>
             <View style={styles.rowContent}>
               <Text variant="body" style={styles.leaveText}>
                 {confirmLeave
                   ? "tap again to confirm"
-                  : "leave this trip"}
+                  : "delete this trip"}
               </Text>
               <Text variant="caption" style={[styles.leaveHint, { color: colors.stone }]}>
-                {members.length === 0
-                  ? "you're the only member — this will delete the trip"
-                  : `ownership will transfer to ${members[0].display_name}`}
+                this cannot be undone
               </Text>
             </View>
           </TouchableOpacity>
@@ -533,6 +416,7 @@ export default function TripSettingsScreen() {
               markedDates={getMarkedDates()}
               onDayPress={handleDayPress}
               enableSwipeMonths
+              current={draftStart || new Date().toISOString().split("T")[0]}
               theme={{
                 backgroundColor: colors.ivory,
                 calendarBackground: colors.ivory,
@@ -560,11 +444,15 @@ export default function TripSettingsScreen() {
               ]}
               onPress={handleSaveDates}
               activeOpacity={0.85}
-              disabled={!draftStart || !draftEnd}
+              disabled={!draftStart || !draftEnd || dateSaving}
             >
-              <Text variant="body" style={{ color: colors.ivory, fontFamily: "InstrumentSans_500Medium", fontSize: 14 }}>
-                save dates
-              </Text>
+              {dateSaving ? (
+                <ActivityIndicator size="small" color={colors.ivory} />
+              ) : (
+                <Text variant="body" style={{ color: colors.ivory, fontFamily: "InstrumentSans_500Medium", fontSize: 14 }}>
+                  save dates
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
