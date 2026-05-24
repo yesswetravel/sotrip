@@ -179,21 +179,22 @@ export async function createItem(
 
   const nextOrder = existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
 
+  // Only send columns guaranteed to exist in the database
+  const row: Record<string, any> = {
+    trip_day_id: input.trip_day_id,
+    sort_order: nextOrder,
+    title: input.title,
+  };
+  if (input.subtitle) row.subtitle = input.subtitle;
+  if (input.time) row.time = input.time;
+  if (input.location_name) row.location_name = input.location_name;
+  if (input.location_lat != null) row.location_lat = input.location_lat;
+  if (input.location_lng != null) row.location_lng = input.location_lng;
+  if (input.notes) row.notes = input.notes;
+
   const { data, error } = await supabase
     .from("trip_items")
-    .insert({
-      trip_day_id: input.trip_day_id,
-      sort_order: nextOrder,
-      title: input.title,
-      subtitle: input.subtitle ?? null,
-      time: input.time ?? null,
-      location_name: input.location_name ?? null,
-      location_lat: input.location_lat ?? null,
-      location_lng: input.location_lng ?? null,
-      notes: input.notes ?? null,
-      link: input.link ?? null,
-      photo_uri: input.photo_uri ?? null,
-    })
+    .insert(row)
     .select()
     .single();
   if (error) throw error;
@@ -204,8 +205,8 @@ export async function updateItem(
   itemId: string,
   patch: UpdateItemInput
 ): Promise<TripItem> {
-  // Strip fields that may not exist in the database yet
-  const { category, ...safePatch } = patch as any;
+  // Only send columns that exist in the database
+  const { category, link, photo_uri, assigned_to, ...safePatch } = patch as any;
   const { data, error } = await supabase
     .from("trip_items")
     .update(safePatch)
