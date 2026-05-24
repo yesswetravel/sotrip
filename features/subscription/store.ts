@@ -9,9 +9,12 @@ interface PersistedState {
   tier: SubscriptionTier;
   status: "active" | "cancelled" | "expired";
   hasSeenPaywall: boolean;
+  demoSignedIn: boolean;
 }
 
 interface SubscriptionState extends PersistedState {
+  demoSignedIn: boolean;
+  setDemoSignedIn: () => void;
   setTier: (tier: SubscriptionTier) => void;
   markPaywallSeen: () => void;
   hydrate: (userId: string) => Promise<void>;
@@ -38,11 +41,16 @@ export const useSubscriptionStore = create<SubscriptionState>()((set, get) => ({
   tier: "free",
   status: "active",
   hasSeenPaywall: false,
+  demoSignedIn: false,
+  setDemoSignedIn: () => {
+    set({ demoSignedIn: true });
+    get()._persist({ demoSignedIn: true });
+  },
 
   _persist: (partial) => {
     set(partial);
-    const { tier, status, hasSeenPaywall } = { ...get(), ...partial };
-    save({ tier, status, hasSeenPaywall });
+    const { tier, status, hasSeenPaywall, demoSignedIn } = { ...get(), ...partial };
+    save({ tier, status, hasSeenPaywall, demoSignedIn });
   },
 
   setTier: (tier) => get()._persist({ tier }),
@@ -53,6 +61,9 @@ export const useSubscriptionStore = create<SubscriptionState>()((set, get) => ({
     const persisted = await load();
     if (persisted.hasSeenPaywall !== undefined) {
       set({ hasSeenPaywall: persisted.hasSeenPaywall });
+    }
+    if (persisted.demoSignedIn) {
+      set({ demoSignedIn: true });
     }
 
     const { data } = await supabase
@@ -72,7 +83,7 @@ export const useSubscriptionStore = create<SubscriptionState>()((set, get) => ({
   },
 
   reset: () => {
-    set({ tier: "free", status: "active", hasSeenPaywall: false });
-    AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
+    set({ tier: "free", status: "active", hasSeenPaywall: false, demoSignedIn: false });
+    save({ tier: "free", status: "active", hasSeenPaywall: false, demoSignedIn: false });
   },
 }));

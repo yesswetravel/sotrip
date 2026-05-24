@@ -5,6 +5,7 @@ import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQueryClient } from "@tanstack/react-query";
 import { Container, Text } from "../../features/design-system";
+import { goBack } from "../../lib/go-back";
 import { useSubscriptionStore } from "../../features/subscription/store";
 import { useColors } from "../../features/theme/ThemeProvider";
 import { spacing } from "../../theme/spacing";
@@ -415,10 +416,10 @@ export default function SeedScreen() {
   }
 
   return (
-    <Container safe>
+    <Container safe logo>
       <ScrollView contentContainerStyle={styles.content}>
-        <TouchableOpacity style={styles.back} onPress={() => router.back()}>
-          <Feather name="arrow-left" size={20} color={colors.ink} />
+        <TouchableOpacity style={styles.back} onPress={() => goBack(router)}>
+          <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
 
         <View style={styles.header}>
@@ -542,7 +543,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   seedBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   note: {
     textAlign: "center",

@@ -27,7 +27,7 @@ export default function UpgradeModal({
 
   function handleUpgrade() {
     onClose();
-    router.push("/(auth)/paywall");
+    router.push("/upgrade");
   }
 
   return (
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   check: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 16,
   },
   benefitText: {
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   upgradeBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   later: {
     paddingVertical: 8,

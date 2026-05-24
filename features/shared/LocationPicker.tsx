@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   input: {
     paddingHorizontal: 10,
     paddingVertical: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     fontSize: 15,
   },
   inputFlex: {
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   },
   mainText: {
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     marginBottom: 2,
   },
   secondaryText: {

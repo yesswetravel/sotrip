@@ -19,7 +19,7 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.ink,
         tabBarInactiveTintColor: colors.stone,
         tabBarLabelStyle: {
-          fontFamily: "Inter_500Medium",
+          fontFamily: "InstrumentSans_500Medium",
           fontSize: 9,
           letterSpacing: 1.2,
           textTransform: "uppercase",

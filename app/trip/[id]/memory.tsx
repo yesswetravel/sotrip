@@ -14,6 +14,7 @@ import { Image } from "expo-image";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BlurView } from "expo-blur";
 import { Text } from "../../../features/design-system";
+import { goBack } from "../../../lib/go-back";
 import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
 
@@ -391,7 +392,7 @@ export default function MemoryBookScreen() {
     <View style={[s.container, { backgroundColor: colors.ivory }]}>
       {/* Header */}
       <View style={s.header}>
-        <TouchableOpacity style={[s.backBtn, { backgroundColor: colors.pearl }]} onPress={() => router.back()} hitSlop={12}>
+        <TouchableOpacity style={[s.backBtn, { backgroundColor: colors.pearl }]} onPress={() => goBack(router)} hitSlop={12}>
           <Feather name="x" size={18} color={colors.stone} />
         </TouchableOpacity>
         <Text style={[s.headerTitle, { color: colors.stone }]}>
@@ -480,7 +481,7 @@ const s = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   headerTitle: {
-    fontFamily: "Inter_500Medium", fontSize: 12, letterSpacing: 1,
+    fontFamily: "InstrumentSans_500Medium", fontSize: 12, letterSpacing: 1,
   },
 
   dotsRow: {
@@ -510,7 +511,7 @@ const s = StyleSheet.create({
     fontFamily: "CormorantGaramond_500Medium_Italic", fontSize: 22,
   },
   lockedSub: {
-    fontFamily: "Inter_400Regular", fontSize: 12, textAlign: "center",
+    fontFamily: "InstrumentSans_400Regular", fontSize: 12, textAlign: "center",
   },
   lockedUnlockBtn: {
     flexDirection: "row", alignItems: "center", gap: 6,
@@ -518,7 +519,7 @@ const s = StyleSheet.create({
     paddingVertical: 12, paddingHorizontal: 24, marginTop: 18,
   },
   lockedUnlockText: {
-    fontFamily: "Inter_500Medium", fontSize: 13,
+    fontFamily: "InstrumentSans_500Medium", fontSize: 13,
   },
 
   /* Unlock banner */
@@ -531,17 +532,17 @@ const s = StyleSheet.create({
   },
   unlockInfo: { flex: 1, gap: 2 },
   unlockTitle: {
-    fontFamily: "Inter_500Medium", fontSize: 14,
+    fontFamily: "InstrumentSans_500Medium", fontSize: 14,
   },
   unlockSub: {
-    fontFamily: "Inter_400Regular", fontSize: 11,
+    fontFamily: "InstrumentSans_400Regular", fontSize: 11,
   },
   unlockBtn: {
     borderRadius: 999,
     paddingVertical: 12, paddingHorizontal: 22,
   },
   unlockBtnText: {
-    fontFamily: "Inter_500Medium", fontSize: 13,
+    fontFamily: "InstrumentSans_500Medium", fontSize: 13,
   },
 
   /* Cover */
@@ -551,7 +552,7 @@ const s = StyleSheet.create({
   },
   coverTop: { alignItems: "center" },
   coverEyebrow: {
-    fontFamily: "Inter_500Medium", fontSize: 9, letterSpacing: 4, color: "rgba(255,255,255,0.6)",
+    fontFamily: "InstrumentSans_500Medium", fontSize: 9, letterSpacing: 4, color: "rgba(255,255,255,0.6)",
   },
   coverCenter: { alignItems: "center" },
   coverCity: {
@@ -560,12 +561,12 @@ const s = StyleSheet.create({
   },
   coverLine: { width: 40, height: 2, marginVertical: 14 },
   coverYear: {
-    fontFamily: "Inter_500Medium", fontSize: 14, letterSpacing: 6, paddingRight: 6, color: "rgba(255,255,255,0.7)",
+    fontFamily: "InstrumentSans_500Medium", fontSize: 14, letterSpacing: 6, paddingRight: 6, color: "rgba(255,255,255,0.7)",
   },
   coverBottom: { alignItems: "center", gap: 4 },
   coverNames: { fontFamily: "CormorantGaramond_500Medium", fontSize: 18, color: "rgba(255,255,255,0.9)" },
-  coverDates: { fontFamily: "Inter_400Regular", fontSize: 11, color: "rgba(255,255,255,0.6)" },
-  coverDays: { fontFamily: "Inter_400Regular", fontSize: 10, color: "rgba(255,255,255,0.4)" },
+  coverDates: { fontFamily: "InstrumentSans_400Regular", fontSize: 11, color: "rgba(255,255,255,0.6)" },
+  coverDays: { fontFamily: "InstrumentSans_400Regular", fontSize: 10, color: "rgba(255,255,255,0.4)" },
 
   /* Mood */
   moodQuote: {
@@ -574,13 +575,13 @@ const s = StyleSheet.create({
   },
   moodDivider: { width: 30, height: 1.5, marginVertical: 20 },
   moodAttrib: {
-    fontFamily: "Inter_400Regular", fontSize: 10, letterSpacing: 0.5,
+    fontFamily: "InstrumentSans_400Regular", fontSize: 10, letterSpacing: 0.5,
     textAlign: "center",
   },
 
   /* Day divider */
   dividerEyebrow: {
-    fontFamily: "Inter_500Medium", fontSize: 10, letterSpacing: 6, marginBottom: 4,
+    fontFamily: "InstrumentSans_500Medium", fontSize: 10, letterSpacing: 6, marginBottom: 4,
   },
   dividerNum: { fontFamily: "CormorantGaramond_500Medium", fontSize: 72, lineHeight: 78 },
   dividerName: { fontFamily: "CormorantGaramond_500Medium_Italic", fontSize: 18, marginTop: 4 },
@@ -603,14 +604,14 @@ const s = StyleSheet.create({
   pcPhoto: { width: "100%", height: "100%" },
   pcTextWrap: { paddingHorizontal: 28, paddingVertical: 20 },
   pcTime: {
-    fontFamily: "Inter_500Medium", fontSize: 10, letterSpacing: 1,
+    fontFamily: "InstrumentSans_500Medium", fontSize: 10, letterSpacing: 1,
     marginBottom: 6, textTransform: "uppercase",
   },
   pcCaption: { fontFamily: "CormorantGaramond_500Medium_Italic", fontSize: 17, lineHeight: 24 },
 
   /* Collage */
   collageTitleText: {
-    fontFamily: "Inter_500Medium", fontSize: 10, letterSpacing: 4,
+    fontFamily: "InstrumentSans_500Medium", fontSize: 10, letterSpacing: 4,
     textTransform: "uppercase", textAlign: "center",
   },
 
@@ -623,7 +624,7 @@ const s = StyleSheet.create({
     fontFamily: "CormorantGaramond_500Medium_Italic", fontSize: 22, lineHeight: 32,
     color: "#fff", textAlign: "center", marginBottom: 14,
   },
-  quoteAttrib: { fontFamily: "Inter_400Regular", fontSize: 10, letterSpacing: 0.5, color: "rgba(255,255,255,0.5)" },
+  quoteAttrib: { fontFamily: "InstrumentSans_400Regular", fontSize: 10, letterSpacing: 0.5, color: "rgba(255,255,255,0.5)" },
 
   /* Story */
   storyTitle: {
@@ -636,12 +637,12 @@ const s = StyleSheet.create({
     textAlign: "center",
   },
   storyAttrib: {
-    fontFamily: "Inter_400Regular", fontSize: 10, letterSpacing: 0.5, marginTop: 20,
+    fontFamily: "InstrumentSans_400Regular", fontSize: 10, letterSpacing: 0.5, marginTop: 20,
   },
 
   /* Remember */
   rememberEyebrow: {
-    fontFamily: "Inter_500Medium", fontSize: 10, letterSpacing: 4, marginBottom: 24,
+    fontFamily: "InstrumentSans_500Medium", fontSize: 10, letterSpacing: 4, marginBottom: 24,
   },
   rememberList: { gap: 14, alignItems: "flex-start" },
   rememberRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
@@ -650,20 +651,20 @@ const s = StyleSheet.create({
 
   /* Stats */
   statsEyebrow: {
-    fontFamily: "Inter_500Medium", fontSize: 10, letterSpacing: 4, marginBottom: 28,
+    fontFamily: "InstrumentSans_500Medium", fontSize: 10, letterSpacing: 4, marginBottom: 28,
   },
   statsRow: { flexDirection: "row", gap: 40, marginBottom: 24 },
   statBlock: { alignItems: "center" },
   statNum: { fontFamily: "CormorantGaramond_500Medium", fontSize: 52, lineHeight: 56 },
-  statLabel: { fontFamily: "Inter_500Medium", fontSize: 9, letterSpacing: 2, marginTop: 4 },
+  statLabel: { fontFamily: "InstrumentSans_500Medium", fontSize: 9, letterSpacing: 2, marginTop: 4 },
   statsClosing: { fontFamily: "CormorantGaramond_500Medium_Italic", fontSize: 15 },
 
   /* Places */
   placesEyebrow: {
-    fontFamily: "Inter_500Medium", fontSize: 10, letterSpacing: 4, textAlign: "center",
+    fontFamily: "InstrumentSans_500Medium", fontSize: 10, letterSpacing: 4, textAlign: "center",
   },
   placeRow: { flexDirection: "row", alignItems: "baseline", paddingVertical: 6 },
-  placeIdx: { fontFamily: "Inter_400Regular", fontSize: 11, width: 28 },
+  placeIdx: { fontFamily: "InstrumentSans_400Regular", fontSize: 11, width: 28 },
   placeName: { fontFamily: "CormorantGaramond_500Medium", fontSize: 18, lineHeight: 22, flex: 1 },
   placeClosing: {
     fontFamily: "CormorantGaramond_500Medium_Italic", fontSize: 15, marginTop: 14, paddingLeft: 28,
@@ -676,5 +677,5 @@ const s = StyleSheet.create({
     color: "#fff", textAlign: "center",
   },
   closingLine: { width: 30, height: 1.5, marginVertical: 18 },
-  closingDate: { fontFamily: "Inter_400Regular", fontSize: 11, letterSpacing: 2, color: "rgba(255,255,255,0.6)" },
+  closingDate: { fontFamily: "InstrumentSans_400Regular", fontSize: 11, letterSpacing: 2, color: "rgba(255,255,255,0.6)" },
 });

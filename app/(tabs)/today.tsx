@@ -479,7 +479,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   moodText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 11,
     letterSpacing: 0.5,
   },
@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
   compactDaysLabel: {
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     fontSize: 9,
     letterSpacing: 0.5,
     marginTop: -2,

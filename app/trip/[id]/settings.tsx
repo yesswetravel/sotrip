@@ -7,11 +7,13 @@ import {
   TextInput,
   Share,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../features/design-system";
+import { goBack } from "../../../lib/go-back";
 import { useTrip, useUpdateTrip, useDeleteTrip } from "../../../features/trips/hooks";
 import { useTripMembers } from "../../../features/couple/hooks";
 import { useColors } from "../../../features/theme/ThemeProvider";
@@ -189,13 +191,13 @@ export default function TripSettingsScreen() {
     }
   }
 
-  if (!trip) return null;
+  if (!trip) return <Container logo><ActivityIndicator size="small" style={{ marginTop: 40 }} /></Container>;
 
   return (
     <Container logo>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.7}>
           <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
         <Text variant="eyebrow">{trip.title}</Text>
@@ -497,7 +499,7 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   rowValue: {
     fontSize: 12,
@@ -515,7 +517,7 @@ const styles = StyleSheet.create({
   },
   editInput: {
     flex: 1,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     fontSize: 14,
     paddingVertical: 4,
     borderBottomWidth: 1,
@@ -538,7 +540,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   memberAvatarText: {
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
     fontSize: 13,
   },
   memberAvatarPending: {
@@ -551,7 +553,7 @@ const styles = StyleSheet.create({
   },
   memberName: {
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   memberRole: {
     fontSize: 11,
@@ -568,7 +570,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   inviteCodeText: {
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
     fontSize: 26,
     letterSpacing: 4,
     paddingRight: 4,
@@ -585,7 +587,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   shareBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 13,
   },
 
@@ -599,7 +601,7 @@ const styles = StyleSheet.create({
   },
   leaveText: {
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     color: "#C44",
   },
   leaveHint: {

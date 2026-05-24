@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     paddingVertical: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     fontSize: 15,
   },
   periodBtn: {
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   },
   periodText: {
     fontSize: 12,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     letterSpacing: 0.5,
   },
   clearBtn: {

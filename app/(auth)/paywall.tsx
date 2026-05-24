@@ -69,10 +69,10 @@ export default function PaywallScreen() {
       </View>
 
       <View style={styles.priceSection}>
-        <Text variant="title" style={[styles.priceAmount, { color: colors.ink }]}>
+        <Text variant="display" style={[styles.priceAmount, { color: colors.ink }]}>
           ${PAID_PRICE}
         </Text>
-        <Text variant="caption" style={styles.priceLabel}>
+        <Text variant="caption" style={[styles.priceLabel, { color: colors.stone }]}>
           one-time purchase — yours forever
         </Text>
       </View>
@@ -154,17 +154,20 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   featureTitle: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   priceSection: {
     alignItems: "center",
     marginBottom: spacing.md,
+    paddingVertical: spacing.sm,
   },
   priceAmount: {
-    fontSize: 36,
+    fontSize: 42,
+    lineHeight: 52,
+    textAlign: "center",
   },
   priceLabel: {
-    marginTop: 4,
+    marginTop: 6,
   },
   freeNote: {
     borderRadius: 10,
@@ -176,23 +179,23 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   unlockBtn: {
-    borderRadius: 8,
-    paddingVertical: 16,
+    borderRadius: 999,
+    paddingVertical: 15,
     alignItems: "center",
     marginBottom: 12,
   },
   unlockBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   freeBtn: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 8,
+    borderRadius: 999,
     paddingVertical: 14,
     alignItems: "center",
     marginBottom: spacing.lg,
   },
   freeBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   restore: {
     textAlign: "center",

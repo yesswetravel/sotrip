@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "PowerShell(node --version)",
-      "PowerShell(npm --version)"
+      "PowerShell(npm --version)",
+      "PowerShell(& \"C:\\\\Users\\\\offic\\\\AppData\\\\Local\\\\gh-cli\\\\bin\\\\gh.exe\" auth login -p https -w 2>&1)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp"
     ]
   }
 }

@@ -11,6 +11,7 @@ import {
 import { useRouter } from "expo-router";
 import { Calendar, type DateData } from "react-native-calendars";
 import { Container, Text } from "../../features/design-system";
+import { goBack } from "../../lib/go-back";
 import { useToast } from "../../features/shared/toast-context";
 import { useCreateTrip, useTrips } from "../../features/trips/hooks";
 import { useSession } from "../../lib/use-session";
@@ -93,15 +94,16 @@ export default function NewTripScreen() {
   }
 
   async function handleSave() {
-    if (!canSave || !session) return;
+    if (!canSave) return;
     if (!canCreate) {
       show("upgrade to create more trips");
       router.back();
       return;
     }
+    const userId = session?.user.id ?? "demo-user";
     try {
       const trip = await createTrip.mutateAsync({
-        userId: session.user.id,
+        userId,
         input: {
           title: title.trim(),
           destination: destination.trim(),
@@ -124,7 +126,7 @@ export default function NewTripScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity onPress={() => goBack(router)}>
             <Text variant="body" style={[styles.cancel, { color: colors.stone }]}>cancel</Text>
           </TouchableOpacity>
         </View>
@@ -192,6 +194,7 @@ export default function NewTripScreen() {
               markingType="period"
               markedDates={getMarkedDates()}
               onDayPress={handleDayPress}
+              enableSwipeMonths
               theme={{
                 backgroundColor: colors.ivory,
                 calendarBackground: colors.ivory,
@@ -202,11 +205,12 @@ export default function NewTripScreen() {
                 dayTextColor: colors.ink,
                 textDisabledColor: colors.mist,
                 monthTextColor: colors.ink,
+                arrowColor: colors.taupe,
                 textMonthFontFamily: "CormorantGaramond_500Medium",
                 textMonthFontSize: 22,
-                textDayFontFamily: "Inter_400Regular",
+                textDayFontFamily: "InstrumentSans_400Regular",
                 textDayFontSize: 14,
-                textDayHeaderFontFamily: "Inter_500Medium",
+                textDayHeaderFontFamily: "InstrumentSans_500Medium",
                 textDayHeaderFontSize: 10,
               }}
             />
@@ -241,7 +245,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: spacing.md,
     paddingVertical: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     fontSize: 15,
   },
   dateButton: {
@@ -259,7 +263,7 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   saveText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   modalOverlay: {
     flex: 1,

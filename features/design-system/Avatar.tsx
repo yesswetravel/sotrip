@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   label: {
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
     fontWeight: "600",
   },
   pair: {

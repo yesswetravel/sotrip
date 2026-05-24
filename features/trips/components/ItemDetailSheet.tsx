@@ -193,11 +193,11 @@ const styles = StyleSheet.create({
   },
   catLabel: {
     fontSize: 12,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   timeLabel: {
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   title: {
     fontSize: 22,
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   },
   locationName: {
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   locationAction: {
     fontSize: 12,
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   editBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   closeBtn: {
     borderWidth: StyleSheet.hairlineWidth,

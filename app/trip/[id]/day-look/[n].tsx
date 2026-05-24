@@ -7,6 +7,7 @@ import {
   TextInput,
   Dimensions,
   Modal,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -14,6 +15,7 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../../features/design-system";
+import { goBack } from "../../../../lib/go-back";
 import { useTrip } from "../../../../features/trips/hooks";
 import { useColors } from "../../../../features/theme/ThemeProvider";
 import { spacing } from "../../../../theme/spacing";
@@ -121,13 +123,13 @@ export default function DayLookScreen() {
 
   const currentDay = trip?.trip_days.find((d) => d.day_number === dayNumber);
 
-  if (!loaded) return null;
+  if (!loaded) return <Container logo><ActivityIndicator size="small" style={{ marginTop: 40 }} /></Container>;
 
   return (
     <Container logo>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.7}>
           <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
         <Text variant="eyebrow">day {String(dayNumber).padStart(2, "0")}</Text>
@@ -143,7 +145,7 @@ export default function DayLookScreen() {
         </Text>
         <View style={[styles.privacyBadge, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
           <View style={[styles.privacyDot, { backgroundColor: colors.coral }]} />
-          <Text variant="caption" style={{ fontSize: 9, color: colors.stone, fontFamily: "Inter_500Medium" }}>only you</Text>
+          <Text variant="caption" style={{ fontSize: 9, color: colors.stone, fontFamily: "InstrumentSans_500Medium" }}>only you</Text>
         </View>
       </View>
 
@@ -184,7 +186,7 @@ export default function DayLookScreen() {
               activeOpacity={0.7}
             >
               <Feather name="plus" size={20} color={colors.sand} />
-              <Text variant="caption" style={{ fontSize: 11, color: colors.sand, fontFamily: "Inter_500Medium" }}>add</Text>
+              <Text variant="caption" style={{ fontSize: 11, color: colors.sand, fontFamily: "InstrumentSans_500Medium" }}>add</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -204,7 +206,7 @@ export default function DayLookScreen() {
               activeOpacity={0.8}
             >
               <Feather name="camera" size={14} color={colors.pearl} />
-              <Text variant="body" style={{ color: colors.pearl, fontFamily: "Inter_500Medium", fontSize: 13 }}>add photos</Text>
+              <Text variant="body" style={{ color: colors.pearl, fontFamily: "InstrumentSans_500Medium", fontSize: 13 }}>add photos</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -227,7 +229,7 @@ export default function DayLookScreen() {
           activeOpacity={0.85}
         >
           <Feather name="camera" size={16} color={colors.ivory} />
-          <Text variant="body" style={{ color: colors.ivory, fontFamily: "Inter_500Medium" }}>add photos</Text>
+          <Text variant="body" style={{ color: colors.ivory, fontFamily: "InstrumentSans_500Medium" }}>add photos</Text>
         </TouchableOpacity>
       )}
 
@@ -279,7 +281,7 @@ export default function DayLookScreen() {
                     onPress={saveDetails}
                     activeOpacity={0.8}
                   >
-                    <Text variant="body" style={{ color: colors.pearl, fontFamily: "Inter_500Medium", fontSize: 14 }}>done</Text>
+                    <Text variant="body" style={{ color: colors.pearl, fontFamily: "InstrumentSans_500Medium", fontSize: 14 }}>done</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => deleteOutfit(viewingOutfit.id)}
@@ -357,7 +359,7 @@ const styles = StyleSheet.create({
   },
   tileName: {
     fontSize: 12,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   addTile: {
     width: TILE_W,
@@ -452,7 +454,7 @@ const styles = StyleSheet.create({
   },
   fullNotesInput: {
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     color: "rgba(255,255,255,0.7)",
     paddingVertical: 4,
     minHeight: 30,

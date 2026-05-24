@@ -13,12 +13,14 @@ import {
   Linking,
   RefreshControl,
   Modal,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../../features/design-system";
+import { goBack } from "../../../../lib/go-back";
 import { getCategoryForItem } from "../../../../theme/categories";
 import { useToast } from "../../../../features/shared/toast-context";
 import ItemSheet from "../../../../features/trips/components/ItemSheet";
@@ -66,6 +68,15 @@ function TimelineItem({
   const colors = useColors();
   const cat = getCategoryForItem(item.category);
   const hasLocation = !!(item.location_name && GMAP_KEY);
+  const hasPhoto = !!item.photo_uri;
+  const hasTitle = !!item.title?.trim();
+
+  // Thumbnail: map for locations, photo only when no location
+  const thumbUri = hasLocation && !mapError
+    ? getStaticMapUrl(item.location_name!)
+    : hasPhoto
+      ? item.photo_uri!
+      : null;
 
   return (
     <Pressable
@@ -92,19 +103,25 @@ function TimelineItem({
         {!isLast && <View style={[styles.line, { backgroundColor: colors.sand }]} />}
       </View>
 
-      {/* Right: content + map */}
+      {/* Right: content + thumbnail */}
       <View style={styles.contentColumn}>
         <View style={styles.contentRow}>
           <View style={styles.contentText}>
-            <Text variant="body" style={[styles.itemTitle, { color: colors.ink }]} numberOfLines={1}>
-              {item.title}
-            </Text>
+            {hasTitle ? (
+              <Text variant="body" style={[styles.itemTitle, { color: colors.ink }]} numberOfLines={1}>
+                {item.title}
+              </Text>
+            ) : (
+              <Text variant="body" style={[styles.itemTitle, { color: colors.sand }]} numberOfLines={1}>
+                {item.location_name || "untitled"}
+              </Text>
+            )}
             {item.subtitle && (
               <Text variant="caption" numberOfLines={1} style={[styles.itemSubtitle, { color: colors.stone }]}>
                 {item.subtitle}
               </Text>
             )}
-            {item.location_name && (
+            {item.location_name && hasTitle && (
               <View style={styles.locationRow}>
                 <Feather name="map-pin" size={10} color={colors.stone} />
                 <Text variant="caption" style={[styles.itemLocation, { color: colors.stone }]}>
@@ -114,22 +131,23 @@ function TimelineItem({
             )}
           </View>
 
-          {/* Mini map thumbnail — tap to open Google Maps */}
-          {hasLocation && !mapError ? (
+          {/* Thumbnail: photo or mini map */}
+          {thumbUri ? (
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={() => {
-                const dest = encodeURIComponent(item.location_name!);
-                const url = `https://www.google.com/maps/search/?api=1&query=${dest}`;
-                Linking.openURL(url);
+                if (hasLocation) {
+                  const dest = encodeURIComponent(item.location_name!);
+                  Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${dest}`);
+                }
               }}
             >
               <Image
-                source={{ uri: getStaticMapUrl(item.location_name!) }}
+                source={{ uri: thumbUri }}
                 style={[styles.mapThumb, { backgroundColor: colors.mist }]}
                 contentFit="cover"
                 transition={300}
-                onError={() => setMapError(true)}
+                onError={() => { if (!hasPhoto) setMapError(true); }}
               />
             </TouchableOpacity>
           ) : null}
@@ -380,13 +398,13 @@ export default function DayViewScreen() {
       .toLowerCase();
   }
 
-  if (!trip || !currentDay) return null;
+  if (!trip || !currentDay) return <Container logo><ActivityIndicator size="small" style={{ marginTop: 40 }} /></Container>;
 
   return (
     <Container logo>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.7}>
           <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
         <Text variant="eyebrow">{trip.title}</Text>
@@ -670,7 +688,7 @@ const styles = StyleSheet.create({
   },
   dayItemCount: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     marginTop: 6,
   },
 
@@ -695,7 +713,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     textTransform: "uppercase" as const,
     letterSpacing: 0.8,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     marginTop: 2,
   },
   body: {
@@ -728,7 +746,7 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 12,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     letterSpacing: 0.2,
   },
   dotColumn: {
@@ -766,7 +784,7 @@ const styles = StyleSheet.create({
   },
   itemTitle: {
     fontSize: 15,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   itemSubtitle: {
     marginTop: 2,
@@ -822,7 +840,7 @@ const styles = StyleSheet.create({
   },
   nowChipText: {
     fontSize: 9,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     letterSpacing: 2,
     paddingRight: 2,
     textTransform: "uppercase",
@@ -859,7 +877,7 @@ const styles = StyleSheet.create({
   },
   nowMiniAvText: {
     fontSize: 8,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
   },
   nowMetaText: {
     fontSize: 11,
@@ -886,7 +904,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     textTransform: "uppercase" as const,
     letterSpacing: 1.2,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
   },
   outfitStripScroll: {
     paddingHorizontal: spacing.lg,
@@ -906,7 +924,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     paddingVertical: 3,
     fontSize: 8,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
 
   /* Fullscreen outfit gallery */
@@ -938,7 +956,7 @@ const styles = StyleSheet.create({
   galleryCounterText: {
     color: "rgba(255,255,255,0.6)",
     fontSize: 12,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     letterSpacing: 1,
   },
   galleryList: {
@@ -959,7 +977,7 @@ const styles = StyleSheet.create({
   galleryName: {
     color: "rgba(255,255,255,0.6)",
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     marginTop: 16,
     letterSpacing: 0.3,
   },
@@ -1002,6 +1020,6 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
   },
   addButtonText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
 });

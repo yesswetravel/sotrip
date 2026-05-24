@@ -5,6 +5,7 @@ import {
   Dimensions,
   TouchableOpacity,
   Animated,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -41,7 +42,7 @@ export default function MemoryConfirmationScreen() {
     ]).start();
   }, []);
 
-  if (!trip) return null;
+  if (!trip) return <Container logo><ActivityIndicator size="small" style={{ marginTop: 40 }} /></Container>;
 
   return (
     <Container logo>
@@ -215,7 +216,7 @@ const s = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   summaryTitle: {
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
     fontSize: 11,
     letterSpacing: 1,
     textTransform: "uppercase",
@@ -232,7 +233,7 @@ const s = StyleSheet.create({
     marginBottom: 8,
   },
   summaryValue: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 13,
   },
   statusBadge: {
@@ -249,7 +250,7 @@ const s = StyleSheet.create({
     borderRadius: 3,
   },
   statusText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 11,
   },
 
@@ -288,7 +289,7 @@ const s = StyleSheet.create({
     paddingVertical: 15,
   },
   primaryBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 14,
     letterSpacing: 0.3,
   },
@@ -297,7 +298,7 @@ const s = StyleSheet.create({
     paddingVertical: 12,
   },
   secondaryBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 13,
   },
 });

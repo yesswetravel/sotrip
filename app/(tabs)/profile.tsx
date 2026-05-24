@@ -1,21 +1,15 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import {
   StyleSheet,
   TouchableOpacity,
   View,
   ScrollView,
-  Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useFocusEffect } from "expo-router";
 import { Container, Text } from "../../features/design-system";
-import { supabase } from "../../lib/supabase";
-import { useSession } from "../../lib/use-session";
+import { goBack } from "../../lib/go-back";
 import { useSubscription } from "../../features/subscription/hooks";
-import { useSubscriptionStore } from "../../features/subscription/store";
-import { PAID_PRICE } from "../../features/subscription/constants";
 import { useColors } from "../../features/theme/ThemeProvider";
 import { spacing } from "../../theme/spacing";
 
@@ -46,7 +40,11 @@ function SettingRow({
       <View
         style={[
           styles.rowIcon,
-          { backgroundColor: danger ? colors.coral + "14" : colors.teal + "14" },
+          {
+            backgroundColor: danger
+              ? colors.coral + "14"
+              : colors.teal + "14",
+          },
         ]}
       >
         <Feather
@@ -56,13 +54,20 @@ function SettingRow({
         />
       </View>
       <Text
-        style={[styles.rowLabel, { color: colors.ink }, danger && { color: colors.coral }]}
+        style={[
+          styles.rowLabel,
+          { color: colors.ink },
+          danger && { color: colors.coral },
+        ]}
         numberOfLines={1}
       >
         {label}
       </Text>
       {value ? (
-        <Text style={[styles.rowValue, { color: colors.stone }]} numberOfLines={1}>
+        <Text
+          style={[styles.rowValue, { color: colors.stone }]}
+          numberOfLines={1}
+        >
           {value}
         </Text>
       ) : null}
@@ -77,203 +82,61 @@ function SettingRow({
 
 function SectionHeader({ title }: { title: string }) {
   const colors = useColors();
-  return <Text style={[styles.sectionTitle, { color: colors.sand }]}>{title}</Text>;
+  return (
+    <Text style={[styles.sectionTitle, { color: colors.sand }]}>
+      {title}
+    </Text>
+  );
 }
 
 /* ------------------------------------------------------------------ */
 /*  Main screen                                                         */
 /* ------------------------------------------------------------------ */
 
-type MemoryOrder = {
-  tripId: string;
-  plan: string;
-  price: number;
-  orderedAt: string;
-  status: string;
-  shipping: { name: string; address: string; city: string; zip: string; country: string } | null;
-};
-
-const STATUS_LABELS: Record<string, { colorKey: "teal" | "coral" | "gold"; label: string; icon: keyof typeof Feather.glyphMap }> = {
-  complete: { colorKey: "teal", label: "digital ready", icon: "check-circle" },
-  processing: { colorKey: "coral", label: "processing", icon: "loader" },
-  printing: { colorKey: "gold", label: "printing", icon: "printer" },
-  shipped: { colorKey: "teal", label: "shipped", icon: "truck" },
-  delivered: { colorKey: "teal", label: "delivered", icon: "package" },
-};
-
-function BookCard({ order, onPress }: { order: MemoryOrder; onPress: () => void }) {
+export default function SettingsScreen() {
   const colors = useColors();
-  const statusCfg = STATUS_LABELS[order.status] ?? STATUS_LABELS.complete;
-  const status = { ...statusCfg, color: colors[statusCfg.colorKey] };
-  const date = new Date(order.orderedAt);
-  const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-
-  return (
-    <TouchableOpacity style={styles.bookCard} onPress={onPress} activeOpacity={0.7}>
-      <View style={[styles.bookCover, { backgroundColor: colors.coral + "12" }]}>
-        <Feather name="book" size={20} color={colors.coral} />
-      </View>
-      <View style={styles.bookInfo}>
-        <Text style={[styles.bookTitle, { color: colors.ink }]}>
-          {order.plan === "print" ? "printed + digital" : "digital book"}
-        </Text>
-        <Text variant="caption" style={[styles.bookDate, { color: colors.stone }]}>{dateStr}</Text>
-      </View>
-      <View style={[styles.bookStatus, { backgroundColor: status.color + "14" }]}>
-        <Feather name={status.icon} size={10} color={status.color} />
-        <Text style={[styles.bookStatusText, { color: status.color }]}>{status.label}</Text>
-      </View>
-    </TouchableOpacity>
-  );
-}
-
-export default function ProfileScreen() {
-  const colors = useColors();
-  const { session } = useSession();
   const router = useRouter();
-  const email = session?.user.email ?? "";
-  const initial = email.charAt(0).toUpperCase();
-
-  const { tier, isPaid } = useSubscription();
-  const setTier = useSubscriptionStore((s) => s.setTier);
-  const [devTaps, setDevTaps] = useState(0);
-
-  const [orders, setOrders] = useState<MemoryOrder[]>([]);
-
-  useFocusEffect(
-    useCallback(() => {
-      AsyncStorage.getItem("memory_orders").then((val) => {
-        if (val) setOrders(JSON.parse(val));
-      });
-    }, [])
-  );
-
-  async function handleSignOut() {
-    Alert.alert("sign out", "are you sure you want to sign out?", [
-      { text: "cancel", style: "cancel" },
-      {
-        text: "sign out",
-        style: "destructive",
-        onPress: () => supabase.auth.signOut(),
-      },
-    ]);
-  }
-
-  function comingSoon(feature: string) {
-    Alert.alert("coming soon", `${feature} will be available in a future update.`);
-  }
-
-  function handleDevToggle() {
-    setTier(isPaid ? "free" : "paid");
-    setDevTaps(0);
-  }
+  const { isPaid } = useSubscription();
 
   return (
     <Container safe logo>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => goBack(router, "/(tabs)/you-two")} activeOpacity={0.7}>
+          <Feather name="chevron-left" size={20} color={colors.ink} />
+        </TouchableOpacity>
+        <Text variant="eyebrow">settings</Text>
+        <View style={{ width: 20 }} />
+      </View>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
       >
-        {/* ---- Avatar & name ---- */}
-        <View style={styles.header}>
-          <View style={[styles.avatar, { backgroundColor: colors.coral }]}>
-            <Text style={[styles.avatarLetter, { color: colors.pearl }]}>{initial}</Text>
-          </View>
-          <Text variant="title" style={styles.displayName}>
-            {email.split("@")[0]}
-          </Text>
-          <Text variant="caption" style={[styles.email, { color: colors.stone }]}>
-            {email}
-          </Text>
-        </View>
-
-        {/* ---- Plan section (subscription) ---- */}
-        <SectionHeader title="your plan" />
-        <View style={[styles.card, { backgroundColor: colors.pearl }]}>
-          <View style={styles.planInner}>
-            <View style={styles.planRow}>
-              <View style={[styles.planBadge, { backgroundColor: colors.mist }, isPaid && { backgroundColor: colors.ink }]}>
-                <Text variant="body" style={[styles.planBadgeText, { color: colors.stone }, isPaid && { color: colors.ivory }]}>
-                  {isPaid ? "paid" : "free"}
-                </Text>
-              </View>
-              {isPaid ? (
-                <Text variant="caption">
-                  unlocked forever
-                </Text>
-              ) : (
-                <Text variant="caption">
-                  1 trip · 10 activities
-                </Text>
-              )}
-            </View>
-
-            {!isPaid && (
-              <TouchableOpacity
-                style={[styles.upgradeBtn, { backgroundColor: colors.ink }]}
-                onPress={() => router.push("/(auth)/paywall")}
-                activeOpacity={0.85}
-              >
-                <Text variant="body" style={[styles.upgradeBtnText, { color: colors.ivory }]}>
-                  upgrade — ${PAID_PRICE} once
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            {isPaid && (
-              <TouchableOpacity style={styles.manageLink} activeOpacity={0.8}>
-                <Text variant="caption" style={[styles.manageLinkText, { color: colors.stone }]}>
-                  manage purchase
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {/* ---- My Books ---- */}
-        {orders.length > 0 && (
-          <>
-            <SectionHeader title="my books" />
-            <View style={[styles.card, { backgroundColor: colors.pearl }]}>
-              {orders.map((order, i) => (
-                <View key={i}>
-                  {i > 0 && <View style={[styles.separator, { backgroundColor: colors.mist }]} />}
-                  <BookCard
-                    order={order}
-                    onPress={() => {
-                      if (order.plan === "print" && order.status !== "complete") {
-                        router.push(`/trip/${order.tripId}/memory-tracking`);
-                      } else {
-                        router.push(`/trip/${order.tripId}/memory`);
-                      }
-                    }}
-                  />
-                </View>
-              ))}
-            </View>
-          </>
-        )}
-
         {/* ---- Account ---- */}
         <SectionHeader title="account" />
         <View style={[styles.card, { backgroundColor: colors.pearl }]}>
           <SettingRow
             icon="user"
             label="edit profile"
-            onPress={() => comingSoon("edit profile")}
+            onPress={() => router.push("/settings/edit-profile")}
           />
-          <View style={[styles.separator, { backgroundColor: colors.mist }]} />
-          <SettingRow
-            icon="lock"
-            label="change password"
-            onPress={() => comingSoon("change password")}
+          <View
+            style={[styles.separator, { backgroundColor: colors.mist }]}
           />
-          <View style={[styles.separator, { backgroundColor: colors.mist }]} />
           <SettingRow
-            icon="mail"
-            label="email"
-            value={email}
-            onPress={() => comingSoon("change email")}
+            icon="credit-card"
+            label="your plan"
+            value={isPaid ? "pro" : "free"}
+            onPress={() => router.push("/settings/manage-plan")}
+          />
+          <View
+            style={[styles.separator, { backgroundColor: colors.mist }]}
+          />
+          <SettingRow
+            icon="users"
+            label="invite partner"
+            onPress={() => router.push("/settings/invite-partner")}
           />
         </View>
 
@@ -283,21 +146,15 @@ export default function ProfileScreen() {
           <SettingRow
             icon="bell"
             label="notifications"
-            onPress={() => comingSoon("notifications")}
+            onPress={() => router.push("/settings/notifications")}
           />
-          <View style={[styles.separator, { backgroundColor: colors.mist }]} />
-          <SettingRow
-            icon="globe"
-            label="language"
-            value="english"
-            onPress={() => comingSoon("language settings")}
+          <View
+            style={[styles.separator, { backgroundColor: colors.mist }]}
           />
-          <View style={[styles.separator, { backgroundColor: colors.mist }]} />
           <SettingRow
             icon="moon"
             label="appearance"
-            value="light"
-            onPress={() => comingSoon("appearance settings")}
+            onPress={() => router.push("/settings/appearance")}
           />
         </View>
 
@@ -306,20 +163,24 @@ export default function ProfileScreen() {
         <View style={[styles.card, { backgroundColor: colors.pearl }]}>
           <SettingRow
             icon="help-circle"
-            label="help & feedback"
-            onPress={() => comingSoon("help & feedback")}
+            label="help & support"
+            onPress={() => router.push("/settings/help")}
           />
-          <View style={[styles.separator, { backgroundColor: colors.mist }]} />
+          <View
+            style={[styles.separator, { backgroundColor: colors.mist }]}
+          />
           <SettingRow
             icon="star"
-            label="rate the app"
-            onPress={() => comingSoon("rate the app")}
+            label="rate sotrip"
+            onPress={() => router.push("/settings/rate-app")}
           />
-          <View style={[styles.separator, { backgroundColor: colors.mist }]} />
+          <View
+            style={[styles.separator, { backgroundColor: colors.mist }]}
+          />
           <SettingRow
             icon="share-2"
             label="share with friends"
-            onPress={() => comingSoon("share")}
+            onPress={() => router.push("/settings/share-app")}
           />
         </View>
 
@@ -329,92 +190,36 @@ export default function ProfileScreen() {
           <SettingRow
             icon="file-text"
             label="terms of service"
-            onPress={() => comingSoon("terms of service")}
+            onPress={() => router.push("/settings/terms")}
           />
-          <View style={[styles.separator, { backgroundColor: colors.mist }]} />
+          <View
+            style={[styles.separator, { backgroundColor: colors.mist }]}
+          />
           <SettingRow
             icon="shield"
             label="privacy policy"
-            onPress={() => comingSoon("privacy policy")}
+            onPress={() => router.push("/settings/privacy")}
           />
-          <View style={[styles.separator, { backgroundColor: colors.mist }]} />
+          <View
+            style={[styles.separator, { backgroundColor: colors.mist }]}
+          />
           <SettingRow
             icon="info"
-            label="cookie policy"
-            onPress={() => comingSoon("cookie policy")}
+            label="about"
+            onPress={() => router.push("/settings/about")}
           />
         </View>
 
-        {/* ---- Data & Security ---- */}
+        {/* ---- Danger zone ---- */}
         <SectionHeader title="data & security" />
         <View style={[styles.card, { backgroundColor: colors.pearl }]}>
-          <SettingRow
-            icon="download"
-            label="export my data"
-            onPress={() => comingSoon("data export")}
-          />
-          <View style={[styles.separator, { backgroundColor: colors.mist }]} />
           <SettingRow
             icon="trash-2"
             label="delete account"
             danger
-            onPress={() =>
-              Alert.alert(
-                "delete account",
-                "this action is permanent and cannot be undone. all your trips, photos, and data will be removed.",
-                [
-                  { text: "cancel", style: "cancel" },
-                  {
-                    text: "delete",
-                    style: "destructive",
-                    onPress: () => comingSoon("account deletion"),
-                  },
-                ]
-              )
-            }
+            onPress={() => router.push("/settings/delete-account")}
           />
         </View>
-
-        {/* ---- Sign out ---- */}
-        <TouchableOpacity
-          style={[styles.signOut, { borderColor: colors.mist }]}
-          onPress={handleSignOut}
-          activeOpacity={0.8}
-        >
-          <Feather name="log-out" size={14} color={colors.stone} />
-          <Text variant="body" style={[styles.signOutText, { color: colors.stone }]}>
-            sign out
-          </Text>
-        </TouchableOpacity>
-
-        {/* Hidden dev toggle — tap version 5 times to switch tiers */}
-        <TouchableOpacity
-          style={styles.devTrigger}
-          onPress={() => {
-            const next = devTaps + 1;
-            if (next >= 5) {
-              handleDevToggle();
-            } else if (next >= 3) {
-              setDevTaps(next);
-            } else {
-              setDevTaps(next);
-            }
-          }}
-          activeOpacity={1}
-        >
-          <Text style={[styles.version, { color: colors.sand }]}>sotrip v1.0.0</Text>
-        </TouchableOpacity>
-
-        {devTaps >= 3 && (
-          <TouchableOpacity
-            style={styles.seedLink}
-            onPress={() => router.push("/dev/seed")}
-            activeOpacity={0.8}
-          >
-            <Feather name="zap" size={12} color={colors.coral} />
-            <Text style={[styles.seedLinkText, { color: colors.coral }]}>seed demo trip</Text>
-          </TouchableOpacity>
-        )}
 
         <View style={{ height: spacing.xxl }} />
       </ScrollView>
@@ -427,58 +232,15 @@ export default function ProfileScreen() {
 /* ------------------------------------------------------------------ */
 
 const styles = StyleSheet.create({
-  scroll: { paddingTop: spacing.sm },
-
-  /* Header */
-  header: { alignItems: "center", marginBottom: spacing.xl },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: spacing.md,
-  },
-  avatarLetter: {
-    fontFamily: "CormorantGaramond_500Medium",
-    fontSize: 30,
-  },
-  displayName: { fontSize: 20, marginBottom: 4 },
-  email: {},
-
-  /* Plan section */
-  planInner: {
-    padding: spacing.md,
-    gap: 12,
-  },
-  planRow: {
+  header: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    gap: 10,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.sm,
   },
-  planBadge: {
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  planBadgeText: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 12,
-  },
-  upgradeBtn: {
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  upgradeBtnText: {
-    fontFamily: "Inter_500Medium",
-  },
-  manageLink: {
-    alignItems: "center",
-    paddingVertical: 4,
-  },
-  manageLinkText: {
-    textDecorationLine: "underline",
+  scroll: {
+    paddingTop: spacing.sm,
   },
 
   /* Section */
@@ -486,7 +248,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     textTransform: "uppercase" as const,
     letterSpacing: 1.5,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_500Medium",
     paddingHorizontal: spacing.lg,
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
@@ -521,84 +283,11 @@ const styles = StyleSheet.create({
   rowLabel: {
     flex: 1,
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   rowValue: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     maxWidth: 120,
-  },
-
-  /* Book card */
-  bookCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    gap: 12,
-  },
-  bookCover: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  bookInfo: { flex: 1, gap: 2 },
-  bookTitle: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 13,
-  },
-  bookDate: { fontSize: 11 },
-  bookStatus: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  bookStatusText: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 9,
-    letterSpacing: 0.3,
-  },
-
-  /* Sign out */
-  signOut: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    marginTop: spacing.xl,
-    marginHorizontal: spacing.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 12,
-    paddingVertical: 14,
-  },
-  signOutText: { fontSize: 14 },
-
-  /* Dev toggle & Version */
-  devTrigger: {
-    alignItems: "center",
-    marginTop: spacing.xxl,
-    paddingVertical: spacing.sm,
-  },
-  version: {
-    textAlign: "center",
-    fontSize: 10,
-    marginTop: spacing.md,
-    fontFamily: "Inter_400Regular",
-  },
-  seedLink: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: spacing.sm,
-  },
-  seedLinkText: {
-    fontSize: 11,
-    fontFamily: "Inter_500Medium",
   },
 });

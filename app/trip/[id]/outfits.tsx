@@ -7,6 +7,7 @@ import {
   Modal,
   Dimensions,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -14,6 +15,7 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../features/design-system";
+import { goBack } from "../../../lib/go-back";
 import { useTrip } from "../../../features/trips/hooks";
 import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
@@ -157,12 +159,12 @@ export default function OutfitsScreen() {
   const unassigned = outfits.filter((o) => o.dayNumber === null);
   const totalAssigned = outfits.length - unassigned.length;
 
-  if (!loaded) return null;
+  if (!loaded) return <Container logo><ActivityIndicator size="small" style={{ marginTop: 40 }} /></Container>;
 
   return (
     <Container logo>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.7}>
           <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
         <Text variant="eyebrow">{trip?.title ?? "trip"}</Text>
@@ -190,7 +192,7 @@ export default function OutfitsScreen() {
                 <Text variant="body" style={[styles.dayLabel, { color: colors.ink }]}>
                   day {row.dayNumber}
                 </Text>
-                <Text variant="caption" style={{ fontSize: 12, color: colors.taupe, fontFamily: "Inter_400Regular" }}>
+                <Text variant="caption" style={{ fontSize: 12, color: colors.taupe, fontFamily: "InstrumentSans_400Regular" }}>
                   {formatDayDate(row.date)}
                 </Text>
               </View>
@@ -300,7 +302,7 @@ export default function OutfitsScreen() {
         activeOpacity={0.85}
       >
         <Feather name="camera" size={16} color={colors.ivory} style={{ marginRight: 6 }} />
-        <Text variant="body" style={{ color: colors.ivory, fontFamily: "Inter_500Medium" }}>add inspiration</Text>
+        <Text variant="body" style={{ color: colors.ivory, fontFamily: "InstrumentSans_500Medium" }}>add inspiration</Text>
       </TouchableOpacity>
 
       {/* Outfit detail modal */}
@@ -430,7 +432,7 @@ export default function OutfitsScreen() {
                   onPress={saveOutfitDetails}
                   activeOpacity={0.8}
                 >
-                  <Text variant="body" style={{ color: colors.ivory, fontFamily: "Inter_500Medium" }}>done</Text>
+                  <Text variant="body" style={{ color: colors.ivory, fontFamily: "InstrumentSans_500Medium" }}>done</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -499,7 +501,7 @@ const styles = StyleSheet.create({
   },
   dayLabel: {
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   addDayBtn: {
     width: 32,
@@ -544,7 +546,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 6,
     fontSize: 11,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
 
   /* Inspiration section */
@@ -654,7 +656,7 @@ const styles = StyleSheet.create({
   },
   dayPickerDayNum: {
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   dayPickerDate: {
     flex: 1,

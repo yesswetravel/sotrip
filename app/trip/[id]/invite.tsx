@@ -13,6 +13,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../features/design-system";
+import { goBack } from "../../../lib/go-back";
 import { useSession } from "../../../lib/use-session";
 import { useTrip } from "../../../features/trips/hooks";
 import { useTripMembers } from "../../../features/couple/hooks";
@@ -101,7 +102,7 @@ export default function TripInviteScreen() {
   return (
     <Container logo>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.7}>
           <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
         <Text variant="eyebrow">invite friends</Text>
@@ -369,7 +370,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
   codeText: {
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
     fontSize: 22,
     letterSpacing: 2,
     paddingRight: 2,
@@ -387,7 +388,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   copyBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 13,
   },
 
@@ -403,7 +404,7 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
   },
   orText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 10,
     textTransform: "uppercase",
     letterSpacing: 1,
@@ -431,11 +432,11 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   shareName: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 13,
   },
   shareDesc: {
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     fontSize: 10,
   },
 
@@ -468,7 +469,7 @@ const styles = StyleSheet.create({
   },
   pendingAvatar: {},
   memberLetter: {
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
     fontSize: 14,
   },
   memberBody: {
@@ -476,11 +477,11 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   memberName: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 14,
   },
   memberRole: {
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     fontSize: 11,
   },
   ownerBadge: {
@@ -519,7 +520,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   addFriendText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 13,
   },
 
@@ -538,7 +539,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     fontSize: 14,
   },
   demoBtnRow: {
@@ -555,7 +556,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   tealBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 13,
   },
   btnDisabled: {
@@ -570,7 +571,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   permTitle: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 12,
     marginBottom: 10,
   },
@@ -581,7 +582,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   permText: {
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     fontSize: 11,
   },
 });

@@ -9,11 +9,13 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Container, Text } from "../../../features/design-system";
+import { goBack } from "../../../lib/go-back";
 import { useTrip } from "../../../features/trips/hooks";
 import { useTripMembers } from "../../../features/couple/hooks";
 import { useColors } from "../../../features/theme/ThemeProvider";
@@ -400,13 +402,13 @@ export default function CalendarTimelineScreen() {
     return `${s} — ${e}`;
   };
 
-  if (!trip) return null;
+  if (!trip) return <Container logo><ActivityIndicator size="small" style={{ marginTop: 40 }} /></Container>;
 
   return (
     <Container logo>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.7}>
           <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
         <Text variant="eyebrow">trip calendar</Text>
@@ -532,7 +534,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 4,
     letterSpacing: 0.3,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
   },
 
   /* Shared bar */
@@ -547,7 +549,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     textTransform: "uppercase",
     letterSpacing: 1.2,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
   },
   avatarStack: {
     flexDirection: "row",
@@ -561,7 +563,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   sharedAvatarText: {
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
     fontSize: 10,
     color: "#FFFFFF",
   },
@@ -584,7 +586,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     textTransform: "uppercase",
     letterSpacing: 0.8,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
   },
   dayNumber: {
     fontFamily: "CormorantGaramond_500Medium",
@@ -606,7 +608,7 @@ const styles = StyleSheet.create({
     fontSize: 7,
     textTransform: "uppercase",
     letterSpacing: 0.6,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
   },
 
   /* Day hero */
@@ -630,7 +632,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "rgba(255,255,255,0.65)",
     marginTop: 1,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
   },
   dayHeroBadge: {
     position: "absolute",
@@ -644,7 +646,7 @@ const styles = StyleSheet.create({
   dayHeroBadgeText: {
     fontSize: 9,
     color: "#FFFFFF",
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     letterSpacing: 0.4,
   },
 
@@ -664,7 +666,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     fontStyle: "italic",
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
   },
 
   /* Timeline */
@@ -678,7 +680,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     textTransform: "uppercase",
     letterSpacing: 1.5,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
     paddingLeft: 28,
     marginBottom: 12,
   },
@@ -715,18 +717,18 @@ const styles = StyleSheet.create({
   },
   activityTime: {
     fontSize: 10,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     letterSpacing: 0.5,
     marginBottom: 4,
   },
   activityTitle: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 14,
     marginBottom: 2,
   },
   activityLocation: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
   },
 
   /* Activity people */
@@ -744,13 +746,13 @@ const styles = StyleSheet.create({
   },
   activityAvatarText: {
     fontSize: 8,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
     color: "#FFFFFF",
   },
   activityPeopleLabel: {
     fontSize: 9,
     marginLeft: 6,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
   },
 
   /* Empty state */
@@ -761,7 +763,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 13,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
   },
   addBtn: {
     flexDirection: "row",
@@ -774,7 +776,7 @@ const styles = StyleSheet.create({
   },
   addBtnText: {
     fontSize: 12,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
 
   /* Date roller */
@@ -797,7 +799,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     textTransform: "uppercase" as const,
     letterSpacing: 0.8,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     marginTop: 2,
   },
 });

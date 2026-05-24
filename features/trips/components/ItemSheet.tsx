@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   StyleSheet,
   View,
@@ -9,7 +9,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Linking,
-  ActivityIndicator,
   Dimensions,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
@@ -17,7 +16,7 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Text } from "../../design-system";
-import { LocationPicker, TimePicker, CategoryPicker } from "../../shared";
+import { LocationPicker, TimePicker } from "../../shared";
 import { useToast } from "../../shared/toast-context";
 import { useCreateItem, useUpdateItem, useDeleteItem } from "../hooks";
 import { useCanAddItem } from "../../subscription/hooks";
@@ -33,6 +32,8 @@ interface ItemSheetProps {
   /** When provided, enables the outfit tab and auto-assigns outfits to this day */
   dayNumber?: number;
   onClose: () => void;
+  /** Called after an item is successfully deleted (use to navigate away) */
+  onDeleted?: () => void;
   /** Called when outfits change so the parent can refresh its display */
   onOutfitsChanged?: () => void;
 }
@@ -58,91 +59,6 @@ const SCREEN_W = Dimensions.get("window").width;
 const OUTFIT_TILE_GAP = 10;
 const OUTFIT_TILE_W = (SCREEN_W - spacing.lg * 2 - OUTFIT_TILE_GAP * 2) / 3;
 
-/* ------------------------------------------------------------------ */
-/*  Link preview via oEmbed APIs                                        */
-/* ------------------------------------------------------------------ */
-
-interface LinkPreview {
-  title: string;
-  author: string;
-  thumbnailUrl?: string;
-  source: string;
-}
-
-async function scrapeOgImage(url: string): Promise<{ image?: string; title?: string }> {
-  try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; SoTrip/1.0)" },
-    });
-    if (!res.ok) return {};
-    const html = await res.text();
-    const imgMatch = html.match(/<meta[^>]+property="og:image"[^>]+content="([^"]+)"/i)
-      || html.match(/<meta[^>]+content="([^"]+)"[^>]+property="og:image"/i);
-    const titleMatch = html.match(/<meta[^>]+property="og:title"[^>]+content="([^"]+)"/i)
-      || html.match(/<meta[^>]+content="([^"]+)"[^>]+property="og:title"/i);
-    return { image: imgMatch?.[1], title: titleMatch?.[1] };
-  } catch {}
-  return {};
-}
-
-async function fetchLinkPreview(url: string): Promise<LinkPreview | null> {
-  if (!url.trim()) return null;
-  try {
-    if (url.includes("instagram.com") || url.includes("instagr.am")) {
-      const res = await fetch(
-        `https://api.instagram.com/oembed?url=${encodeURIComponent(url)}&omitscript=true`
-      );
-      if (res.ok) {
-        const d = await res.json();
-        if (d.thumbnail_url) {
-          return { title: d.title || "instagram post", author: `@${d.author_name || "unknown"}`, thumbnailUrl: d.thumbnail_url, source: "instagram" };
-        }
-      }
-      const og = await scrapeOgImage(url);
-      if (og.image) {
-        return { title: og.title || "instagram post", author: "instagram", thumbnailUrl: og.image, source: "instagram" };
-      }
-    }
-    if (url.includes("pinterest.com") || url.includes("pin.it")) {
-      const res = await fetch(
-        `https://www.pinterest.com/oembed.json?url=${encodeURIComponent(url)}`
-      );
-      if (res.ok) {
-        const d = await res.json();
-        return { title: d.title || "pinned place", author: d.author_name || "pinterest", thumbnailUrl: d.thumbnail_url, source: "pinterest" };
-      }
-    }
-    if (url.includes("tiktok.com")) {
-      const res = await fetch(
-        `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`
-      );
-      if (res.ok) {
-        const d = await res.json();
-        return { title: d.title || "tiktok video", author: `@${d.author_name || "unknown"}`, thumbnailUrl: d.thumbnail_url, source: "tiktok" };
-      }
-    }
-    const og = await scrapeOgImage(url);
-    if (og.image) {
-      const domain = url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
-      return { title: og.title || domain, author: domain, thumbnailUrl: og.image, source: domain };
-    }
-  } catch {}
-  return null;
-}
-
-/* ------------------------------------------------------------------ */
-/*  Field label                                                         */
-/* ------------------------------------------------------------------ */
-
-function FieldLabel({ label, icon }: { label: string; icon: keyof typeof Feather.glyphMap }) {
-  const colors = useColors();
-  return (
-    <View style={styles.fieldLabel}>
-      <Feather name={icon} size={12} color={colors.taupe} />
-      <Text style={[styles.fieldLabelText, { color: colors.taupe }]}>{label}</Text>
-    </View>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /*  Outfit Tab Content                                                  */
@@ -276,6 +192,7 @@ export default function ItemSheet({
   currentItemCount = 0,
   dayNumber,
   onClose,
+  onDeleted,
   onOutfitsChanged,
 }: ItemSheetProps) {
   const colors = useColors();
@@ -296,35 +213,14 @@ export default function ItemSheet({
   const [locationLng, setLocationLng] = useState(item?.location_lng ?? 0);
   const [photoUri, setPhotoUri] = useState(item?.photo_uri ?? "");
   const [notes, setNotes] = useState(item?.notes ?? "");
-  const [link, setLink] = useState(item?.link ?? "");
-  const [linkPreview, setLinkPreview] = useState<LinkPreview | null>(null);
-  const [linkLoading, setLinkLoading] = useState(false);
-  const linkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const { canAdd } = useCanAddItem(currentItemCount);
-  const canSave = title.trim().length > 0 || locationName.trim().length > 0 || link.trim().length > 0;
-
-  useEffect(() => {
-    if (item?.link) {
-      fetchLinkPreview(item.link).then((preview) => {
-        if (preview) setLinkPreview(preview);
-      });
-    }
-  }, []);
-
-  function handleLinkChange(text: string) {
-    setLink(text);
-    setLinkPreview(null);
-    if (linkTimer.current) clearTimeout(linkTimer.current);
-    if (!text.trim() || !text.includes(".")) return;
-    linkTimer.current = setTimeout(async () => {
-      setLinkLoading(true);
-      const preview = await fetchLinkPreview(text.trim());
-      setLinkLoading(false);
-      if (preview) setLinkPreview(preview);
-    }, 600);
-  }
+  const canSave =
+    title.trim().length > 0 ||
+    locationName.trim().length > 0 ||
+    time.trim().length > 0 ||
+    photoUri.trim().length > 0;
 
   function handleOpenMap() {
     if (!locationLat || !locationLng) return;
@@ -334,7 +230,7 @@ export default function ItemSheet({
 
   async function handleSave() {
     if (!canSave) return;
-    const finalTitle = title.trim() || locationName.trim() || linkPreview?.title || link.trim();
+    const finalTitle = title.trim() || locationName.trim();
     try {
       if (isEditing) {
         await updateItem.mutateAsync({
@@ -348,7 +244,6 @@ export default function ItemSheet({
             location_lng: locationLng || null,
             photo_uri: photoUri.trim() || null,
             notes: notes.trim() || null,
-            link: link.trim() || null,
           },
         });
       } else {
@@ -362,12 +257,26 @@ export default function ItemSheet({
           location_lng: locationLng || undefined,
           photo_uri: photoUri.trim() || undefined,
           notes: notes.trim() || undefined,
-          link: link.trim() || undefined,
         });
       }
       onClose();
     } catch (err: any) {
       show("couldn't save plan");
+    }
+  }
+
+  async function handlePickPhoto() {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        quality: 0.8,
+        allowsMultipleSelection: false,
+      });
+      if (!result.canceled && result.assets.length > 0) {
+        setPhotoUri(result.assets[0].uri);
+      }
+    } catch {
+      show("couldn't pick photo");
     }
   }
 
@@ -377,7 +286,7 @@ export default function ItemSheet({
       return;
     }
     deleteItem.mutate(item!.id, {
-      onSuccess: onClose,
+      onSuccess: () => { onDeleted ? onDeleted() : onClose(); },
       onError: () => show("couldn't delete plan"),
     });
   }
@@ -449,123 +358,113 @@ export default function ItemSheet({
             {/* ============ Plan Tab ============ */}
             {activeTab === "plan" && (
               <>
-                {/* Location (primary field) */}
-                <FieldLabel label="location" icon="map-pin" />
-                <LocationPicker
-                  value={locationName}
-                  placeholder="search a place..."
-                  onSelect={(place) => {
-                    setLocationName(place.name);
-                    setLocationLat(place.lat);
-                    setLocationLng(place.lng);
-                    if (place.photo_uri) setPhotoUri(place.photo_uri);
-                  }}
-                  onClear={() => {
-                    setLocationName("");
-                    setLocationLat(0);
-                    setLocationLng(0);
-                    setPhotoUri("");
-                  }}
-                />
-                {locationName.trim().length > 0 && locationLat !== 0 && (
-                  <TouchableOpacity
-                    style={styles.mapLink}
-                    onPress={handleOpenMap}
-                    activeOpacity={0.7}
-                  >
-                    <Feather name="navigation" size={12} color={colors.teal} />
-                    <Text style={[styles.mapLinkText, { color: colors.teal }]}>open in maps</Text>
-                  </TouchableOpacity>
-                )}
-
-                {/* Category */}
-                <FieldLabel label="category" icon="tag" />
-                <CategoryPicker value={category} onChange={setCategory} />
-
-                {/* Time */}
-                <FieldLabel label="time" icon="clock" />
-                <TimePicker
-                  value={time}
-                  onChange={setTime}
-                  onClear={() => setTime("")}
-                  placeholder="set time"
-                />
-
-                {/* Plan name (optional — location is used if empty) */}
-                <FieldLabel label="plan name (optional)" icon="edit-3" />
+                {/* Plan name */}
                 <TextInput
-                  style={[styles.input, { borderColor: colors.sand, color: colors.ink, backgroundColor: colors.pearl }]}
-                  placeholder="e.g. sunset visit, morning coffee..."
+                  style={[styles.input, { borderColor: colors.sand, color: colors.ink, backgroundColor: colors.pearl, marginTop: spacing.sm }]}
+                  placeholder="plan name"
                   placeholderTextColor={colors.stone}
                   value={title}
                   onChangeText={setTitle}
                 />
 
-                {/* Note */}
-                <FieldLabel label="note" icon="file-text" />
+                {/* Location — zIndex keeps dropdown above fields below */}
+                <View style={{ marginTop: spacing.sm, zIndex: 20 }}>
+                  <LocationPicker
+                    value={locationName}
+                    placeholder="search location..."
+                    onSelect={(place) => {
+                      setLocationName(place.name);
+                      setLocationLat(place.lat);
+                      setLocationLng(place.lng);
+                      if (place.photo_uri && !photoUri) setPhotoUri(place.photo_uri);
+                    }}
+                    onClear={() => {
+                      setLocationName("");
+                      setLocationLat(0);
+                      setLocationLng(0);
+                    }}
+                  />
+                  {locationName.trim().length > 0 && locationLat !== 0 && (
+                    <TouchableOpacity
+                      style={styles.mapLink}
+                      onPress={handleOpenMap}
+                      activeOpacity={0.7}
+                    >
+                      <Feather name="navigation" size={12} color={colors.teal} />
+                      <Text style={[styles.mapLinkText, { color: colors.teal }]}>open in maps</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Photo — preview or input options */}
+                <View style={{ marginTop: spacing.sm, zIndex: 1 }}>
+                  {photoUri ? (
+                    <>
+                      <View style={[styles.photoPreview, { borderColor: colors.mist }]}>
+                        <Image
+                          source={{ uri: photoUri }}
+                          style={styles.photoPreviewImage}
+                          contentFit="cover"
+                          transition={200}
+                        />
+                        <TouchableOpacity
+                          style={styles.photoRemoveBtn}
+                          onPress={() => setPhotoUri("")}
+                          activeOpacity={0.7}
+                          hitSlop={8}
+                        >
+                          <Feather name="x" size={12} color="#fff" />
+                        </TouchableOpacity>
+                      </View>
+                      {photoUri.startsWith("http") && (
+                        <Text variant="caption" style={[styles.photoSourceHint, { color: colors.taupe }]}>
+                          from google · tap × to change
+                        </Text>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <TouchableOpacity
+                        style={[styles.photoPickBtn, { borderColor: colors.sand, backgroundColor: colors.pearl }]}
+                        onPress={handlePickPhoto}
+                        activeOpacity={0.8}
+                      >
+                        <Feather name="image" size={16} color={colors.coral} />
+                        <Text style={[styles.photoPickText, { color: colors.stone }]}>tap, paste, or drag photo</Text>
+                      </TouchableOpacity>
+                      <TextInput
+                        style={[styles.input, { borderColor: colors.sand, color: colors.ink, backgroundColor: colors.pearl, marginTop: spacing.sm }]}
+                        placeholder="or paste image URL..."
+                        placeholderTextColor={colors.stone}
+                        value=""
+                        onChangeText={setPhotoUri}
+                        keyboardType="url"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                      />
+                    </>
+                  )}
+                </View>
+
+                {/* Time */}
+                <View style={{ marginTop: spacing.sm, zIndex: 1 }}>
+                  <TimePicker
+                    value={time}
+                    onChange={setTime}
+                    onClear={() => setTime("")}
+                    placeholder="set time"
+                  />
+                </View>
+
+                {/* Notes — long text with links */}
                 <TextInput
-                  style={[styles.input, styles.notesInput, { borderColor: colors.sand, color: colors.ink, backgroundColor: colors.pearl }]}
-                  placeholder="any details or reminders..."
+                  style={[styles.input, styles.notesInput, { borderColor: colors.sand, color: colors.ink, backgroundColor: colors.pearl, marginTop: spacing.sm }]}
+                  placeholder="notes, links, details..."
                   placeholderTextColor={colors.stone}
                   value={notes}
                   onChangeText={setNotes}
                   multiline
                 />
-
-                {/* Link */}
-                <FieldLabel label="link or reference" icon="link" />
-                <View style={[styles.linkRow, { borderColor: colors.sand, backgroundColor: colors.pearl }]}>
-                  <TextInput
-                    style={[styles.linkInput, { color: colors.ink }]}
-                    placeholder="paste a URL (booking, article, etc.)"
-                    placeholderTextColor={colors.stone}
-                    value={link}
-                    onChangeText={handleLinkChange}
-                    keyboardType="url"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                  {linkLoading && <ActivityIndicator size="small" color={colors.coral} />}
-                </View>
-
-                {/* Link preview card */}
-                {linkPreview && (
-                  <View style={[styles.previewCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
-                    {linkPreview.thumbnailUrl ? (
-                      <Image source={{ uri: linkPreview.thumbnailUrl }} style={styles.previewImage} contentFit="cover" transition={200} />
-                    ) : (
-                      <View style={[styles.previewImagePlaceholder, { backgroundColor: colors.gold + "20" }]}>
-                        <Feather name="image" size={20} color={colors.sand} />
-                      </View>
-                    )}
-                    <View style={styles.previewBody}>
-                      <Text style={[styles.previewTitle, { color: colors.ink }]} numberOfLines={2}>{linkPreview.title}</Text>
-                      <Text variant="caption" style={{ color: colors.stone }}>{linkPreview.author}</Text>
-                      <View style={[styles.previewBadge, { backgroundColor: colors.stone + "10" }]}>
-                        <Feather
-                          name={linkPreview.source === "instagram" ? "instagram" : linkPreview.source === "pinterest" ? "heart" : "link"}
-                          size={9}
-                          color={colors.stone}
-                        />
-                        <Text style={[styles.previewBadgeText, { color: colors.stone }]}>{linkPreview.source}</Text>
-                      </View>
-                    </View>
-                  </View>
-                )}
-
-                {link.trim().length > 0 && !linkPreview && (
-                  <TouchableOpacity
-                    style={styles.mapLink}
-                    onPress={() => {
-                      const url = link.startsWith("http") ? link : `https://${link}`;
-                      Linking.openURL(url).catch(() => show("couldn't open link"));
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Feather name="external-link" size={12} color={colors.teal} />
-                    <Text style={[styles.mapLinkText, { color: colors.teal }]}>open link</Text>
-                  </TouchableOpacity>
-                )}
 
                 {/* Save / Cancel / Delete */}
                 <View style={styles.actions}>
@@ -665,27 +564,12 @@ const styles = StyleSheet.create({
   tabPillActive: {},
   tabPillText: {
     fontSize: 11,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     letterSpacing: 0.3,
   },
 
   scrollContent: {
     paddingBottom: spacing.md,
-  },
-
-  /* Field labels */
-  fieldLabel: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 6,
-    marginTop: spacing.md,
-  },
-  fieldLabelText: {
-    fontSize: 10,
-    textTransform: "uppercase" as const,
-    letterSpacing: 1.2,
-    fontFamily: "Inter_600SemiBold",
   },
 
   /* Inputs */
@@ -694,12 +578,61 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: spacing.md,
     paddingVertical: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     fontSize: 15,
   },
   notesInput: {
     minHeight: 80,
     textAlignVertical: "top",
+  },
+
+  /* Photo field */
+  photoPickBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 10,
+    paddingVertical: 14,
+    borderStyle: "dashed" as any,
+  },
+  photoPickText: {
+    fontFamily: "InstrumentSans_500Medium",
+    fontSize: 14,
+  },
+  photoPreview: {
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+    position: "relative",
+  },
+  photoPreviewImage: {
+    width: "100%",
+    height: 180,
+    borderRadius: 12,
+  },
+  photoRemoveBtn: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.45)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  photoSourceHint: {
+    marginTop: 6,
+    fontSize: 11,
+    textAlign: "center",
+    fontFamily: "InstrumentSans_400Regular",
   },
 
   /* Map / link helpers */
@@ -712,66 +645,7 @@ const styles = StyleSheet.create({
   },
   mapLinkText: {
     fontSize: 12,
-    fontFamily: "Inter_500Medium",
-  },
-
-  /* Link input row */
-  linkRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 10,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 14,
-  },
-  linkInput: {
-    flex: 1,
-    fontFamily: "Inter_400Regular",
-    fontSize: 15,
-  },
-
-  /* Link preview */
-  previewCard: {
-    flexDirection: "row",
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    overflow: "hidden",
-    marginTop: 10,
-  },
-  previewImage: {
-    width: 80,
-    height: 80,
-  },
-  previewImagePlaceholder: {
-    width: 80,
-    height: 80,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  previewBody: {
-    flex: 1,
-    padding: 10,
-    justifyContent: "center",
-    gap: 2,
-  },
-  previewTitle: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 13,
-  },
-  previewBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    alignSelf: "flex-start",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 999,
-    marginTop: 4,
-  },
-  previewBadgeText: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 9,
-    letterSpacing: 0.5,
+    fontFamily: "InstrumentSans_500Medium",
   },
 
   /* Actions */
@@ -788,7 +662,7 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   saveBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   deleteLink: {
     alignItems: "center",
@@ -849,7 +723,7 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
   },
   outfitAddBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 14,
   },
 });

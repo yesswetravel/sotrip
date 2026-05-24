@@ -14,7 +14,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { Text, Cairn } from "../../features/design-system";
 import { useToast } from "../../features/shared/toast-context";
-import { supabase } from "../../lib/supabase";
+import { useSubscriptionStore } from "../../features/subscription/store";
 import { useColors } from "../../features/theme/ThemeProvider";
 import { spacing } from "../../theme/spacing";
 
@@ -46,6 +46,7 @@ function buildSlides(colors: ReturnType<typeof useColors>) {
 
 export default function SignInScreen() {
   const colors = useColors();
+  const setDemoSignedIn = useSubscriptionStore((s) => s.setDemoSignedIn);
   const SLIDES = buildSlides(colors);
   const [step, setStep] = useState<"welcome" | "email">("welcome");
   const [email, setEmail] = useState("");
@@ -145,23 +146,13 @@ export default function SignInScreen() {
     Animated.timing(emailFade, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => setStep("welcome"));
   }
 
-  async function handleSubmit() {
+  function handleDemoLogin() {
+    setDemoSignedIn();
+  }
+
+  function handleSubmit() {
     if (!email.trim() || !password.trim()) return;
-    setLoading(true);
-    try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({ email: email.trim(), password: password.trim() });
-        if (error) throw error;
-        show("check your email to confirm your account");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: password.trim() });
-        if (error) throw error;
-      }
-    } catch (err: unknown) {
-      show(err instanceof Error ? err.message : "something went wrong");
-    } finally {
-      setLoading(false);
-    }
+    handleDemoLogin();
   }
 
   const canSubmit = email.trim().length > 0 && password.trim().length > 0;
@@ -171,7 +162,7 @@ export default function SignInScreen() {
       <KeyboardAvoidingView style={[styles.root, { backgroundColor: colors.ivory }]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <Animated.View style={[styles.emailScreen, { opacity: emailFade, backgroundColor: colors.ivory }]}>
           <TouchableOpacity style={styles.backBtn} onPress={goBackToWelcome} activeOpacity={0.7}>
-            <Feather name="arrow-left" size={20} color={colors.ink} />
+            <Feather name="chevron-left" size={20} color={colors.ink} />
           </TouchableOpacity>
 
           <View style={styles.emailInner}>
@@ -261,7 +252,7 @@ export default function SignInScreen() {
                 { backgroundColor: slide.accent + "14", transform: [{ translateY: iconFloats[i] }] },
               ]}
             >
-              <Feather name={slide.icon} size={34} color={slide.accent} />
+              <Feather name={slide.icon} size={28} color={slide.accent} />
             </Animated.View>
 
             <Text variant="display" style={[styles.slideTitle, { color: colors.ink }]}>{slide.title}</Text>
@@ -293,12 +284,12 @@ export default function SignInScreen() {
 
         {/* Buttons */}
         <Animated.View style={[styles.btnsWrap, { opacity: btnsFade }]}>
-          <TouchableOpacity style={[styles.appleBtn, { backgroundColor: colors.ink }]} onPress={() => show("apple sign-in coming soon")} activeOpacity={0.85}>
+          <TouchableOpacity style={[styles.appleBtn, { backgroundColor: colors.ink }]} onPress={handleDemoLogin} activeOpacity={0.85}>
             <Feather name="smartphone" size={17} color={colors.pearl} />
             <Text style={[styles.appleBtnText, { color: colors.pearl }]}>continue with apple</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.googleBtn, { backgroundColor: colors.pearl, borderColor: colors.mist }]} onPress={() => show("google sign-in coming soon")} activeOpacity={0.85}>
+          <TouchableOpacity style={[styles.googleBtn, { backgroundColor: colors.pearl, borderColor: colors.mist }]} onPress={handleDemoLogin} activeOpacity={0.85}>
             <Feather name="globe" size={17} color={colors.ink} />
             <Text style={[styles.googleBtnText, { color: colors.ink }]}>continue with google</Text>
           </TouchableOpacity>
@@ -347,29 +338,29 @@ const styles = StyleSheet.create({
   },
   decorMark: {
     position: "absolute",
-    bottom: "22%",
+    bottom: "18%",
     left: 0,
     right: 0,
     alignItems: "center",
-    opacity: 0.08,
-    transform: [{ scale: 2.2 }],
+    opacity: 0.05,
+    transform: [{ scale: 1.4 }],
   },
   iconCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 24,
+    marginBottom: 16,
   },
   slideTitle: {
-    fontSize: 30,
+    fontSize: 26,
     textAlign: "center",
-    marginBottom: 10,
+    marginBottom: 8,
   },
   slideSubtitle: {
     textAlign: "center",
-    lineHeight: 24,
+    lineHeight: 22,
   },
   dots: {
     flexDirection: "row",
@@ -387,11 +378,11 @@ const styles = StyleSheet.create({
   /* Auth area */
   authArea: {
     paddingHorizontal: spacing.xl,
-    paddingBottom: Platform.OS === "ios" ? 44 : 28,
+    paddingBottom: Platform.OS === "ios" ? 36 : 20,
     alignItems: "center",
   },
   brandWrap: {
-    marginBottom: 20,
+    marginBottom: 14,
     alignItems: "center",
   },
   btnsWrap: {
@@ -407,11 +398,11 @@ const styles = StyleSheet.create({
     gap: 10,
     width: "100%",
     borderRadius: 999,
-    paddingVertical: 15,
-    marginBottom: 10,
+    paddingVertical: 13,
+    marginBottom: 8,
   },
   appleBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 14,
   },
   googleBtn: {
@@ -422,11 +413,11 @@ const styles = StyleSheet.create({
     width: "100%",
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 999,
-    paddingVertical: 15,
+    paddingVertical: 13,
     marginBottom: 0,
   },
   googleBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 14,
   },
 
@@ -436,14 +427,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     width: "100%",
-    marginVertical: 14,
+    marginVertical: 10,
   },
   orLine: {
     flex: 1,
     height: StyleSheet.hairlineWidth,
   },
   orText: {
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     fontSize: 11,
     textTransform: "uppercase",
     letterSpacing: 1,
@@ -458,17 +449,17 @@ const styles = StyleSheet.create({
     width: "100%",
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 999,
-    paddingVertical: 14,
-    marginBottom: spacing.sm,
+    paddingVertical: 12,
+    marginBottom: 4,
   },
   emailBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 13,
   },
 
   /* Terms */
   terms: {
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     fontSize: 10,
     textAlign: "center",
     lineHeight: 16,
@@ -512,7 +503,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     fontSize: 15,
   },
   submitBtn: {
@@ -522,7 +513,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   submitBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 14,
   },
   btnDisabled: {
@@ -533,7 +524,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   toggleText: {
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     fontSize: 12,
   },
 });

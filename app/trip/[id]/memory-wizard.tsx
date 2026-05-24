@@ -7,12 +7,14 @@ import {
   TextInput,
   Dimensions,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../features/design-system";
+import { goBack } from "../../../lib/go-back";
 import { useTrip } from "../../../features/trips/hooks";
 import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
@@ -81,13 +83,13 @@ export default function MemoryWizardScreen() {
     }, 1500);
   }
 
-  if (!trip) return null;
+  if (!trip) return <Container logo><ActivityIndicator size="small" style={{ marginTop: 40 }} /></Container>;
 
   return (
     <Container logo>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.7}>
           <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
         <Text variant="eyebrow">create memory book</Text>
@@ -356,7 +358,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   stepNum: {
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
     fontSize: 11,
   },
   sectionTitle: {
@@ -387,7 +389,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   vibeLabel: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 13,
     marginTop: 4,
   },
@@ -407,7 +409,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
   },
   coverLabel: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 11,
     textAlign: "center",
   },
@@ -442,7 +444,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   storyLabel: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 14,
   },
 
@@ -471,7 +473,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   summaryTitle: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 13,
   },
 
@@ -501,7 +503,7 @@ const styles = StyleSheet.create({
     opacity: 0.35,
   },
   generateBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 14,
     letterSpacing: 0.3,
   },

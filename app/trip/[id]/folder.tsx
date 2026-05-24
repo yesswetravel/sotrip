@@ -7,6 +7,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { Container, Text } from "../../../features/design-system";
+import { goBack } from "../../../lib/go-back";
 import { useTrip } from "../../../features/trips/hooks";
 import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
@@ -54,7 +55,7 @@ export default function FolderScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+          <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.7}>
             <Feather name="chevron-left" size={20} color={colors.ink} />
           </TouchableOpacity>
           <Text variant="eyebrow" style={{ color: colors.stone }}>
@@ -106,6 +107,13 @@ export default function FolderScreen() {
             subtitle="create a keepsake from your trip"
             color={colors.coral}
             onPress={() => router.push(`/trip/${id}/memory`)}
+          />
+          <FolderItem
+            icon="share"
+            label="share trip"
+            subtitle="send your itinerary to anyone"
+            color={colors.coral}
+            onPress={() => router.push(`/trip/${id}/share`)}
           />
           <FolderItem
             icon="settings"
@@ -164,6 +172,6 @@ const styles = StyleSheet.create({
   },
   itemLabel: {
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
 });

@@ -6,11 +6,13 @@ import {
   TextInput,
   TouchableOpacity,
   Modal,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../features/design-system";
+import { goBack } from "../../../lib/go-back";
 import { useTrip } from "../../../features/trips/hooks";
 import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
@@ -129,12 +131,12 @@ export default function BudgetScreen() {
     }));
   }, [entries, limit]);
 
-  if (!loaded) return null;
+  if (!loaded) return <Container logo><ActivityIndicator size="small" style={{ marginTop: 40 }} /></Container>;
 
   return (
     <Container logo>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.7}>
           <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
         <Text variant="eyebrow">{trip?.title ?? "trip"}</Text>
@@ -362,7 +364,7 @@ export default function BudgetScreen() {
                       style={{
                         color: newCategory === cat.key ? colors.ivory : colors.stone,
                         fontSize: 11,
-                        fontFamily: "Inter_500Medium",
+                        fontFamily: "InstrumentSans_500Medium",
                       }}
                     >
                       {cat.label}
@@ -489,11 +491,11 @@ const styles = StyleSheet.create({
   catName: {
     flex: 1,
     fontSize: 12,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   catAmount: {
     fontSize: 12,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   catBar: {
     height: 3,
@@ -558,7 +560,7 @@ const styles = StyleSheet.create({
   },
   entryAmount: {
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   deleteBtn: {
     padding: 4,
@@ -576,7 +578,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   addButtonText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   overlay: {
     flex: 1,
@@ -604,7 +606,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: spacing.md,
     paddingVertical: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     fontSize: 15,
     marginBottom: 12,
   },
@@ -623,7 +625,7 @@ const styles = StyleSheet.create({
   amountInput: {
     flex: 1,
     paddingVertical: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     fontSize: 18,
   },
   catSectionLabel: {
@@ -654,7 +656,7 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   saveBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   cancelBtn: {
     borderWidth: StyleSheet.hairlineWidth,

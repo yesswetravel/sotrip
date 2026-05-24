@@ -3,6 +3,7 @@ import { StyleSheet, View, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { Text } from "../../../features/design-system";
+import { goBack } from "../../../lib/go-back";
 import MapWrapper from "../../../features/shared/MapWrapper";
 import { useTrip } from "../../../features/trips/hooks";
 import { useColors } from "../../../features/theme/ThemeProvider";
@@ -37,7 +38,7 @@ export default function TripMapScreen() {
     <View style={[styles.container, { backgroundColor: colors.ivory }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.ivory }]}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.7}>
           <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
         <Text variant="eyebrow">{trip?.title ?? ""} · map</Text>

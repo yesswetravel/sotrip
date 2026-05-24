@@ -21,13 +21,33 @@ const DEMO_SESSION = {
 } as Session;
 
 export function useSession() {
-  const [session, setSession] = useState<Session | null>(DEMO_MODE ? DEMO_SESSION : null);
-  const [loading, setLoading] = useState(DEMO_MODE ? false : true);
+  const demoSignedIn = useSubscriptionStore((s) => s.demoSignedIn);
   const hydrate = useSubscriptionStore((s) => s.hydrate);
   const reset = useSubscriptionStore((s) => s.reset);
 
+  // In demo mode, session is derived from the Zustand flag (reactive)
+  const [session, setSession] = useState<Session | null>(
+    DEMO_MODE && demoSignedIn ? DEMO_SESSION : null,
+  );
+  const [loading, setLoading] = useState(DEMO_MODE ? false : true);
+
+  // React to demoSignedIn changing
+  useEffect(() => {
+    if (DEMO_MODE) {
+      if (demoSignedIn) {
+        setSession(DEMO_SESSION);
+        hydrate("demo-user");
+      } else {
+        setSession(null);
+      }
+      return;
+    }
+  }, [demoSignedIn]);
+
+  // Real Supabase auth (only when not in demo mode)
   useEffect(() => {
     if (DEMO_MODE) return;
+
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       if (data.session?.user.id) {

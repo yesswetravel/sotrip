@@ -106,6 +106,6 @@ const styles = StyleSheet.create({
   },
   dateNum: {
     fontSize: 16,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
 });

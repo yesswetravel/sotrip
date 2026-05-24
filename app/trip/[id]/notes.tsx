@@ -6,11 +6,13 @@ import {
   TextInput,
   TouchableOpacity,
   Modal,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../features/design-system";
+import { goBack } from "../../../lib/go-back";
 import { useTrip } from "../../../features/trips/hooks";
 import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
@@ -153,12 +155,12 @@ export default function NotesScreen() {
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
 
-  if (!loaded) return null;
+  if (!loaded) return <Container logo><ActivityIndicator size="small" style={{ marginTop: 40 }} /></Container>;
 
   return (
     <Container logo>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.7}>
           <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
         <Text variant="eyebrow">{trip?.title ?? "trip"}</Text>
@@ -233,7 +235,7 @@ export default function NotesScreen() {
         activeOpacity={0.85}
       >
         <Feather name="plus" size={16} color={colors.ivory} style={{ marginRight: 6 }} />
-        <Text variant="body" style={{ color: colors.ivory, fontFamily: "Inter_500Medium" }}>new note</Text>
+        <Text variant="body" style={{ color: colors.ivory, fontFamily: "InstrumentSans_500Medium" }}>new note</Text>
       </TouchableOpacity>
 
       {/* Edit modal */}
@@ -388,7 +390,7 @@ const styles = StyleSheet.create({
   },
   noteTitle: {
     fontSize: 15,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     marginBottom: 6,
   },
   noteBody: {
@@ -439,7 +441,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   doneText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 15,
   },
   sheetActions: {
@@ -450,7 +452,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   deleteConfirm: {
-    backgroundColor: "#C4414",
+    backgroundColor: "#C44141",
     borderRadius: 6,
     paddingVertical: 6,
     paddingHorizontal: 10,
@@ -460,7 +462,7 @@ const styles = StyleSheet.create({
   deleteConfirmText: {
     color: "#C44",
     fontSize: 11,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   colorRow: {
     flexDirection: "row",

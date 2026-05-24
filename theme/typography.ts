@@ -29,25 +29,25 @@ export const typography = {
     lineHeight: 21,
     color: colors.ink,
   },
-  /** Tiny labels above titles — Inter 500, 10px, uppercase */
+  /** Tiny labels above titles — Instrument Sans 500, 10px, uppercase */
   eyebrow: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 10,
     letterSpacing: 2,
     paddingRight: 2,
     textTransform: "uppercase" as const,
     color: colors.stone,
   },
-  /** Place names in dense lists — Inter 500, 14px */
+  /** Place names in dense lists — Instrument Sans 500, 14px */
   body: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 14,
     lineHeight: 20,
     color: colors.ink,
   },
-  /** Metadata, sub-text — Inter 400, 12px */
+  /** Metadata, sub-text — Instrument Sans 400, 12px */
   caption: {
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     fontSize: 12,
     lineHeight: 18,
     color: colors.stone,

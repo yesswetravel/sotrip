@@ -14,6 +14,7 @@ import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../../features/design-system";
+import { goBack } from "../../../../lib/go-back";
 import ItemSheet from "../../../../features/trips/components/ItemSheet";
 import { useTrip } from "../../../../features/trips/hooks";
 import { getCategoryForItem } from "../../../../theme/categories";
@@ -45,6 +46,67 @@ async function scrapeOgImage(url: string): Promise<{ image?: string; title?: str
     return { image: imgMatch?.[1], title: titleMatch?.[1] };
   } catch {}
   return {};
+}
+
+/** Extract Instagram shortcode from URL */
+function getIgShortcode(url: string): string | null {
+  const match = url.match(/instagram\.com\/(?:p|reel)\/([A-Za-z0-9_-]+)/);
+  return match?.[1] ?? null;
+}
+
+
+/** Try Instagram's direct media endpoint for the full uncropped image */
+async function tryInstagramDirect(url: string): Promise<LinkPreview | null> {
+  const shortcode = getIgShortcode(url);
+  if (!shortcode) return null;
+
+  // Attempt 1: /media/?size=l — redirects to full-size image (works on native, CORS on web)
+  try {
+    const mediaUrl = `https://www.instagram.com/p/${shortcode}/media/?size=l`;
+    const res = await fetch(mediaUrl, { redirect: "follow" });
+    if (res.ok && res.headers.get("content-type")?.startsWith("image")) {
+      return {
+        title: "instagram post",
+        author: "instagram",
+        thumbnailUrl: res.url || mediaUrl,
+        source: "instagram",
+      };
+    }
+  } catch {}
+
+  // Attempt 2: Scrape the embed page for the full display_url
+  try {
+    const embedUrl = `https://www.instagram.com/p/${shortcode}/embed/`;
+    const res = await fetch(embedUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; SoTrip/1.0)" },
+    });
+    if (res.ok) {
+      const html = await res.text();
+      // Look for display_url in the embedded JSON data
+      const displayMatch = html.match(/"display_url"\s*:\s*"([^"]+)"/);
+      if (displayMatch) {
+        const imgUrl = displayMatch[1].replace(/\\u0026/g, "&").replace(/\\\//g, "/");
+        return {
+          title: "instagram post",
+          author: "instagram",
+          thumbnailUrl: imgUrl,
+          source: "instagram",
+        };
+      }
+      // Fallback: look for EmbeddedMediaImage class
+      const imgTag = html.match(/<img[^>]+class="EmbeddedMediaImage"[^>]+src="([^"]+)"/);
+      if (imgTag) {
+        return {
+          title: "instagram post",
+          author: "instagram",
+          thumbnailUrl: imgTag[1].replace(/&amp;/g, "&"),
+          source: "instagram",
+        };
+      }
+    }
+  } catch {}
+
+  return null;
 }
 
 /** Try multiple oEmbed/proxy services to get a link preview */
@@ -149,7 +211,16 @@ async function tryMicrolink(url: string): Promise<LinkPreview | null> {
 async function fetchLinkPreview(url: string): Promise<LinkPreview | null> {
   if (!url.trim()) return null;
 
-  // Try native oEmbed first
+  const isIg = url.includes("instagram.com") || url.includes("instagr.am");
+
+  // For Instagram — try direct methods first for full uncropped image
+  // (works on native mobile; CORS blocks on web preview — falls through to noembed)
+  if (isIg) {
+    const direct = await tryInstagramDirect(url);
+    if (direct?.thumbnailUrl) return direct;
+  }
+
+  // Try native oEmbed
   const native = await tryOembed(url);
   if (native?.thumbnailUrl) return native;
 
@@ -157,19 +228,18 @@ async function fetchLinkPreview(url: string): Promise<LinkPreview | null> {
   const proxy = await tryNoembedProxy(url);
   if (proxy?.thumbnailUrl) return proxy;
 
-  // Try microlink (free tier)
+  // Try microlink (free tier) — skip if it returns a base64 placeholder
   const micro = await tryMicrolink(url);
-  if (micro?.thumbnailUrl) return micro;
+  if (micro?.thumbnailUrl && !micro.thumbnailUrl.startsWith("data:")) return micro;
 
   // Try scraping og:image directly
   const og = await scrapeOgImage(url);
   if (og.image) {
-    const isIg = url.includes("instagram.com") || url.includes("instagr.am");
     const domain = url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
     return {
       title: og.title || (isIg ? "instagram post" : domain),
       author: isIg ? "instagram" : domain,
-      thumbnailUrl: (og.image),
+      thumbnailUrl: og.image,
       source: isIg ? "instagram" : domain,
     };
   }
@@ -251,12 +321,16 @@ export default function PlaceDetailScreen() {
   const cat = item ? getCategoryForItem(item.category) : null;
 
   useEffect(() => {
-    const name = item?.location_name || item?.title;
-    // Hero photo always from Google Places only
-    if (name) {
-      fetchPlacePhoto(name).then((url) => {
-        if (url) setPhotoUrl(url);
-      });
+    // Hero photo: user's photo takes priority, then Google Places
+    if (item?.photo_uri) {
+      setPhotoUrl(item.photo_uri);
+    } else {
+      const name = item?.location_name || item?.title;
+      if (name) {
+        fetchPlacePhoto(name).then((url) => {
+          if (url) setPhotoUrl(url);
+        });
+      }
     }
     // Link preview separately
     if (item?.link) {
@@ -266,7 +340,7 @@ export default function PlaceDetailScreen() {
         setLinkLoading(false);
       });
     }
-  }, [item?.link, item?.location_name, item?.title]);
+  }, [item?.link, item?.location_name, item?.title, item?.photo_uri]);
 
   useState(() => {
     AsyncStorage.getItem(storageKey(itemId)).then((raw) => {
@@ -287,7 +361,7 @@ export default function PlaceDetailScreen() {
     setSaved(!saved);
   }
 
-  if (!trip || !item) return null;
+  if (!trip || !item) return <Container logo><ActivityIndicator size="small" style={{ marginTop: 40 }} /></Container>;
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.ivory }]}>
@@ -309,7 +383,7 @@ export default function PlaceDetailScreen() {
             <View style={styles.heroNav}>
               <TouchableOpacity
                 style={styles.heroNavBtn}
-                onPress={() => router.back()}
+                onPress={() => goBack(router)}
                 activeOpacity={0.8}
               >
                 <Feather name="chevron-left" size={16} color={colors.ink} />
@@ -388,45 +462,32 @@ export default function PlaceDetailScreen() {
           )}
         </View>
 
-        {/* Link preview card */}
+        {/* Link preview card — small side-by-side layout */}
         {linkPreview ? (
           <TouchableOpacity
             style={[styles.linkCard, { backgroundColor: colors.pearl, borderColor: colors.mist }]}
             onPress={() => item.link && Linking.openURL(item.link)}
             activeOpacity={0.8}
           >
-            {/* Image banner */}
             {linkPreview.thumbnailUrl ? (
-              <View style={styles.linkImageWrap}>
+              <View style={styles.linkThumb}>
                 <Image
                   source={{ uri: linkPreview.thumbnailUrl }}
-                  style={StyleSheet.absoluteFill}
-                  contentFit="cover"
+                  style={styles.linkThumbImage}
+                  contentFit="contain"
                   transition={200}
                 />
-                {/* Gradient overlay at bottom */}
-                <View style={styles.linkImageGradient} />
-                {/* Source badge on image */}
-                <View style={[styles.sourceBadge, {
-                  position: "absolute",
-                  top: 10,
-                  left: 10,
-                  backgroundColor: linkPreview.source === "instagram" ? "#E1306C"
-                    : linkPreview.source === "pinterest" ? "#E60023"
-                    : linkPreview.source === "tiktok" ? "#010101"
-                    : colors.stone,
-                }]}>
-                  <Text style={styles.sourceBadgeText}>{linkPreview.source}</Text>
-                </View>
-                {/* View prompt */}
-                <View style={styles.linkViewPrompt}>
-                  <Feather name="external-link" size={10} color="#fff" />
-                  <Text style={styles.linkViewText}>view post</Text>
-                </View>
               </View>
             ) : null}
-            {/* Info row */}
             <View style={styles.linkInfo}>
+              <View style={[styles.sourceBadge, {
+                backgroundColor: linkPreview.source === "instagram" ? "#E1306C"
+                  : linkPreview.source === "pinterest" ? "#E60023"
+                  : linkPreview.source === "tiktok" ? "#010101"
+                  : colors.stone,
+              }]}>
+                <Text style={styles.sourceBadgeText}>{linkPreview.source}</Text>
+              </View>
               <Text variant="body" style={[styles.linkTitle, { color: colors.ink }]} numberOfLines={2}>
                 {linkPreview.title}
               </Text>
@@ -434,6 +495,7 @@ export default function PlaceDetailScreen() {
                 {linkPreview.author}
               </Text>
             </View>
+            <Feather name="external-link" size={12} color={colors.stone} style={{ marginRight: 14 }} />
           </TouchableOpacity>
         ) : null}
 
@@ -469,11 +531,25 @@ export default function PlaceDetailScreen() {
         </View>
 
 
-        {/* Notes from the item */}
+        {/* Notes from the item — URLs are tappable */}
         {item.notes && (
           <View style={styles.notesSection}>
             <Text variant="eyebrow" style={styles.notesLabel}>notes</Text>
-            <Text style={[styles.notesText, { color: colors.ink }]}>{item.notes}</Text>
+            <Text style={[styles.notesText, { color: colors.ink }]}>
+              {item.notes.split(/(https?:\/\/[^\s]+)/g).map((segment, i) =>
+                /^https?:\/\//.test(segment) ? (
+                  <Text
+                    key={i}
+                    style={[styles.notesLink, { color: colors.teal }]}
+                    onPress={() => Linking.openURL(segment)}
+                  >
+                    {segment}
+                  </Text>
+                ) : (
+                  segment
+                )
+              )}
+            </Text>
           </View>
         )}
 
@@ -498,6 +574,7 @@ export default function PlaceDetailScreen() {
           dayId={day.id}
           item={item}
           onClose={() => setShowEditSheet(false)}
+          onDeleted={() => router.replace(`/trip/${id}/day/${day.day_number}`)}
         />
       )}
     </View>
@@ -555,7 +632,7 @@ const styles = StyleSheet.create({
   categoryText: {
     color: "#F7F2E2",
     fontSize: 9,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     letterSpacing: 1.5,
     textTransform: "uppercase",
   },
@@ -610,66 +687,44 @@ const styles = StyleSheet.create({
   },
   miniAvText: {
     fontSize: 8,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
   },
   savedByText: {
     fontSize: 10,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
 
-  /* Link preview */
+  /* Link preview — small side-by-side */
   linkCard: {
     marginHorizontal: spacing.lg,
     marginTop: spacing.md,
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: "hidden",
-  },
-  linkImageWrap: {
-    width: "100%",
-    height: 180,
-    position: "relative",
-  },
-  linkImageGradient: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 50,
-    backgroundColor: "rgba(0,0,0,0.25)",
-  },
-  linkViewPrompt: {
-    position: "absolute",
-    bottom: 10,
-    right: 12,
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
   },
-  linkViewText: {
-    color: "#fff",
-    fontSize: 9,
-    fontFamily: "Inter_500Medium",
-    letterSpacing: 0.5,
+  linkThumb: {
+    width: 72,
+    height: 72,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+    overflow: "hidden",
+    backgroundColor: "rgba(0,0,0,0.03)",
+  },
+  linkThumbImage: {
+    width: "100%",
+    height: "100%",
   },
   linkInfo: {
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     gap: 4,
   },
   linkTitle: {
     fontSize: 13,
     lineHeight: 18,
-  },
-  linkLoading: {
-    flex: 1,
-    paddingVertical: 20,
-    alignItems: "center",
-    justifyContent: "center",
   },
   sourceBadge: {
     alignSelf: "flex-start",
@@ -681,7 +736,7 @@ const styles = StyleSheet.create({
   sourceBadgeText: {
     color: "#fff",
     fontSize: 8,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
     letterSpacing: 1,
     textTransform: "uppercase",
   },
@@ -720,7 +775,7 @@ const styles = StyleSheet.create({
   linkRowText: {
     flex: 1,
     fontSize: 12,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
 
   /* Notes */
@@ -736,6 +791,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
   },
+  notesLink: {
+    textDecorationLine: "underline",
+    fontFamily: "InstrumentSans_400Regular",
+    fontSize: 13,
+  },
 
   /* Bottom bar */
   bottomBar: {
@@ -748,7 +808,7 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   primaryBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 13,
   },
   editPlanBtn: {

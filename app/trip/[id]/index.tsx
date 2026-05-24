@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   StyleSheet,
   View,
@@ -17,6 +17,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useEffect } from "react";
 import { Container, Text } from "../../../features/design-system";
+import { goBack } from "../../../lib/go-back";
 import { Skeleton } from "../../../features/shared";
 import { useTrip, useTripRealtime } from "../../../features/trips/hooks";
 import { useTheme } from "../../../features/theme/ThemeProvider";
@@ -55,13 +56,13 @@ function daysUntilLabel(dateStr: string | null): string {
 /*  Cairn Navigation Hub                                                */
 /* ------------------------------------------------------------------ */
 
-/* Matches the original cairn SVG mark: r=6, r=9, r=17, r=30 (scaled 1.3× for mobile) */
-const DOT_SIZES = [31, 39, 62, 109];
-const DOT_ICON_SIZES = [0, 17, 26, 44];
-const DOT_ICONS: (keyof typeof Feather.glyphMap)[] = ["users", "folder", "map", "calendar"];
-const DOT_GAPS = [0, 5, 10, 16];
-const LABEL_SIZES = [8, 9, 10, 10];
-const LABEL_SPACING = [1.2, 1.5, 2, 2];
+/* Flipped cairn: largest on top (timeline) → smallest at bottom (team) */
+const DOT_SIZES = [109, 62, 39, 31];
+const DOT_ICON_SIZES = [44, 26, 17, 0];
+const DOT_ICONS: (keyof typeof Feather.glyphMap)[] = ["calendar", "map", "folder", "users"];
+const DOT_GAPS = [0, 16, 10, 5];
+const LABEL_SIZES = [10, 10, 9, 8];
+const LABEL_SPACING = [2, 2, 1.5, 1.2];
 
 function CairnHub({
   tripId,
@@ -74,21 +75,21 @@ function CairnHub({
   const colors = useColors();
 
   const dotColors = [
-    theme.accent,
-    theme.accent,
     theme.ink,
     theme.ink,
+    theme.accent,
+    theme.accent,
   ];
 
   const iconColors = [
+    theme.pearl,
+    theme.pearl,
+    theme.pearl,
     theme.accent,
-    theme.pearl,
-    theme.pearl,
-    theme.pearl,
   ];
 
-  const labels = ["team", "folder", "map", "timeline"];
-  const targets = ["invite", "folder", "map", "day/1"];
+  const labels = ["timeline", "map", "folder", "team"];
+  const targets = ["day/1", "map", "folder", "invite"];
 
   const dots = [
     useSharedValue(0),
@@ -193,12 +194,24 @@ function MonthCalendar({
     return map;
   }, [tripDays]);
 
-  const refDate = new Date(startDate + "T00:00:00");
-  const year = refDate.getFullYear();
-  const month = refDate.getMonth();
-  const monthName = refDate
+  /* Determine which months the trip spans */
+  const startRef = new Date(startDate + "T00:00:00");
+  const endRef = new Date(endDate + "T00:00:00");
+  const startYM = startRef.getFullYear() * 12 + startRef.getMonth();
+  const endYM = endRef.getFullYear() * 12 + endRef.getMonth();
+  const spansMultiple = endYM > startYM;
+
+  const [monthOffset, setMonthOffset] = useState(0);
+
+  const viewDate = new Date(startRef.getFullYear(), startRef.getMonth() + monthOffset, 1);
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const monthName = viewDate
     .toLocaleDateString("en-US", { month: "long", year: "numeric" })
     .toLowerCase();
+
+  const canGoBack = monthOffset > 0;
+  const canGoForward = (year * 12 + month) < endYM;
 
   const firstOfMonth = new Date(year, month, 1);
   let startDow = firstOfMonth.getDay();
@@ -219,7 +232,23 @@ function MonthCalendar({
 
   return (
     <View style={[styles.monthWrap, { backgroundColor: colors.pearl, borderColor: colors.mist }]}>
-      <Text style={[styles.monthTitle, { color: colors.ink }]}>{monthName}</Text>
+      <View style={styles.monthHeader}>
+        {spansMultiple && canGoBack ? (
+          <TouchableOpacity onPress={() => setMonthOffset((o) => o - 1)} activeOpacity={0.7} style={styles.monthArrow}>
+            <Feather name="chevron-left" size={18} color={colors.taupe} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.monthArrow} />
+        )}
+        <Text style={[styles.monthTitle, { color: colors.ink, marginBottom: 0 }]}>{monthName}</Text>
+        {spansMultiple && canGoForward ? (
+          <TouchableOpacity onPress={() => setMonthOffset((o) => o + 1)} activeOpacity={0.7} style={styles.monthArrow}>
+            <Feather name="chevron-right" size={18} color={colors.taupe} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.monthArrow} />
+        )}
+      </View>
 
       <View style={styles.monthRow}>
         {WEEKDAYS.map((d) => (
@@ -316,11 +345,16 @@ export default function TripOverviewScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* ============ Header ============ */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+          <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.7}>
             <Feather name="chevron-left" size={20} color={colors.ink} />
           </TouchableOpacity>
           <Text variant="eyebrow">trip overview</Text>
-          <View style={{ width: 20 }} />
+          <TouchableOpacity
+            onPress={() => router.push(`/trip/${id}/share`)}
+            activeOpacity={0.7}
+          >
+            <Feather name="share" size={18} color={colors.ink} />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.titleBlock}>
@@ -383,7 +417,7 @@ const styles = StyleSheet.create({
   countdown: {
     marginTop: 2,
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
   },
 
   /* Cairn Hub */
@@ -396,7 +430,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   cairnLabel: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     textTransform: "uppercase",
   },
 
@@ -416,6 +450,18 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderWidth: StyleSheet.hairlineWidth,
   },
+  monthHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  monthArrow: {
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   monthTitle: {
     fontFamily: "CormorantGaramond_500Medium",
     fontSize: 18,
@@ -429,7 +475,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     textTransform: "uppercase",
     letterSpacing: 0.8,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
     textAlign: "center",
     paddingBottom: 4,
   },
@@ -453,8 +499,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   monthDayNumTrip: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 15,
+    fontFamily: "CormorantGaramond_700Bold",
+    fontSize: 18,
   },
   monthDot: {
     width: 4,

@@ -8,6 +8,7 @@ import {
   Pressable,
   Modal,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -15,6 +16,7 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../features/design-system";
+import { goBack } from "../../../lib/go-back";
 import { useTrip } from "../../../features/trips/hooks";
 import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
@@ -212,13 +214,13 @@ export default function PackingListScreen() {
   const totalItems = items.length;
   const progressPct = totalItems > 0 ? (totalPacked / totalItems) * 100 : 0;
 
-  if (!loaded) return null;
+  if (!loaded) return <Container logo><ActivityIndicator size="small" style={{ marginTop: 40 }} /></Container>;
 
   return (
     <Container logo>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.7}>
           <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
         <Text variant="eyebrow">{trip?.title ?? "trip"}</Text>
@@ -588,7 +590,7 @@ export default function PackingListScreen() {
                         >
                           <Text
                             variant="body"
-                            style={{ fontSize: 14, fontFamily: "Inter_500Medium", color: isSelected ? colors.ivory : colors.ink }}
+                            style={{ fontSize: 14, fontFamily: "InstrumentSans_500Medium", color: isSelected ? colors.ivory : colors.ink }}
                           >
                             day {String(d.day_number).padStart(2, "0")}
                           </Text>
@@ -718,7 +720,7 @@ const styles = StyleSheet.create({
   },
   catTabText: {
     fontSize: 12,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   catBadge: {
     borderRadius: 8,
@@ -728,7 +730,7 @@ const styles = StyleSheet.create({
   },
   catBadgeText: {
     fontSize: 10,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   addRow: {
     marginBottom: spacing.lg,
@@ -746,7 +748,7 @@ const styles = StyleSheet.create({
   addInput: {
     flex: 1,
     paddingVertical: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     fontSize: 15,
   },
   group: {
@@ -770,7 +772,7 @@ const styles = StyleSheet.create({
   },
   groupCount: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
   },
   groupCard: {
     borderRadius: 10,
@@ -827,7 +829,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     textTransform: "uppercase",
     letterSpacing: 1.5,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
   },
   outfitsHint: {
     textAlign: "center",
@@ -855,7 +857,7 @@ const styles = StyleSheet.create({
   },
   outfitDayBadgeText: {
     fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
   },
   outfitDayInfo: {
     flex: 1,
@@ -863,7 +865,7 @@ const styles = StyleSheet.create({
   },
   outfitDayLabel: {
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   outfitDayDate: {
     fontSize: 11,
@@ -895,7 +897,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 5,
     fontSize: 10,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   outfitEmptySlot: {
     flexDirection: "row",
@@ -1010,7 +1012,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   outfitSaveBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
   },
   outfitDeleteLink: {
     flexDirection: "row",

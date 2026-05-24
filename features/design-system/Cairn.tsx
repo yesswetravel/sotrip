@@ -151,7 +151,7 @@ export function Cairn({
     <Animated.Text
       style={[
         {
-          fontFamily: "Inter_400Regular",
+          fontFamily: "InstrumentSans_400Regular",
           fontSize: s.sub,
           letterSpacing: 4,
           paddingRight: 4,

@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
   },
   newButtonText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 13,
   },
   sectionHeader: {

@@ -5,11 +5,13 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../features/design-system";
+import { goBack } from "../../../lib/go-back";
 import { useTrip } from "../../../features/trips/hooks";
 import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
@@ -77,7 +79,7 @@ export default function MemoryTrackingScreen() {
     });
   }, [id]);
 
-  if (!trip || !order) return null;
+  if (!trip || !order) return <Container logo><ActivityIndicator size="small" style={{ marginTop: 40 }} /></Container>;
 
   const currentStepIndex = STATUS_ORDER.indexOf(order.trackingStatus ?? "processing");
   const orderDate = new Date(order.orderedAt);
@@ -88,7 +90,7 @@ export default function MemoryTrackingScreen() {
     <Container logo>
       {/* Header */}
       <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.7}>
           <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
         <Text variant="eyebrow">order tracking</Text>
@@ -220,7 +222,7 @@ export default function MemoryTrackingScreen() {
           <TouchableOpacity
             style={s.secondaryBtn}
             activeOpacity={0.7}
-            onPress={() => router.back()}
+            onPress={() => goBack(router)}
           >
             <Text style={[s.secondaryBtnText, { color: colors.stone }]}>back</Text>
           </TouchableOpacity>
@@ -268,7 +270,7 @@ const s = StyleSheet.create({
     fontSize: 18,
   },
   bookPrice: {
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
     fontSize: 16,
   },
 
@@ -284,7 +286,7 @@ const s = StyleSheet.create({
   },
   deliveryInfo: { flex: 1, gap: 2 },
   deliveryLabel: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 10,
     letterSpacing: 0.5,
     textTransform: "uppercase",
@@ -321,7 +323,7 @@ const s = StyleSheet.create({
     paddingBottom: 28,
   },
   stepLabel: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 14,
   },
   stepDesc: {
@@ -344,7 +346,7 @@ const s = StyleSheet.create({
     borderRadius: 3,
   },
   currentText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 10,
   },
 
@@ -355,14 +357,14 @@ const s = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   addressTitle: {
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
     fontSize: 10,
     letterSpacing: 1,
     textTransform: "uppercase",
     marginBottom: 10,
   },
   addressLine: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 14,
     marginBottom: 2,
   },
@@ -378,7 +380,7 @@ const s = StyleSheet.create({
     paddingVertical: 15,
   },
   primaryBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 14,
     letterSpacing: 0.3,
   },
@@ -387,7 +389,7 @@ const s = StyleSheet.create({
     paddingVertical: 12,
   },
   secondaryBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 13,
   },
 });

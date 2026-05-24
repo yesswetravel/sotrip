@@ -13,6 +13,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../features/design-system";
+import { goBack } from "../../../lib/go-back";
 import { useTrip } from "../../../features/trips/hooks";
 import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
@@ -110,7 +111,7 @@ export default function MemoryOrderScreen() {
     }, 1200);
   }
 
-  if (!trip) return null;
+  if (!trip) return <Container logo><ActivityIndicator size="small" style={{ marginTop: 40 }} /></Container>;
 
   // If print is selected, show shipping form
   if (showShipping) {
@@ -227,7 +228,7 @@ export default function MemoryOrderScreen() {
     <Container logo>
       {/* Header */}
       <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.7}>
           <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
         <Text variant="eyebrow">unlock your book</Text>
@@ -409,7 +410,7 @@ const s = StyleSheet.create({
     borderBottomLeftRadius: 8,
   },
   planTagText: {
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "InstrumentSans_600SemiBold",
     fontSize: 9,
     letterSpacing: 0.5,
     textTransform: "uppercase",
@@ -439,7 +440,7 @@ const s = StyleSheet.create({
     flex: 1,
   },
   planTitle: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 15,
   },
   planPrice: {
@@ -507,7 +508,7 @@ const s = StyleSheet.create({
   },
   payBtnDisabled: { opacity: 0.4 },
   payBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 14,
     letterSpacing: 0.3,
   },
@@ -543,7 +544,7 @@ const s = StyleSheet.create({
   formGroup: { marginBottom: 16 },
   formRow: { flexDirection: "row", gap: 12 },
   formLabel: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 11,
     letterSpacing: 0.5,
     textTransform: "uppercase",
@@ -554,7 +555,7 @@ const s = StyleSheet.create({
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
     padding: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "InstrumentSans_400Regular",
     fontSize: 14,
   },
 });

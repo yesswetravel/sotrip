@@ -2,6 +2,7 @@ import { StyleSheet, View, ScrollView, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { Container, Text } from "../features/design-system";
+import { goBack } from "../lib/go-back";
 import { useSession } from "../lib/use-session";
 import { useTrips } from "../features/trips/hooks";
 import { useColors } from "../features/theme/ThemeProvider";
@@ -22,7 +23,7 @@ export default function InviteRedirectScreen() {
   return (
     <Container logo>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.7}>
           <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
         <Text variant="eyebrow">invite friends</Text>
@@ -113,7 +114,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   tripTitle: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "InstrumentSans_500Medium",
     fontSize: 14,
   },
   tripDest: {

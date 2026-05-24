@@ -9,8 +9,10 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Text } from "../../../../features/design-system";
+import { goBack } from "../../../../lib/go-back";
 import { usePhotosByTrip, useUpdatePhoto, useDeletePhoto } from "../../../../features/photos/hooks";
 import { useColors } from "../../../../features/theme/ThemeProvider";
 import { spacing } from "../../../../theme/spacing";
@@ -51,7 +53,7 @@ export default function PhotoViewerScreen() {
         onPress: () => {
           deletePhoto.mutate(
             { photoId: photo!.id, storagePath: photo!.storage_path },
-            { onSuccess: () => router.back() }
+            { onSuccess: () => goBack(router) }
           );
         },
       },
@@ -77,8 +79,8 @@ export default function PhotoViewerScreen() {
         <>
           {/* Top bar */}
           <View style={styles.topBar}>
-            <TouchableOpacity onPress={() => router.back()}>
-              <Text variant="body" style={[styles.closeBtn, { color: colors.ivory }]}>✕</Text>
+            <TouchableOpacity onPress={() => goBack(router)}>
+              <Feather name="x" size={22} color={colors.ivory} />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleDelete}>
               <Text variant="caption" style={styles.deleteLink}>delete</Text>
