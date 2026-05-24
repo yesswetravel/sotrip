@@ -10,7 +10,7 @@ import type {
   UpdateItemInput,
 } from "../../types/database";
 
-export const DEMO_MODE = true; // matches BYPASS_AUTH in _layout.tsx — set false for production
+export const DEMO_MODE = false; // matches BYPASS_AUTH in _layout.tsx — set false for production
 
 async function isOffline(): Promise<boolean> {
   if (DEMO_MODE) return true;

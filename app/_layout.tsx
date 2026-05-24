@@ -36,7 +36,7 @@ function AuthGate() {
   const router = useRouter();
   const hasSeenPaywall = useSubscriptionStore((s) => s.hasSeenPaywall);
 
-  const BYPASS_AUTH = true;
+  const BYPASS_AUTH = false;
   const setDemoSignedIn = useSubscriptionStore((s) => s.setDemoSignedIn);
 
   useEffect(() => {
