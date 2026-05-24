@@ -166,18 +166,21 @@ export default function TripSettingsScreen() {
       setPickingStart(false);
     } else {
       if (day.dateString < draftStart) {
+        // Tapped before start — reset start
         setDraftStart(day.dateString);
+        setDraftEnd("");
         setPickingStart(false);
       } else {
         setDraftEnd(day.dateString);
-        setShowCalendar(false);
-        setPickingStart(true);
-        // Save immediately
-        if (trip) {
-          updateTripDates.mutate({ tripId: trip.id, startDate: draftStart, endDate: day.dateString });
-        }
       }
     }
+  }
+
+  function handleSaveDates() {
+    if (!trip || !draftStart || !draftEnd) return;
+    updateTripDates.mutate({ tripId: trip.id, startDate: draftStart, endDate: draftEnd });
+    setShowCalendar(false);
+    setPickingStart(true);
   }
 
   function getMarkedDates() {
@@ -500,13 +503,31 @@ export default function TripSettingsScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.calendarSheet, { backgroundColor: colors.ivory }]}>
             <View style={styles.calendarHeader}>
-              <Text variant="eyebrow">
-                {pickingStart ? "select start date" : "select end date"}
+              <Text variant="eyebrow" style={{ color: colors.taupe }}>
+                {pickingStart ? "tap start date" : draftEnd ? "dates selected" : "tap end date"}
               </Text>
               <TouchableOpacity onPress={() => { setShowCalendar(false); setPickingStart(true); }}>
-                <Text variant="body" style={{ color: colors.stone }}>done</Text>
+                <Feather name="x" size={20} color={colors.stone} />
               </TouchableOpacity>
             </View>
+
+            {/* Selected range display */}
+            <View style={styles.dateRangeRow}>
+              <View style={[styles.dateBox, draftStart ? { borderColor: colors.taupe } : { borderColor: colors.mist }]}>
+                <Text variant="caption" style={{ color: colors.stone }}>start</Text>
+                <Text variant="body" style={{ color: draftStart ? colors.ink : colors.mist }}>
+                  {draftStart ? formatDate(draftStart) : "—"}
+                </Text>
+              </View>
+              <Feather name="arrow-right" size={14} color={colors.stone} />
+              <View style={[styles.dateBox, draftEnd ? { borderColor: colors.taupe } : { borderColor: colors.mist }]}>
+                <Text variant="caption" style={{ color: colors.stone }}>end</Text>
+                <Text variant="body" style={{ color: draftEnd ? colors.ink : colors.mist }}>
+                  {draftEnd ? formatDate(draftEnd) : "—"}
+                </Text>
+              </View>
+            </View>
+
             <Calendar
               markingType="period"
               markedDates={getMarkedDates()}
@@ -531,6 +552,20 @@ export default function TripSettingsScreen() {
                 textDayHeaderFontSize: 10,
               }}
             />
+
+            <TouchableOpacity
+              style={[
+                styles.saveDatesBtn,
+                { backgroundColor: draftStart && draftEnd ? colors.ink : colors.mist },
+              ]}
+              onPress={handleSaveDates}
+              activeOpacity={0.85}
+              disabled={!draftStart || !draftEnd}
+            >
+              <Text variant="body" style={{ color: colors.ivory, fontFamily: "InstrumentSans_500Medium", fontSize: 14 }}>
+                save dates
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -720,6 +755,28 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: spacing.sm,
+  },
+  dateRangeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
     marginBottom: spacing.md,
+  },
+  dateBox: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    gap: 2,
+  },
+  saveDatesBtn: {
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: spacing.md,
   },
 });
