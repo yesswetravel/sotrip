@@ -190,7 +190,6 @@ export async function createItem(
       location_name: input.location_name ?? null,
       location_lat: input.location_lat ?? null,
       location_lng: input.location_lng ?? null,
-      category: input.category ?? null,
       notes: input.notes ?? null,
       link: input.link ?? null,
       photo_uri: input.photo_uri ?? null,
@@ -205,9 +204,11 @@ export async function updateItem(
   itemId: string,
   patch: UpdateItemInput
 ): Promise<TripItem> {
+  // Strip fields that may not exist in the database yet
+  const { category, ...safePatch } = patch as any;
   const { data, error } = await supabase
     .from("trip_items")
-    .update(patch)
+    .update(safePatch)
     .eq("id", itemId)
     .select()
     .single();
