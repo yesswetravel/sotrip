@@ -563,15 +563,17 @@ export default function DayViewScreen() {
           ))
         )}
 
-        {/* Add plan — full-width, always visible inside scroll */}
-        <TouchableOpacity
-          style={[styles.addButton, { backgroundColor: colors.ink }]}
-          onPress={handleAddItem}
-          activeOpacity={0.85}
-        >
-          <Feather name="plus" size={16} color={colors.ivory} style={{ marginRight: 6 }} />
-          <Text variant="body" style={[styles.addButtonText, { color: colors.ivory }]}>add plan</Text>
-        </TouchableOpacity>
+        {/* Add plan */}
+        <View style={styles.addButtonWrap}>
+          <TouchableOpacity
+            style={[styles.addButton, { backgroundColor: colors.ink }]}
+            onPress={handleAddItem}
+            activeOpacity={0.85}
+          >
+            <Feather name="plus" size={14} color={colors.ivory} style={{ marginRight: 5 }} />
+            <Text variant="body" style={[styles.addButtonText, { color: colors.ivory }]}>add plan</Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={{ height: dayOutfits.length > 0 ? 170 : 24 }} />
       </ScrollView>
@@ -1060,15 +1062,20 @@ const styles = StyleSheet.create({
   },
 
   /* Add button */
-  addButton: {
-    borderRadius: 10,
-    paddingVertical: 14,
+  addButtonWrap: {
+    alignItems: "center",
+    marginTop: spacing.md,
     marginBottom: spacing.lg,
+  },
+  addButton: {
+    borderRadius: 999,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
   },
   addButtonText: {
     fontFamily: "InstrumentSans_500Medium",
+    fontSize: 13,
   },
 });

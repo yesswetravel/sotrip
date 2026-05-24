@@ -20,7 +20,6 @@ import { ThemeProvider } from "../features/theme/ThemeProvider";
 import { AnimatedSplash } from "../features/shared/AnimatedSplash";
 import { useSession } from "../lib/use-session";
 import { useSubscriptionStore } from "../features/subscription/store";
-import { DEMO_MODE } from "../features/trips/api";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -43,17 +42,7 @@ function AuthGate() {
   const router = useRouter();
   const hasSeenPaywall = useSubscriptionStore((s) => s.hasSeenPaywall);
 
-  const BYPASS_AUTH = false;
-  const setDemoSignedIn = useSubscriptionStore((s) => s.setDemoSignedIn);
-
   useEffect(() => {
-    if (BYPASS_AUTH) {
-      /* Auto-activate demo session so useTrips etc. have a valid userId */
-      if (DEMO_MODE) setDemoSignedIn();
-      const inAuth = segments[0] === "(auth)";
-      if (inAuth) router.replace("/");
-      return;
-    }
     if (loading) return;
     const inAuth = segments[0] === "(auth)";
     if (!session && !inAuth) {

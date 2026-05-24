@@ -267,10 +267,8 @@ export default function ItemSheet({
       onClose();
     } catch (err: any) {
       setSaving(false);
-      const msg = err?.message?.includes("session")
-        ? "session expired — please sign in again"
-        : "couldn't save — check your connection and try again";
-      setSaveError(msg);
+      const raw = err?.message || "unknown error";
+      setSaveError(raw);
     }
   }
 

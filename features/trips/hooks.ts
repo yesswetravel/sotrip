@@ -13,7 +13,6 @@ import {
   reorderItems,
   updateTripDates,
   updateDayNotes,
-  DEMO_MODE,
 } from "./api";
 import type {
   Trip,
@@ -59,13 +58,7 @@ export function useCreateTrip() {
   return useMutation({
     mutationFn: ({ userId, input }: { userId: string; input: CreateTripInput }) =>
       createTrip(userId, input),
-    onSuccess: async (newTrip, { userId }) => {
-      if (DEMO_MODE) {
-        qc.setQueryData<Trip[]>(["trips", userId], (old) => [...(old || []), newTrip]);
-        const detail = await fetchTrip(newTrip.id);
-        qc.setQueryData(["trip", newTrip.id], detail);
-        return;
-      }
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["trips"] });
     },
   });
@@ -76,16 +69,7 @@ export function useUpdateTrip() {
   return useMutation({
     mutationFn: ({ tripId, patch }: { tripId: string; patch: Partial<Trip> }) =>
       updateTrip(tripId, patch),
-    onSuccess: (updatedTrip, { tripId }) => {
-      if (DEMO_MODE) {
-        qc.setQueriesData<Trip[]>({ queryKey: ["trips"] }, (old) =>
-          old?.map((t) => (t.id === tripId ? { ...t, ...updatedTrip } : t)) || []
-        );
-        qc.setQueryData<TripWithDaysAndItems>(["trip", tripId], (old) =>
-          old ? { ...old, ...updatedTrip } : undefined
-        );
-        return;
-      }
+    onSuccess: (_, { tripId }) => {
       qc.invalidateQueries({ queryKey: ["trip", tripId] });
       qc.invalidateQueries({ queryKey: ["trips"] });
     },
@@ -108,14 +92,7 @@ export function useDeleteTrip() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (tripId: string) => deleteTrip(tripId),
-    onSuccess: (_data, tripId) => {
-      if (DEMO_MODE) {
-        qc.setQueriesData<Trip[]>({ queryKey: ["trips"] }, (old) =>
-          old?.filter((t) => t.id !== tripId) || []
-        );
-        qc.removeQueries({ queryKey: ["trip", tripId] });
-        return;
-      }
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["trips"] });
     },
   });
@@ -166,7 +143,7 @@ export function useCreateItem(tripId: string) {
       if (context?.prev) qc.setQueryData(["trip", tripId], context.prev);
     },
     onSettled: () => {
-      if (!DEMO_MODE) qc.invalidateQueries({ queryKey: ["trip", tripId] });
+      qc.invalidateQueries({ queryKey: ["trip", tripId] });
     },
   });
 }
@@ -197,7 +174,7 @@ export function useUpdateItem(tripId: string) {
       if (context?.prev) qc.setQueryData(["trip", tripId], context.prev);
     },
     onSettled: () => {
-      if (!DEMO_MODE) qc.invalidateQueries({ queryKey: ["trip", tripId] });
+      qc.invalidateQueries({ queryKey: ["trip", tripId] });
     },
   });
 }
@@ -225,7 +202,7 @@ export function useDeleteItem(tripId: string) {
       if (context?.prev) qc.setQueryData(["trip", tripId], context.prev);
     },
     onSettled: () => {
-      if (!DEMO_MODE) qc.invalidateQueries({ queryKey: ["trip", tripId] });
+      qc.invalidateQueries({ queryKey: ["trip", tripId] });
     },
   });
 }
@@ -263,7 +240,7 @@ export function useReorderItems(tripId: string) {
       if (context?.prev) qc.setQueryData(["trip", tripId], context.prev);
     },
     onSettled: () => {
-      if (!DEMO_MODE) qc.invalidateQueries({ queryKey: ["trip", tripId] });
+      qc.invalidateQueries({ queryKey: ["trip", tripId] });
     },
   });
 }
@@ -291,7 +268,7 @@ export function useUpdateDayNotes(tripId: string) {
       if (context?.prev) qc.setQueryData(["trip", tripId], context.prev);
     },
     onSettled: () => {
-      if (!DEMO_MODE) qc.invalidateQueries({ queryKey: ["trip", tripId] });
+      qc.invalidateQueries({ queryKey: ["trip", tripId] });
     },
   });
 }
@@ -300,7 +277,7 @@ export function useTripRealtime(tripId: string | undefined) {
   const qc = useQueryClient();
 
   useEffect(() => {
-    if (DEMO_MODE || !tripId) return;
+    if (!tripId) return;
 
     const channel = supabase
       .channel(`trip-${tripId}`)
@@ -318,7 +295,6 @@ export function useTripRealtime(tripId: string | undefined) {
         }
       )
       .subscribe((status) => {
-        // Silently ignore subscription errors — data still loads via REST
         if (status === "CHANNEL_ERROR") {
           supabase.removeChannel(channel);
         }
