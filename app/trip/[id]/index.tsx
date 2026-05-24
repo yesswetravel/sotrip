@@ -67,9 +67,11 @@ const LABEL_SPACING = [2, 2, 1.5, 1.2];
 function CairnHub({
   tripId,
   onNavigate,
+  firstDayNumber = 1,
 }: {
   tripId: string;
   onNavigate: (target: string) => void;
+  firstDayNumber?: number;
 }) {
   const { theme } = useTheme();
   const colors = useColors();
@@ -89,7 +91,7 @@ function CairnHub({
   ];
 
   const labels = ["timeline", "map", "folder", "team"];
-  const targets = ["day/1", "map", "folder", "invite"];
+  const targets = [`day/${firstDayNumber}`, "map", "folder", "invite"];
 
   const dots = [
     useSharedValue(0),
@@ -316,7 +318,7 @@ export default function TripOverviewScreen() {
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { data: trip, isLoading } = useTrip(id);
+  const { data: trip, isLoading, isError, refetch } = useTrip(id);
   useTripRealtime(id);
 
   const totalItems = useMemo(
@@ -324,13 +326,30 @@ export default function TripOverviewScreen() {
     [trip]
   );
 
-  if (isLoading || !trip) {
+  if (isLoading) {
     return (
       <Container logo>
         <View style={{ paddingTop: 80, paddingHorizontal: spacing.lg }}>
           <Skeleton width="60%" height={28} />
           <View style={{ height: 8 }} />
           <Skeleton width="40%" height={14} />
+        </View>
+      </Container>
+    );
+  }
+
+  if (isError || !trip) {
+    return (
+      <Container logo>
+        <View style={{ alignItems: "center", paddingTop: 80, gap: 12 }}>
+          <Feather name="alert-circle" size={28} color={colors.stone} />
+          <Text variant="body" style={{ color: colors.stone }}>couldn't load trip</Text>
+          <TouchableOpacity onPress={() => refetch()} activeOpacity={0.8} style={{ paddingVertical: 8, paddingHorizontal: 16 }}>
+            <Text variant="body" style={{ color: colors.coral }}>try again</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.8}>
+            <Text variant="caption" style={{ color: colors.stone }}>go back</Text>
+          </TouchableOpacity>
         </View>
       </Container>
     );
@@ -361,6 +380,11 @@ export default function TripOverviewScreen() {
           <Text variant="display" style={[styles.tripTitle, { color: colors.ink }]}>
             {trip.title}
           </Text>
+          {trip.destination ? (
+            <Text variant="subtitle" style={{ color: colors.stone, marginBottom: 2 }}>
+              {trip.destination}
+            </Text>
+          ) : null}
           <Text variant="eyebrow" style={{ color: colors.stone }}>
             {formatDateRange(trip.start_date, trip.end_date)}
           </Text>
@@ -371,7 +395,7 @@ export default function TripOverviewScreen() {
         </View>
 
         {/* ============ Cairn Navigation Hub ============ */}
-        <CairnHub tripId={id} onNavigate={handleNavigate} />
+        <CairnHub tripId={id} onNavigate={handleNavigate} firstDayNumber={trip.trip_days?.[0]?.day_number ?? 1} />
 
         {/* ============ Calendar ============ */}
         <View style={styles.calendarSection}>

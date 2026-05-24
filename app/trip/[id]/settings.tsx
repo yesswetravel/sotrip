@@ -8,13 +8,15 @@ import {
   Share,
   Alert,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { Calendar, type DateData } from "react-native-calendars";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Container, Text } from "../../../features/design-system";
 import { goBack } from "../../../lib/go-back";
-import { useTrip, useUpdateTrip, useDeleteTrip } from "../../../features/trips/hooks";
+import { useTrip, useUpdateTrip, useUpdateTripDates, useDeleteTrip } from "../../../features/trips/hooks";
 import { useTripMembers } from "../../../features/couple/hooks";
 import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
@@ -115,6 +117,7 @@ export default function TripSettingsScreen() {
   const router = useRouter();
   const { data: trip } = useTrip(id);
   const updateTrip = useUpdateTrip();
+  const updateTripDates = useUpdateTripDates();
   const deleteTrip = useDeleteTrip();
   const { members, pendingInvites, createInvite, removeMember, cancelInvite } =
     useTripMembers(id);
@@ -124,6 +127,12 @@ export default function TripSettingsScreen() {
   const [editingDest, setEditingDest] = useState(false);
   const [destDraft, setDestDraft] = useState("");
   const [confirmLeave, setConfirmLeave] = useState(false);
+
+  // Date editing
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [pickingStart, setPickingStart] = useState(true);
+  const [draftStart, setDraftStart] = useState("");
+  const [draftEnd, setDraftEnd] = useState("");
 
   // Get or create invite code for sharing
   const [inviteCode, setInviteCode] = useState<string | null>(null);
@@ -142,6 +151,52 @@ export default function TripSettingsScreen() {
       }
     });
   });
+
+  function openDatePicker() {
+    setDraftStart(trip?.start_date ?? "");
+    setDraftEnd(trip?.end_date ?? "");
+    setPickingStart(true);
+    setShowCalendar(true);
+  }
+
+  function handleDayPress(day: DateData) {
+    if (pickingStart) {
+      setDraftStart(day.dateString);
+      setDraftEnd("");
+      setPickingStart(false);
+    } else {
+      if (day.dateString < draftStart) {
+        setDraftStart(day.dateString);
+        setPickingStart(false);
+      } else {
+        setDraftEnd(day.dateString);
+        setShowCalendar(false);
+        setPickingStart(true);
+        // Save immediately
+        if (trip) {
+          updateTripDates.mutate({ tripId: trip.id, startDate: draftStart, endDate: day.dateString });
+        }
+      }
+    }
+  }
+
+  function getMarkedDates() {
+    const marks: Record<string, object> = {};
+    if (draftStart) {
+      marks[draftStart] = { startingDay: true, color: colors.taupe, textColor: colors.pearl };
+    }
+    if (draftStart && draftEnd) {
+      const current = new Date(draftStart + "T00:00:00");
+      const last = new Date(draftEnd + "T00:00:00");
+      current.setDate(current.getDate() + 1);
+      while (current < last) {
+        marks[current.toISOString().split("T")[0]] = { color: colors.sand, textColor: colors.ink };
+        current.setDate(current.getDate() + 1);
+      }
+      marks[draftEnd] = { endingDay: true, color: colors.taupe, textColor: colors.pearl };
+    }
+    return marks;
+  }
 
   const handleSaveTitle = useCallback(() => {
     if (!titleDraft.trim() || !trip) return;
@@ -290,7 +345,7 @@ export default function TripSettingsScreen() {
             icon="calendar"
             label="dates"
             value={`${formatDate(trip.start_date)} — ${formatDate(trip.end_date)}`}
-            chevron={false}
+            onPress={openDatePicker}
             colors={colors}
           />
 
@@ -440,6 +495,45 @@ export default function TripSettingsScreen() {
 
         <View style={{ height: spacing.xxl }} />
       </ScrollView>
+
+      <Modal visible={showCalendar} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.calendarSheet, { backgroundColor: colors.ivory }]}>
+            <View style={styles.calendarHeader}>
+              <Text variant="eyebrow">
+                {pickingStart ? "select start date" : "select end date"}
+              </Text>
+              <TouchableOpacity onPress={() => { setShowCalendar(false); setPickingStart(true); }}>
+                <Text variant="body" style={{ color: colors.stone }}>done</Text>
+              </TouchableOpacity>
+            </View>
+            <Calendar
+              markingType="period"
+              markedDates={getMarkedDates()}
+              onDayPress={handleDayPress}
+              enableSwipeMonths
+              theme={{
+                backgroundColor: colors.ivory,
+                calendarBackground: colors.ivory,
+                textSectionTitleColor: colors.stone,
+                selectedDayBackgroundColor: colors.taupe,
+                selectedDayTextColor: colors.pearl,
+                todayTextColor: colors.taupe,
+                dayTextColor: colors.ink,
+                textDisabledColor: colors.mist,
+                monthTextColor: colors.ink,
+                arrowColor: colors.taupe,
+                textMonthFontFamily: "CormorantGaramond_500Medium",
+                textMonthFontSize: 22,
+                textDayFontFamily: "InstrumentSans_400Regular",
+                textDayFontSize: 14,
+                textDayHeaderFontFamily: "InstrumentSans_500Medium",
+                textDayHeaderFontSize: 10,
+              }}
+            />
+          </View>
+        </View>
+      </Modal>
     </Container>
   );
 }
@@ -607,5 +701,25 @@ const styles = StyleSheet.create({
   leaveHint: {
     fontSize: 11,
     marginTop: 1,
+  },
+
+  /* Calendar modal */
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.3)",
+  },
+  calendarSheet: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xxl,
+    paddingHorizontal: spacing.md,
+  },
+  calendarHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: spacing.md,
   },
 });

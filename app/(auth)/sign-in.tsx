@@ -17,6 +17,7 @@ import { useToast } from "../../features/shared/toast-context";
 import { useSubscriptionStore } from "../../features/subscription/store";
 import { useColors } from "../../features/theme/ThemeProvider";
 import { spacing } from "../../theme/spacing";
+import { supabase } from "../../lib/supabase";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const AUTO_ADVANCE_MS = 4000;
@@ -150,9 +151,30 @@ export default function SignInScreen() {
     setDemoSignedIn();
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!email.trim() || !password.trim()) return;
-    handleDemoLogin();
+    setLoading(true);
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password: password.trim(),
+          options: { data: { display_name: "Traveller" } },
+        });
+        if (error) throw error;
+        show("account created — you're in!");
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password: password.trim(),
+        });
+        if (error) throw error;
+      }
+    } catch (err: any) {
+      show(err.message || "something went wrong");
+    } finally {
+      setLoading(false);
+    }
   }
 
   const canSubmit = email.trim().length > 0 && password.trim().length > 0;

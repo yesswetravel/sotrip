@@ -550,36 +550,28 @@ export default function DayViewScreen() {
             <Text variant="titleItalic" style={[styles.emptyText, { color: colors.stone }]}>
               nothing planned yet
             </Text>
-            <TouchableOpacity
-              style={[styles.addButton, { backgroundColor: colors.ink, marginTop: spacing.md }]}
-              onPress={handleAddItem}
-              activeOpacity={0.85}
-            >
-              <Feather name="plus" size={16} color={colors.ivory} style={{ marginRight: 6 }} />
-              <Text variant="body" style={[styles.addButtonText, { color: colors.ivory }]}>add plan</Text>
-            </TouchableOpacity>
           </View>
         ) : (
-          <>
-            {items.map((item, idx) => (
-              <TimelineItem
-                key={item.id}
-                item={item}
-                onTap={() => router.push(`/trip/${id}/place/${item.id}`)}
-                onDelete={() => handleDeleteItem(item.id)}
-                isLast={idx === items.length - 1}
-              />
-            ))}
-            <TouchableOpacity
-              style={[styles.addButton, { backgroundColor: colors.ink, marginTop: spacing.xs }]}
-              onPress={handleAddItem}
-              activeOpacity={0.85}
-            >
-              <Feather name="plus" size={16} color={colors.ivory} style={{ marginRight: 6 }} />
-              <Text variant="body" style={[styles.addButtonText, { color: colors.ivory }]}>add plan</Text>
-            </TouchableOpacity>
-          </>
+          items.map((item, idx) => (
+            <TimelineItem
+              key={item.id}
+              item={item}
+              onTap={() => router.push(`/trip/${id}/place/${item.id}`)}
+              onDelete={() => handleDeleteItem(item.id)}
+              isLast={idx === items.length - 1}
+            />
+          ))
         )}
+
+        {/* Add plan — full-width, always visible inside scroll */}
+        <TouchableOpacity
+          style={[styles.addButton, { backgroundColor: colors.ink }]}
+          onPress={handleAddItem}
+          activeOpacity={0.85}
+        >
+          <Feather name="plus" size={16} color={colors.ivory} style={{ marginRight: 6 }} />
+          <Text variant="body" style={[styles.addButtonText, { color: colors.ivory }]}>add plan</Text>
+        </TouchableOpacity>
 
         <View style={{ height: dayOutfits.length > 0 ? 170 : 24 }} />
       </ScrollView>

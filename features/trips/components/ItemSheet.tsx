@@ -216,6 +216,7 @@ export default function ItemSheet({
   const [notes, setNotes] = useState(item?.notes ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const { canAdd } = useCanAddItem(currentItemCount);
   const canSave =
@@ -233,6 +234,7 @@ export default function ItemSheet({
   async function handleSave() {
     if (!canSave || saving) return;
     setSaving(true);
+    setSaveError("");
     const finalTitle = title.trim() || locationName.trim();
     try {
       if (isEditing) {
@@ -265,7 +267,10 @@ export default function ItemSheet({
       onClose();
     } catch (err: any) {
       setSaving(false);
-      show(err?.message?.includes("session") ? "please sign in again" : "couldn't save plan — check your connection");
+      const msg = err?.message?.includes("session")
+        ? "session expired — please sign in again"
+        : "couldn't save — check your connection and try again";
+      setSaveError(msg);
     }
   }
 
@@ -486,6 +491,12 @@ export default function ItemSheet({
           {/* Save / Cancel / Delete — fixed at bottom, outside ScrollView */}
           {activeTab === "plan" && (
             <View style={styles.actions}>
+              {saveError ? (
+                <View style={[styles.errorBanner, { backgroundColor: "#C4444420" }]}>
+                  <Feather name="alert-circle" size={14} color="#C44" />
+                  <Text variant="caption" style={{ color: "#C44", flex: 1 }}>{saveError}</Text>
+                </View>
+              ) : null}
               <TouchableOpacity
                 style={[styles.saveBtn, { backgroundColor: colors.ink }, (!canSave || saving) && styles.saveBtnDisabled]}
                 onPress={handleSave}
@@ -661,7 +672,16 @@ const styles = StyleSheet.create({
 
   /* Actions */
   actions: {
-    marginTop: spacing.xl,
+    marginTop: spacing.md,
+  },
+  errorBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 10,
   },
   saveBtn: {
     borderRadius: 10,
