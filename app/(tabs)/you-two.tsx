@@ -18,6 +18,7 @@ import { useTrips } from "../../features/trips/hooks";
 import { useSubscription } from "../../features/subscription/hooks";
 import { useSubscriptionStore } from "../../features/subscription/store";
 import { PAID_PRICE } from "../../features/subscription/constants";
+import { supabase } from "../../lib/supabase";
 import { useColors } from "../../features/theme/ThemeProvider";
 import { spacing } from "../../theme/spacing";
 
@@ -92,9 +93,51 @@ export default function MeScreen() {
       {
         text: "sign out",
         style: "destructive",
-        onPress: () => useSubscriptionStore.getState().reset(),
+        onPress: async () => {
+          await supabase.auth.signOut();
+          useSubscriptionStore.getState().reset();
+          queryClient.clear();
+        },
       },
     ]);
+  }
+
+  function handleClearData() {
+    Alert.alert(
+      "clear all data",
+      "this will delete all your trips, plans, and photos. this cannot be undone.",
+      [
+        { text: "cancel", style: "cancel" },
+        {
+          text: "delete everything",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Delete in order: items → days → trips (respects foreign keys)
+              const { data: myTrips } = await supabase.from("trips").select("id");
+              if (myTrips && myTrips.length > 0) {
+                const tripIds = myTrips.map((t) => t.id);
+                // Get all day IDs for these trips
+                const { data: myDays } = await supabase
+                  .from("trip_days")
+                  .select("id")
+                  .in("trip_id", tripIds);
+                if (myDays && myDays.length > 0) {
+                  const dayIds = myDays.map((d) => d.id);
+                  await supabase.from("trip_items").delete().in("trip_day_id", dayIds);
+                }
+                await supabase.from("trip_days").delete().in("trip_id", tripIds);
+                await supabase.from("trips").delete().in("id", tripIds);
+              }
+              queryClient.clear();
+              Alert.alert("done", "all data cleared — you're starting fresh!");
+            } catch (err: any) {
+              Alert.alert("error", err?.message || "couldn't clear data");
+            }
+          },
+        },
+      ]
+    );
   }
 
   /* Loading skeleton */
@@ -295,6 +338,18 @@ export default function MeScreen() {
             settings
           </Text>
           <Feather name="chevron-right" size={14} color={colors.sand} />
+        </TouchableOpacity>
+
+        {/* ---- Clear data ---- */}
+        <TouchableOpacity
+          style={[styles.signOut, { borderColor: colors.mist }]}
+          onPress={handleClearData}
+          activeOpacity={0.8}
+        >
+          <Feather name="trash-2" size={14} color="#C44" />
+          <Text variant="body" style={[styles.signOutText, { color: "#C44" }]}>
+            clear all data
+          </Text>
         </TouchableOpacity>
 
         {/* ---- Sign out ---- */}
