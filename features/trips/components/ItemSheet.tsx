@@ -10,6 +10,7 @@ import {
   Platform,
   Linking,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -214,6 +215,7 @@ export default function ItemSheet({
   const [photoUri, setPhotoUri] = useState(item?.photo_uri ?? "");
   const [notes, setNotes] = useState(item?.notes ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const { canAdd } = useCanAddItem(currentItemCount);
   const canSave =
@@ -229,7 +231,8 @@ export default function ItemSheet({
   }
 
   async function handleSave() {
-    if (!canSave) return;
+    if (!canSave || saving) return;
+    setSaving(true);
     const finalTitle = title.trim() || locationName.trim();
     try {
       if (isEditing) {
@@ -261,7 +264,8 @@ export default function ItemSheet({
       }
       onClose();
     } catch (err: any) {
-      show("couldn't save plan");
+      setSaving(false);
+      show(err?.message?.includes("session") ? "please sign in again" : "couldn't save plan — check your connection");
     }
   }
 
@@ -466,31 +470,6 @@ export default function ItemSheet({
                   multiline
                 />
 
-                {/* Save / Cancel / Delete */}
-                <View style={styles.actions}>
-                  <TouchableOpacity
-                    style={[styles.saveBtn, { backgroundColor: colors.ink }, !canSave && styles.saveBtnDisabled]}
-                    onPress={handleSave}
-                    disabled={!canSave}
-                    activeOpacity={0.8}
-                  >
-                    <Text variant="body" style={[styles.saveBtnText, { color: colors.ivory }]}>
-                      {isEditing ? "save changes" : "add plan"}
-                    </Text>
-                  </TouchableOpacity>
-
-                  {isEditing && (
-                    <TouchableOpacity
-                      style={styles.deleteLink}
-                      onPress={handleDelete}
-                      activeOpacity={0.8}
-                    >
-                      <Text variant="caption" style={styles.deleteLinkText}>
-                        {confirmDelete ? "tap again to confirm delete" : "delete this plan"}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
               </>
             )}
 
@@ -503,6 +482,38 @@ export default function ItemSheet({
               />
             )}
           </ScrollView>
+
+          {/* Save / Cancel / Delete — fixed at bottom, outside ScrollView */}
+          {activeTab === "plan" && (
+            <View style={styles.actions}>
+              <TouchableOpacity
+                style={[styles.saveBtn, { backgroundColor: colors.ink }, (!canSave || saving) && styles.saveBtnDisabled]}
+                onPress={handleSave}
+                disabled={!canSave || saving}
+                activeOpacity={0.8}
+              >
+                {saving ? (
+                  <ActivityIndicator size="small" color={colors.ivory} />
+                ) : (
+                  <Text variant="body" style={[styles.saveBtnText, { color: colors.ivory }]}>
+                    {isEditing ? "save changes" : "add plan"}
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              {isEditing && (
+                <TouchableOpacity
+                  style={styles.deleteLink}
+                  onPress={handleDelete}
+                  activeOpacity={0.8}
+                >
+                  <Text variant="caption" style={styles.deleteLinkText}>
+                    {confirmDelete ? "tap again to confirm delete" : "delete this plan"}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </View>
       </KeyboardAvoidingView>
     </Modal>

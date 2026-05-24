@@ -23,6 +23,7 @@ import { Container, Text } from "../../../../features/design-system";
 import { goBack } from "../../../../lib/go-back";
 import { getCategoryForItem } from "../../../../theme/categories";
 import { useToast } from "../../../../features/shared/toast-context";
+import { Skeleton } from "../../../../features/shared";
 import ItemSheet from "../../../../features/trips/components/ItemSheet";
 import ItemDetailSheet from "../../../../features/trips/components/ItemDetailSheet";
 import {
@@ -287,7 +288,7 @@ export default function DayViewScreen() {
   const initialDay = parseInt(n, 10);
   const [dayNumber, setDayNumber] = useState(initialDay);
 
-  const { data: trip, refetch: refetchTrip } = useTrip(id);
+  const { data: trip, refetch: refetchTrip, isLoading: tripLoading, isError: tripError } = useTrip(id);
   useTripRealtime(id);
   const deleteItemMutation = useDeleteItem(id);
   const [refreshing, setRefreshing] = useState(false);
@@ -316,10 +317,18 @@ export default function DayViewScreen() {
   }, [id, dayNumber]);
   useFocusEffect(loadOutfits);
 
+  // Auto-recover: if the requested day doesn't exist, snap to the first available day
   const currentDay = useMemo(
     () => trip?.trip_days.find((d) => d.day_number === dayNumber),
     [trip, dayNumber]
   );
+
+  useEffect(() => {
+    if (trip && !currentDay && trip.trip_days.length > 0) {
+      const firstDay = trip.trip_days[0].day_number;
+      setDayNumber(firstDay);
+    }
+  }, [trip, currentDay]);
 
   const items = useMemo(() => {
     if (!currentDay) return [];
@@ -398,7 +407,53 @@ export default function DayViewScreen() {
       .toLowerCase();
   }
 
-  if (!trip || !currentDay) return <Container logo><ActivityIndicator size="small" style={{ marginTop: 40 }} /></Container>;
+  // Loading & error states — consistent skeletons, never a bare spinner
+  if (tripLoading) return (
+    <Container logo>
+      <View style={styles.header}>
+        <View style={{ width: 20 }} />
+        <Skeleton width={140} height={10} />
+        <View style={{ width: 20 }} />
+      </View>
+      <View style={{ alignItems: "center", paddingTop: 24, gap: 8 }}>
+        <Skeleton width={100} height={28} />
+        <Skeleton width={160} height={10} />
+      </View>
+    </Container>
+  );
+
+  if (tripError || !trip) return (
+    <Container logo>
+      <View style={{ alignItems: "center", paddingTop: 60, gap: 12 }}>
+        <Feather name="alert-circle" size={28} color={colors.stone} />
+        <Text variant="body" style={{ color: colors.stone }}>couldn't load trip</Text>
+        <TouchableOpacity onPress={() => refetchTrip()} activeOpacity={0.8} style={{ paddingVertical: 8, paddingHorizontal: 16 }}>
+          <Text variant="body" style={{ color: colors.coral }}>try again</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.8}>
+          <Text variant="caption" style={{ color: colors.stone }}>go back</Text>
+        </TouchableOpacity>
+      </View>
+    </Container>
+  );
+
+  if (!currentDay && trip.trip_days.length === 0) return (
+    <Container logo>
+      <View style={{ alignItems: "center", paddingTop: 60, gap: 12 }}>
+        <Text variant="body" style={{ color: colors.stone }}>no days in this trip yet</Text>
+        <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.8}>
+          <Text variant="body" style={{ color: colors.coral }}>go back</Text>
+        </TouchableOpacity>
+      </View>
+    </Container>
+  );
+
+  // Auto-recover effect above will fix this, but guard the render
+  if (!currentDay) return (
+    <Container logo>
+      <ActivityIndicator size="small" style={{ marginTop: 40 }} />
+    </Container>
+  );
 
   return (
     <Container logo>
@@ -407,7 +462,9 @@ export default function DayViewScreen() {
         <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.7}>
           <Feather name="chevron-left" size={20} color={colors.ink} />
         </TouchableOpacity>
-        <Text variant="eyebrow">{trip.title}</Text>
+        <Text variant="eyebrow">
+          {trip.title}{trip.destination ? ` · ${trip.destination}` : ""}
+        </Text>
         <View style={{ width: 20 }} />
       </View>
 
@@ -493,20 +550,38 @@ export default function DayViewScreen() {
             <Text variant="titleItalic" style={[styles.emptyText, { color: colors.stone }]}>
               nothing planned yet
             </Text>
+            <TouchableOpacity
+              style={[styles.addButton, { backgroundColor: colors.ink, marginTop: spacing.md }]}
+              onPress={handleAddItem}
+              activeOpacity={0.85}
+            >
+              <Feather name="plus" size={16} color={colors.ivory} style={{ marginRight: 6 }} />
+              <Text variant="body" style={[styles.addButtonText, { color: colors.ivory }]}>add plan</Text>
+            </TouchableOpacity>
           </View>
         ) : (
-          items.map((item, idx) => (
-            <TimelineItem
-              key={item.id}
-              item={item}
-              onTap={() => router.push(`/trip/${id}/place/${item.id}`)}
-              onDelete={() => handleDeleteItem(item.id)}
-              isLast={idx === items.length - 1}
-            />
-          ))
+          <>
+            {items.map((item, idx) => (
+              <TimelineItem
+                key={item.id}
+                item={item}
+                onTap={() => router.push(`/trip/${id}/place/${item.id}`)}
+                onDelete={() => handleDeleteItem(item.id)}
+                isLast={idx === items.length - 1}
+              />
+            ))}
+            <TouchableOpacity
+              style={[styles.addButton, { backgroundColor: colors.ink, marginTop: spacing.xs }]}
+              onPress={handleAddItem}
+              activeOpacity={0.85}
+            >
+              <Feather name="plus" size={16} color={colors.ivory} style={{ marginRight: 6 }} />
+              <Text variant="body" style={[styles.addButtonText, { color: colors.ivory }]}>add plan</Text>
+            </TouchableOpacity>
+          </>
         )}
 
-        <View style={{ height: dayOutfits.length > 0 ? 170 : 100 }} />
+        <View style={{ height: dayOutfits.length > 0 ? 170 : 24 }} />
       </ScrollView>
 
       {/* Sticky outfit strip at bottom */}
@@ -544,14 +619,6 @@ export default function DayViewScreen() {
           </ScrollView>
         </View>
       )}
-
-      {/* Add button */}
-      <View style={styles.addArea}>
-        <TouchableOpacity style={[styles.addButton, { backgroundColor: colors.ink }]} onPress={handleAddItem} activeOpacity={0.85}>
-          <Feather name="plus" size={16} color={colors.ivory} style={{ marginRight: 6 }} />
-          <Text variant="body" style={[styles.addButtonText, { color: colors.ivory }]}>add plan</Text>
-        </TouchableOpacity>
-      </View>
 
       {/* Item Detail Sheet (read-only) */}
       {viewingItem && (
@@ -885,10 +952,7 @@ const styles = StyleSheet.create({
 
   /* Sticky outfit strip */
   outfitStrip: {
-    position: "absolute",
-    bottom: 76,
-    left: 0,
-    right: 0,
+    marginHorizontal: -spacing.lg,
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingTop: 8,
     paddingBottom: 10,
@@ -1003,21 +1067,14 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
 
-  /* Add button area */
-  addArea: {
-    position: "absolute",
-    bottom: 24,
-    left: spacing.lg,
-    right: spacing.lg,
-    alignItems: "center",
-  },
+  /* Add button */
   addButton: {
     borderRadius: 10,
     paddingVertical: 14,
+    marginBottom: spacing.lg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    alignSelf: "stretch",
   },
   addButtonText: {
     fontFamily: "InstrumentSans_500Medium",
