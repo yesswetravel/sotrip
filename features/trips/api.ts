@@ -45,11 +45,28 @@ export async function fetchTrip(tripId: string): Promise<TripWithDaysAndItems> {
   if (error) throw error;
   const trip = data as TripWithDaysAndItems;
 
-  // Auto-repair: create missing trip_day rows for dates in range
+  // Auto-repair: items stick to their DATE.
+  // Only create missing empty days and clean up orphan empty days.
   if (trip.start_date && trip.end_date) {
     const expectedDates = daysBetween(trip.start_date, trip.end_date);
     const existingDates = new Set(trip.trip_days.map((d) => d.date).filter(Boolean));
     const missing = expectedDates.filter((d) => !existingDates.has(d));
+
+    // Remove orphan empty days (outside the date range, no items)
+    const expectedSet = new Set(expectedDates);
+    const orphans = trip.trip_days.filter(
+      (d) => d.date && !expectedSet.has(d.date) && d.trip_items.length === 0
+    );
+
+    let didRepair = false;
+
+    if (orphans.length > 0) {
+      await supabase
+        .from("trip_days")
+        .delete()
+        .in("id", orphans.map((d) => d.id));
+      didRepair = true;
+    }
 
     if (missing.length > 0) {
       const toInsert = missing.map((date) => ({
@@ -58,8 +75,11 @@ export async function fetchTrip(tripId: string): Promise<TripWithDaysAndItems> {
         date,
       }));
       await supabase.from("trip_days").insert(toInsert);
+      didRepair = true;
+    }
 
-      // Re-number all days to match correct date order
+    if (didRepair) {
+      // Re-number all days by date order
       const { data: allDays } = await supabase
         .from("trip_days")
         .select("id, date")
@@ -71,7 +91,7 @@ export async function fetchTrip(tripId: string): Promise<TripWithDaysAndItems> {
         }
       }
 
-      // Re-fetch with the new days
+      // Re-fetch with the corrected days
       const { data: fresh, error: freshErr } = await supabase
         .from("trips")
         .select("*, trip_days(*, trip_items(*))")
@@ -145,8 +165,33 @@ export async function updateTripDates(
   endDate: string
 ): Promise<Trip> {
   const newDates = daysBetween(startDate, endDate);
+  const newDateSet = new Set(newDates);
 
-  // 1. Update the trip dates
+  // 1. Fetch existing days with item counts
+  const { data: existingDays, error: daysError } = await supabase
+    .from("trip_days")
+    .select("*, trip_items(id)")
+    .eq("trip_id", tripId);
+  if (daysError) throw daysError;
+
+  const days = existingDays ?? [];
+
+  // 2. Block if any days being removed have items
+  const daysBeingRemoved = days.filter((d: any) => d.date && !newDateSet.has(d.date));
+  const daysWithItems = daysBeingRemoved.filter(
+    (d: any) => d.trip_items && d.trip_items.length > 0
+  );
+  if (daysWithItems.length > 0) {
+    const dateList = daysWithItems
+      .map((d: any) => {
+        const dt = new Date(d.date + "T00:00:00");
+        return dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      })
+      .join(", ");
+    throw new Error(`remove plans from ${dateList} first`);
+  }
+
+  // 3. Update the trip record
   const { data: trip, error: tripError } = await supabase
     .from("trips")
     .update({ start_date: startDate, end_date: endDate, updated_at: new Date().toISOString() })
@@ -155,52 +200,42 @@ export async function updateTripDates(
     .single();
   if (tripError) throw tripError;
 
-  // 2. Fetch existing days
-  const { data: existingDays, error: daysError } = await supabase
-    .from("trip_days")
-    .select("*, trip_items(id)")
-    .eq("trip_id", tripId);
-  if (daysError) throw daysError;
-
-  const existingByDate = new Map((existingDays ?? []).filter((d: any) => d.date).map((d: any) => [d.date, d]));
-  const newDateSet = new Set(newDates);
-
-  // 3. Delete days that are no longer in range AND have no items
-  const toDelete = (existingDays ?? []).filter(
-    (d: any) => d.date && !newDateSet.has(d.date) && (!d.trip_items || d.trip_items.length === 0)
+  // 4. Delete empty days outside the new range
+  const emptyToDelete = daysBeingRemoved.filter(
+    (d: any) => !d.trip_items || d.trip_items.length === 0
   );
-  if (toDelete.length > 0) {
-    const { error } = await supabase
+  if (emptyToDelete.length > 0) {
+    await supabase
       .from("trip_days")
       .delete()
-      .in("id", toDelete.map((d: any) => d.id));
-    if (error) throw error;
+      .in("id", emptyToDelete.map((d: any) => d.id));
   }
 
-  // 4. Insert new days that don't already exist
-  const toInsert = newDates
-    .filter((date) => !existingByDate.has(date))
-    .map((date) => ({
+  // 5. Create empty days for new dates not yet covered
+  const existingDates = new Set(days.filter((d: any) => d.date).map((d: any) => d.date));
+  const datesToCreate = newDates.filter((d) => !existingDates.has(d));
+  if (datesToCreate.length > 0) {
+    const toInsert = datesToCreate.map((date) => ({
       trip_id: tripId,
       day_number: newDates.indexOf(date) + 1,
       date,
     }));
-  if (toInsert.length > 0) {
-    const { error } = await supabase.from("trip_days").insert(toInsert);
-    if (error) throw error;
+    await supabase.from("trip_days").insert(toInsert);
   }
 
-  // 5. Re-number all days to match the new date order
+  // 6. Re-number all days by date order
   const { data: allDays } = await supabase
     .from("trip_days")
     .select("id, date")
     .eq("trip_id", tripId)
     .order("date", { ascending: true });
   if (allDays) {
-    const shiftUp = allDays.map((d: any, i: number) =>
-      supabase.from("trip_days").update({ day_number: i + 1000 }).eq("id", d.id)
+    // Two-pass renumber to avoid conflicts
+    await Promise.all(
+      allDays.map((d: any, i: number) =>
+        supabase.from("trip_days").update({ day_number: i + 1000 }).eq("id", d.id)
+      )
     );
-    await Promise.all(shiftUp);
     for (let i = 0; i < allDays.length; i++) {
       await supabase.from("trip_days").update({ day_number: i + 1 }).eq("id", allDays[i].id);
     }

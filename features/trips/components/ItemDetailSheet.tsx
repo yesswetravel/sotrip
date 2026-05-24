@@ -31,16 +31,17 @@ function formatTime12h(time24: string): string {
 
 function openInMaps(name: string, lat: number, lng: number) {
   const label = encodeURIComponent(name);
-  const url =
-    Platform.OS === "ios"
-      ? `maps:0,0?q=${label}@${lat},${lng}`
-      : `https://www.google.com/maps/search/?api=1&query=${lat},${lng}&query_place_id=${label}`;
-  Linking.openURL(url).catch(() => {
-    // fallback to google maps web
-    Linking.openURL(
-      `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
-    );
-  });
+  const googleUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+
+  if (Platform.OS === "ios") {
+    // Try Apple Maps first, fall back to Google Maps
+    Linking.openURL(`maps:0,0?q=${label}@${lat},${lng}`).catch(() => {
+      Linking.openURL(googleUrl);
+    });
+  } else {
+    // Android + web → Google Maps
+    Linking.openURL(googleUrl);
+  }
 }
 
 export default function ItemDetailSheet({ item, onClose, onEdit }: Props) {
@@ -129,6 +130,20 @@ export default function ItemDetailSheet({ item, onClose, onEdit }: Props) {
                   {item.notes}
                 </Text>
               </View>
+            )}
+
+            {/* Google Maps button */}
+            {hasLocation && (
+              <TouchableOpacity
+                style={[styles.mapsBtn, { backgroundColor: colors.teal + "14", borderColor: colors.teal + "30" }]}
+                onPress={() => openInMaps(item.location_name!, item.location_lat!, item.location_lng!)}
+                activeOpacity={0.8}
+              >
+                <Feather name="navigation" size={14} color={colors.teal} style={{ marginRight: 8 }} />
+                <Text variant="body" style={[styles.mapsBtnText, { color: colors.teal }]}>
+                  open in google maps
+                </Text>
+              </TouchableOpacity>
             )}
 
             {/* Actions */}
@@ -245,6 +260,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     fontFamily: "CormorantGaramond_500Medium_Italic",
+  },
+  mapsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    paddingVertical: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginBottom: spacing.sm,
+  },
+  mapsBtnText: {
+    fontFamily: "InstrumentSans_500Medium",
+    fontSize: 13,
   },
   actions: {
     gap: 10,

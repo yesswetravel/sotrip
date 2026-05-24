@@ -33,7 +33,8 @@ export default function NewTripScreen() {
   const { data: existingTrips } = useTrips(session?.user.id);
 
   const activeCount = (existingTrips ?? []).filter((t) => {
-    const today = new Date().toISOString().split("T")[0];
+    const _n = new Date();
+    const today = `${_n.getFullYear()}-${String(_n.getMonth() + 1).padStart(2, "0")}-${String(_n.getDate()).padStart(2, "0")}`;
     return !t.end_date || t.end_date >= today;
   }).length;
   const { canCreate } = useCanCreateTrip(activeCount);
@@ -50,12 +51,22 @@ export default function NewTripScreen() {
   function handleDayPress(day: DateData) {
     if (pickingStart) {
       setStartDate(day.dateString);
-      setEndDate("");
-      setPickingStart(false);
+      if (endDate && day.dateString < endDate) {
+        // End date still valid — keep it
+        setPickingStart(true);
+      } else {
+        setEndDate("");
+        setPickingStart(false);
+      }
     } else {
       if (day.dateString < startDate) {
         setStartDate(day.dateString);
-        setPickingStart(false);
+        if (endDate && day.dateString < endDate) {
+          setPickingStart(true);
+        } else {
+          setEndDate("");
+          setPickingStart(false);
+        }
       } else {
         setEndDate(day.dateString);
         setShowCalendar(false);
@@ -78,7 +89,10 @@ export default function NewTripScreen() {
       const last = new Date(endDate + "T00:00:00");
       current.setDate(current.getDate() + 1);
       while (current < last) {
-        marks[current.toISOString().split("T")[0]] = {
+        const cy = current.getFullYear();
+        const cm = String(current.getMonth() + 1).padStart(2, "0");
+        const cd = String(current.getDate()).padStart(2, "0");
+        marks[`${cy}-${cm}-${cd}`] = {
           color: colors.sand,
           textColor: colors.ink,
         };
@@ -195,6 +209,7 @@ export default function NewTripScreen() {
               markedDates={getMarkedDates()}
               onDayPress={handleDayPress}
               enableSwipeMonths
+              firstDay={1}
               theme={{
                 backgroundColor: colors.ivory,
                 calendarBackground: colors.ivory,

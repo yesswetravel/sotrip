@@ -5,6 +5,7 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
+  Image,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -33,7 +34,13 @@ function TripCard({ trip, onPress }: { trip: Trip; onPress: () => void }) {
       activeOpacity={0.85}
     >
       <View style={styles.cardPhoto}>
-        {trip.cover_photo_url ? null : <View style={[styles.placeholder, { backgroundColor: colors.taupe }]} />}
+        {trip.cover_photo_url ? (
+          <Image source={{ uri: trip.cover_photo_url }} style={styles.coverImage} />
+        ) : (
+          <View style={[styles.placeholder, { backgroundColor: colors.sand + "40" }]}>
+            <Feather name="image" size={20} color={colors.taupe} style={{ opacity: 0.4 }} />
+          </View>
+        )}
       </View>
       <View style={styles.cardBody}>
         <Text variant="title" numberOfLines={1}>{trip.title}</Text>
@@ -97,7 +104,8 @@ export default function HomeScreen() {
 
   const { upcoming, past: allPast } = useMemo(() => {
     if (!trips) return { upcoming: [], past: [] };
-    const today = new Date().toISOString().split("T")[0];
+    const _n = new Date();
+    const today = `${_n.getFullYear()}-${String(_n.getMonth() + 1).padStart(2, "0")}-${String(_n.getDate()).padStart(2, "0")}`;
     return {
       upcoming: trips.filter((t) => !t.end_date || t.end_date >= today),
       past: trips.filter((t) => t.end_date && t.end_date < today),
@@ -270,9 +278,14 @@ const styles = StyleSheet.create({
   cardPhoto: {
     height: 80,
   },
+  coverImage: {
+    flex: 1,
+    width: "100%",
+  },
   placeholder: {
     flex: 1,
-    opacity: 0.2,
+    alignItems: "center",
+    justifyContent: "center",
   },
   cardBody: {
     padding: spacing.md,

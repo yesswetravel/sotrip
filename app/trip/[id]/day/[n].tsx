@@ -349,7 +349,9 @@ export default function DayViewScreen() {
   const { isPaid } = useSubscription();
 
   // NOW card: find current or next item if today matches this day
-  const isToday = currentDay?.date === new Date().toISOString().split("T")[0];
+  const _now = new Date();
+  const _todayStr = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, "0")}-${String(_now.getDate()).padStart(2, "0")}`;
+  const isToday = currentDay?.date === _todayStr;
   const nowItem = useMemo(() => {
     if (!isToday || items.length === 0) return null;
     const now = new Date();

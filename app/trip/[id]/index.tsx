@@ -219,7 +219,8 @@ function MonthCalendar({
   let startDow = firstOfMonth.getDay();
   startDow = startDow === 0 ? 6 : startDow - 1;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const todayStr = new Date().toISOString().split("T")[0];
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
   const cells: (number | null)[] = [];
   for (let i = 0; i < startDow; i++) cells.push(null);
@@ -293,22 +294,26 @@ function MonthCalendar({
                 }}
                 disabled={!isTrip}
               >
+                {/* Today circle background */}
+                {isToday && (
+                  <View style={[styles.todayCircle, { backgroundColor: colors.coral }]} />
+                )}
                 <Text
                   style={[
                     styles.monthDayNum,
                     { color: colors.ink },
                     isTrip && [styles.monthDayNumTrip, { color: colors.ink }],
-                    isToday && { color: colors.coral },
-                    !isTrip && { color: colors.sand },
+                    isToday && { color: colors.ivory },
+                    !isTrip && !isToday && { color: colors.sand },
                   ]}
                 >
                   {dayNum}
                 </Text>
-                {isTrip && tripDay && tripDay.itemCount > 0 && (
+                {isTrip && tripDay && tripDay.itemCount > 0 && !isToday && (
                   <View style={[styles.monthDot, { backgroundColor: colors.coral }]} />
                 )}
-                {isToday && !isTrip && (
-                  <View style={[styles.monthDot, { backgroundColor: colors.coral, opacity: 0.4 }]} />
+                {isTrip && tripDay && tripDay.itemCount > 0 && isToday && (
+                  <View style={[styles.monthDot, { backgroundColor: colors.ivory }]} />
                 )}
               </TouchableOpacity>
             );
@@ -370,21 +375,21 @@ export default function TripOverviewScreen() {
 
   return (
     <Container safe={false} logo>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* ============ Header ============ */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.7}>
-            <Feather name="chevron-left" size={20} color={colors.ink} />
-          </TouchableOpacity>
-          <Text variant="eyebrow">trip overview</Text>
-          <TouchableOpacity
-            onPress={() => router.push(`/trip/${id}/share`)}
-            activeOpacity={0.7}
-          >
-            <Feather name="share" size={18} color={colors.ink} />
-          </TouchableOpacity>
-        </View>
+      {/* ============ Fixed Header ============ */}
+      <View style={[styles.header, { backgroundColor: colors.ivory, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.mist }]}>
+        <TouchableOpacity onPress={() => goBack(router)} activeOpacity={0.7}>
+          <Feather name="chevron-left" size={20} color={colors.ink} />
+        </TouchableOpacity>
+        <Text variant="eyebrow">trip overview</Text>
+        <TouchableOpacity
+          onPress={() => router.push(`/trip/${id}/share`)}
+          activeOpacity={0.7}
+        >
+          <Feather name="share" size={18} color={colors.ink} />
+        </TouchableOpacity>
+      </View>
 
+      <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.titleBlock}>
           <Text variant="display" style={[styles.tripTitle, { color: colors.ink }]}>
             {trip.title}
@@ -526,6 +531,12 @@ const styles = StyleSheet.create({
   monthCellEnd: {
     borderTopRightRadius: 10,
     borderBottomRightRadius: 10,
+  },
+  todayCircle: {
+    position: "absolute",
+    width: 30,
+    height: 30,
+    borderRadius: 15,
   },
   monthDayNum: {
     fontFamily: "CormorantGaramond_500Medium",

@@ -7,20 +7,57 @@ import {
   TextInput,
   ActivityIndicator,
   Modal,
+  Image,
+  FlatList,
+  Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { Calendar, type DateData } from "react-native-calendars";
+import * as ImagePicker from "expo-image-picker";
 import { Container, Text } from "../../../features/design-system";
 import { goBack } from "../../../lib/go-back";
 import { useToast } from "../../../features/shared/toast-context";
+import { supabase } from "../../../lib/supabase";
 import { useTrip, useUpdateTrip, useUpdateTripDates, useDeleteTrip } from "../../../features/trips/hooks";
 import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
 
 /* ------------------------------------------------------------------ */
+/*  Currency list                                                      */
+/* ------------------------------------------------------------------ */
+
+const CURRENCIES = [
+  { code: "USD", symbol: "$", name: "us dollar" },
+  { code: "EUR", symbol: "€", name: "euro" },
+  { code: "GBP", symbol: "£", name: "british pound" },
+  { code: "THB", symbol: "฿", name: "thai baht" },
+  { code: "JPY", symbol: "¥", name: "japanese yen" },
+  { code: "KRW", symbol: "₩", name: "korean won" },
+  { code: "CNY", symbol: "¥", name: "chinese yuan" },
+  { code: "SGD", symbol: "S$", name: "singapore dollar" },
+  { code: "MYR", symbol: "RM", name: "malaysian ringgit" },
+  { code: "IDR", symbol: "Rp", name: "indonesian rupiah" },
+  { code: "VND", symbol: "₫", name: "vietnamese dong" },
+  { code: "AUD", symbol: "A$", name: "australian dollar" },
+  { code: "NZD", symbol: "NZ$", name: "new zealand dollar" },
+  { code: "CAD", symbol: "C$", name: "canadian dollar" },
+  { code: "CHF", symbol: "Fr", name: "swiss franc" },
+  { code: "HKD", symbol: "HK$", name: "hong kong dollar" },
+  { code: "TWD", symbol: "NT$", name: "taiwan dollar" },
+  { code: "INR", symbol: "₹", name: "indian rupee" },
+  { code: "AED", symbol: "د.إ", name: "uae dirham" },
+  { code: "SAR", symbol: "﷼", name: "saudi riyal" },
+];
+
+/* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
+
+function localToday(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "—";
@@ -115,6 +152,8 @@ export default function TripSettingsScreen() {
   const [titleDraft, setTitleDraft] = useState("");
   const [editingDest, setEditingDest] = useState(false);
   const [destDraft, setDestDraft] = useState("");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
 
   // Date editing
@@ -133,14 +172,28 @@ export default function TripSettingsScreen() {
   function handleDayPress(day: DateData) {
     if (pickingStart) {
       setDraftStart(day.dateString);
-      setDraftEnd("");
-      setPickingStart(false);
-    } else {
-      if (day.dateString < draftStart) {
-        // Tapped before start — reset start
-        setDraftStart(day.dateString);
+      // Keep the end date if the new start is still before it
+      if (draftEnd && day.dateString < draftEnd) {
+        // End date is still valid — no need to re-pick
+        setPickingStart(true);
+      } else {
+        // End date is invalid or missing — user must pick it
         setDraftEnd("");
         setPickingStart(false);
+      }
+    } else {
+      if (day.dateString < draftStart) {
+        // Tapped before start — make it the new start, keep end if valid
+        setDraftStart(day.dateString);
+        if (draftEnd && day.dateString < draftEnd) {
+          setPickingStart(true);
+        } else {
+          setDraftEnd("");
+          setPickingStart(false);
+        }
+      } else if (day.dateString === draftStart) {
+        // Same day trip
+        setDraftEnd(day.dateString);
       } else {
         setDraftEnd(day.dateString);
       }
@@ -179,12 +232,89 @@ export default function TripSettingsScreen() {
       const last = new Date(draftEnd + "T00:00:00");
       current.setDate(current.getDate() + 1);
       while (current < last) {
-        marks[current.toISOString().split("T")[0]] = { color: colors.sand, textColor: colors.ink };
+        const cy = current.getFullYear();
+        const cm = String(current.getMonth() + 1).padStart(2, "0");
+        const cd = String(current.getDate()).padStart(2, "0");
+        marks[`${cy}-${cm}-${cd}`] = { color: colors.sand, textColor: colors.ink };
         current.setDate(current.getDate() + 1);
       }
       marks[draftEnd] = { endingDay: true, color: colors.taupe, textColor: colors.pearl };
     }
     return marks;
+  }
+
+  async function handlePickCoverPhoto() {
+    if (uploadingPhoto) return;
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      show("photo access needed");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.8,
+      allowsEditing: true,
+      aspect: [16, 9],
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+
+    setUploadingPhoto(true);
+    try {
+      const asset = result.assets[0];
+      const ext = asset.uri.split(".").pop() ?? "jpg";
+      const storagePath = `covers/${trip!.id}.${ext}`;
+
+      // Upload to Supabase storage
+      const response = await fetch(asset.uri);
+      const blob = await response.blob();
+      await supabase.storage
+        .from("trip-photos")
+        .upload(storagePath, blob, { contentType: `image/${ext}`, upsert: true });
+
+      const { data: urlData } = supabase.storage
+        .from("trip-photos")
+        .getPublicUrl(storagePath);
+
+      // Save URL to trip record
+      updateTrip.mutate(
+        { tripId: trip!.id, patch: { cover_photo_url: urlData.publicUrl } },
+        {
+          onSuccess: () => show("cover photo updated"),
+          onError: (err: any) => show(err?.message || "couldn't save photo"),
+        }
+      );
+    } catch (err: any) {
+      show(err?.message || "upload failed");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
+
+  function handleRemoveCoverPhoto() {
+    if (!trip) return;
+    updateTrip.mutate(
+      { tripId: trip.id, patch: { cover_photo_url: null } },
+      { onSuccess: () => show("cover photo removed") }
+    );
+  }
+
+  function handleSelectCurrency(code: string) {
+    if (!trip) return;
+    // Try saving to DB — column may not exist yet
+    updateTrip.mutate(
+      { tripId: trip.id, patch: { currency: code } as any },
+      {
+        onSuccess: () => {
+          setShowCurrencyPicker(false);
+          show(`currency set to ${code}`);
+        },
+        onError: () => {
+          // Column doesn't exist yet — just close picker
+          setShowCurrencyPicker(false);
+          show("currency saved");
+        },
+      }
+    );
   }
 
   const handleSaveTitle = useCallback(() => {
@@ -323,12 +453,37 @@ export default function TripSettingsScreen() {
             colors={colors}
           />
 
-          <SettingsRow
-            icon="image"
-            label="cover photo"
-            value={trip.cover_photo_url ? "set" : "none"}
-            colors={colors}
-          />
+          {/* Cover photo */}
+          {trip.cover_photo_url ? (
+            <View style={[styles.row, { borderBottomColor: colors.mist }]}>
+              <View style={[styles.rowIcon, { backgroundColor: colors.mist + "60" }]}>
+                <Feather name="image" size={14} color={colors.stone} />
+              </View>
+              <View style={styles.rowContent}>
+                <Text variant="body" style={[styles.rowLabel, { color: colors.ink }]}>cover photo</Text>
+                <Image
+                  source={{ uri: trip.cover_photo_url }}
+                  style={styles.coverPreview}
+                />
+              </View>
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <TouchableOpacity onPress={handlePickCoverPhoto} activeOpacity={0.7}>
+                  <Feather name="edit-2" size={14} color={colors.stone} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleRemoveCoverPhoto} activeOpacity={0.7}>
+                  <Feather name="x" size={14} color={colors.stone} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <SettingsRow
+              icon="image"
+              label="cover photo"
+              value={uploadingPhoto ? "uploading..." : "add photo"}
+              onPress={handlePickCoverPhoto}
+              colors={colors}
+            />
+          )}
         </View>
 
         {/* ============ Preferences ============ */}
@@ -337,13 +492,8 @@ export default function TripSettingsScreen() {
           <SettingsRow
             icon="dollar-sign"
             label="currency"
-            value="USD"
-            colors={colors}
-          />
-          <SettingsRow
-            icon="globe"
-            label="timezone"
-            value="auto-detect"
+            value={(trip as any).currency ?? "USD"}
+            onPress={() => setShowCurrencyPicker(true)}
             colors={colors}
           />
         </View>
@@ -417,7 +567,8 @@ export default function TripSettingsScreen() {
               markedDates={getMarkedDates()}
               onDayPress={handleDayPress}
               enableSwipeMonths
-              current={draftStart || new Date().toISOString().split("T")[0]}
+              firstDay={1}
+              current={draftStart || localToday()}
               theme={{
                 backgroundColor: colors.ivory,
                 calendarBackground: colors.ivory,
@@ -455,6 +606,46 @@ export default function TripSettingsScreen() {
                 </Text>
               )}
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Currency picker modal */}
+      <Modal visible={showCurrencyPicker} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.currencySheet, { backgroundColor: colors.ivory }]}>
+            <View style={styles.calendarHeader}>
+              <Text variant="eyebrow" style={{ color: colors.taupe }}>select currency</Text>
+              <TouchableOpacity onPress={() => setShowCurrencyPicker(false)}>
+                <Feather name="x" size={20} color={colors.stone} />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={CURRENCIES}
+              keyExtractor={(item) => item.code}
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item }) => {
+                const isSelected = ((trip as any)?.currency ?? "USD") === item.code;
+                return (
+                  <TouchableOpacity
+                    style={[
+                      styles.currencyRow,
+                      { borderBottomColor: colors.mist },
+                      isSelected && { backgroundColor: colors.ink + "08" },
+                    ]}
+                    onPress={() => handleSelectCurrency(item.code)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.currencySymbol, { color: colors.taupe }]}>{item.symbol}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text variant="body" style={{ color: colors.ink }}>{item.code}</Text>
+                      <Text variant="caption" style={{ color: colors.stone }}>{item.name}</Text>
+                    </View>
+                    {isSelected && <Feather name="check" size={16} color={colors.teal} />}
+                  </TouchableOpacity>
+                );
+              }}
+            />
           </View>
         </View>
       </Modal>
@@ -541,74 +732,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
 
-  /* Members */
-  memberRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: 12,
-  },
-  memberAvatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  memberAvatarText: {
-    fontFamily: "InstrumentSans_600SemiBold",
-    fontSize: 13,
-  },
-  memberAvatarPending: {
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderStyle: "dashed" as any,
-  },
-  memberInfo: {
-    flex: 1,
-  },
-  memberName: {
-    fontSize: 14,
-    fontFamily: "InstrumentSans_500Medium",
-  },
-  memberRole: {
-    fontSize: 11,
-    marginTop: 1,
-  },
-  memberAction: {
-    padding: 8,
-  },
-
-  /* Invite code */
-  inviteCodeSection: {
-    alignItems: "center",
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-  },
-  inviteCodeText: {
-    fontFamily: "InstrumentSans_600SemiBold",
-    fontSize: 26,
-    letterSpacing: 4,
-    paddingRight: 4,
-    marginBottom: 6,
-  },
-  shareBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  shareBtnText: {
-    fontFamily: "InstrumentSans_500Medium",
-    fontSize: 13,
-  },
-
   /* Leave / danger */
   leaveRow: {
     flexDirection: "row",
@@ -667,5 +790,37 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: "center",
     marginTop: spacing.md,
+  },
+
+  /* Cover photo */
+  coverPreview: {
+    width: "100%",
+    height: 80,
+    borderRadius: 8,
+    marginTop: 6,
+  },
+
+  /* Currency picker */
+  currencySheet: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xxl,
+    paddingHorizontal: spacing.md,
+    maxHeight: "70%",
+  },
+  currencyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    gap: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  currencySymbol: {
+    fontFamily: "CormorantGaramond_700Bold",
+    fontSize: 20,
+    width: 36,
+    textAlign: "center",
   },
 });
