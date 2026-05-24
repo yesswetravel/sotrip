@@ -412,6 +412,7 @@ export default function TripSettingsScreen() {
             </View>
 
             <Calendar
+              key={draftStart || "today"}
               markingType="period"
               markedDates={getMarkedDates()}
               onDayPress={handleDayPress}
