@@ -266,7 +266,8 @@ function MonthCalendar({
             if (dayNum === null) return <View key={ci} style={styles.monthCell} />;
             const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
             const tripDay = tripDateMap.get(dateStr);
-            const isTrip = !!tripDay;
+            const isInRange = dateStr >= startDate && dateStr <= endDate;
+            const isTrip = !!tripDay || isInRange;
             const isToday = dateStr === todayStr;
             const isStart = dateStr === startDate;
             const isEnd = dateStr === endDate;
@@ -281,7 +282,15 @@ function MonthCalendar({
                   isEnd && styles.monthCellEnd,
                 ]}
                 activeOpacity={isTrip ? 0.7 : 1}
-                onPress={() => isTrip && onDayPress(tripDay!.dayNumber)}
+                onPress={() => {
+                  if (tripDay) {
+                    onDayPress(tripDay.dayNumber);
+                  } else if (isInRange) {
+                    // Calculate day number from date offset
+                    const dayOffset = Math.round((new Date(dateStr + "T00:00:00").getTime() - new Date(startDate + "T00:00:00").getTime()) / 86400000);
+                    onDayPress(dayOffset + 1);
+                  }
+                }}
                 disabled={!isTrip}
               >
                 <Text
@@ -295,7 +304,7 @@ function MonthCalendar({
                 >
                   {dayNum}
                 </Text>
-                {isTrip && tripDay!.itemCount > 0 && (
+                {isTrip && tripDay && tripDay.itemCount > 0 && (
                   <View style={[styles.monthDot, { backgroundColor: colors.coral }]} />
                 )}
                 {isToday && !isTrip && (
