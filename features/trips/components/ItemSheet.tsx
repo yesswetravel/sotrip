@@ -15,7 +15,9 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { supabase } from "../../../lib/supabase";
 import { Text } from "../../design-system";
 import { LocationPicker, TimePicker } from "../../shared";
 import { useToast } from "../../shared/toast-context";
@@ -272,6 +274,8 @@ export default function ItemSheet({
     }
   }
 
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
   async function handlePickPhoto() {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -280,7 +284,35 @@ export default function ItemSheet({
         allowsMultipleSelection: false,
       });
       if (!result.canceled && result.assets.length > 0) {
-        setPhotoUri(result.assets[0].uri);
+        setUploadingPhoto(true);
+        try {
+          const asset = result.assets[0];
+
+          // Compress and resize to max 800px wide
+          const manipulated = await ImageManipulator.manipulateAsync(
+            asset.uri,
+            [{ resize: { width: 800 } }],
+            { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+          );
+
+          // Upload to Supabase storage
+          const fileName = `items/${tripId}/${Date.now()}.jpg`;
+          const response = await fetch(manipulated.uri);
+          const blob = await response.blob();
+          await supabase.storage
+            .from("trip-photos")
+            .upload(fileName, blob, { contentType: "image/jpeg", upsert: true });
+
+          const { data: urlData } = supabase.storage
+            .from("trip-photos")
+            .getPublicUrl(fileName);
+
+          setPhotoUri(urlData.publicUrl);
+        } catch {
+          show("upload failed — try again");
+        } finally {
+          setUploadingPhoto(false);
+        }
       }
     } catch {
       show("couldn't pick photo");
@@ -435,9 +467,19 @@ export default function ItemSheet({
                         style={[styles.photoPickBtn, { borderColor: colors.sand, backgroundColor: colors.pearl }]}
                         onPress={handlePickPhoto}
                         activeOpacity={0.8}
+                        disabled={uploadingPhoto}
                       >
-                        <Feather name="image" size={16} color={colors.coral} />
-                        <Text style={[styles.photoPickText, { color: colors.stone }]}>tap, paste, or drag photo</Text>
+                        {uploadingPhoto ? (
+                          <>
+                            <ActivityIndicator size="small" color={colors.coral} />
+                            <Text style={[styles.photoPickText, { color: colors.stone }]}>uploading...</Text>
+                          </>
+                        ) : (
+                          <>
+                            <Feather name="image" size={16} color={colors.coral} />
+                            <Text style={[styles.photoPickText, { color: colors.stone }]}>tap, paste, or drag photo</Text>
+                          </>
+                        )}
                       </TouchableOpacity>
                       <TextInput
                         style={[styles.input, { borderColor: colors.sand, color: colors.ink, backgroundColor: colors.pearl, marginTop: spacing.sm }]}

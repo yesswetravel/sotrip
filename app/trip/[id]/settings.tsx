@@ -15,11 +15,13 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { Calendar, type DateData } from "react-native-calendars";
 import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import { Container, Text } from "../../../features/design-system";
 import { goBack } from "../../../lib/go-back";
 import { useToast } from "../../../features/shared/toast-context";
 import { supabase } from "../../../lib/supabase";
 import { useTrip, useUpdateTrip, useUpdateTripDates, useDeleteTrip } from "../../../features/trips/hooks";
+import { useToggleOffline, useOfflineStore } from "../../../features/offline";
 import { useColors } from "../../../features/theme/ThemeProvider";
 import { spacing } from "../../../theme/spacing";
 
@@ -130,6 +132,50 @@ function SettingsRow({
       {chevron && onPress && (
         <Feather name="chevron-right" size={14} color={colors.sand} />
       )}
+    </TouchableOpacity>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Offline toggle row                                                  */
+/* ------------------------------------------------------------------ */
+
+function OfflineRow({ colors }: { colors: ReturnType<typeof useColors> }) {
+  const { enabled, toggle } = useToggleOffline();
+  const { syncing, lastSyncedAt } = useOfflineStore();
+
+  const statusText = syncing
+    ? "syncing..."
+    : enabled
+      ? lastSyncedAt
+        ? `on · synced ${lastSyncedAt}`
+        : "on"
+      : "off";
+
+  return (
+    <TouchableOpacity
+      style={[styles.row, { borderBottomColor: colors.mist }]}
+      onPress={toggle}
+      activeOpacity={0.7}
+    >
+      <View style={[styles.rowIcon, { backgroundColor: enabled ? colors.teal + "18" : colors.mist + "60" }]}>
+        <Feather
+          name={enabled ? "download-cloud" : "wifi-off"}
+          size={14}
+          color={enabled ? colors.teal : colors.stone}
+        />
+      </View>
+      <View style={styles.rowContent}>
+        <Text variant="body" style={[styles.rowLabel, { color: colors.ink }]}>
+          offline mode
+        </Text>
+        <Text variant="caption" style={[styles.rowValue, { color: enabled ? colors.teal : colors.stone }]} numberOfLines={1}>
+          {statusText}
+        </Text>
+      </View>
+      <View style={[styles.toggleTrack, { backgroundColor: enabled ? colors.teal : colors.sand }]}>
+        <View style={[styles.toggleThumb, enabled && styles.toggleThumbOn]} />
+      </View>
     </TouchableOpacity>
   );
 }
@@ -261,15 +307,22 @@ export default function TripSettingsScreen() {
     setUploadingPhoto(true);
     try {
       const asset = result.assets[0];
-      const ext = asset.uri.split(".").pop() ?? "jpg";
-      const storagePath = `covers/${trip!.id}.${ext}`;
 
-      // Upload to Supabase storage
-      const response = await fetch(asset.uri);
+      // Compress and resize to max 1200px wide, JPEG quality 0.7
+      const manipulated = await ImageManipulator.manipulateAsync(
+        asset.uri,
+        [{ resize: { width: 1200 } }],
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+      );
+
+      const storagePath = `covers/${trip!.id}.jpg`;
+
+      // Upload compressed image to Supabase storage
+      const response = await fetch(manipulated.uri);
       const blob = await response.blob();
       await supabase.storage
         .from("trip-photos")
-        .upload(storagePath, blob, { contentType: `image/${ext}`, upsert: true });
+        .upload(storagePath, blob, { contentType: "image/jpeg", upsert: true });
 
       const { data: urlData } = supabase.storage
         .from("trip-photos")
@@ -496,6 +549,7 @@ export default function TripSettingsScreen() {
             onPress={() => setShowCurrencyPicker(true)}
             colors={colors}
           />
+          <OfflineRow colors={colors} />
         </View>
 
         {/* ============ Danger Zone ============ */}
@@ -822,5 +876,22 @@ const styles = StyleSheet.create({
     fontSize: 20,
     width: 36,
     textAlign: "center",
+  },
+  /* Toggle switch */
+  toggleTrack: {
+    width: 36,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: "center",
+    paddingHorizontal: 2,
+  },
+  toggleThumb: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#fff",
+  },
+  toggleThumbOn: {
+    alignSelf: "flex-end",
   },
 });

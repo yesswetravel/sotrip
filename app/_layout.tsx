@@ -20,6 +20,7 @@ import { ThemeProvider } from "../features/theme/ThemeProvider";
 import { AnimatedSplash } from "../features/shared/AnimatedSplash";
 import { useSession } from "../lib/use-session";
 import { useSubscriptionStore } from "../features/subscription/store";
+import { useOfflineStore, useOfflineSync, useOfflineFallback, OfflineBanner } from "../features/offline";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -35,6 +36,19 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+function OfflineLayer() {
+  const { session } = useSession();
+  useOfflineSync(session?.user.id);
+  useOfflineFallback();
+
+  // Hydrate offline store on mount
+  useEffect(() => {
+    useOfflineStore.getState().hydrate();
+  }, []);
+
+  return <OfflineBanner />;
+}
 
 function AuthGate() {
   const { session, loading } = useSession();
@@ -58,7 +72,12 @@ function AuthGate() {
     }
   }, [session, loading, segments, hasSeenPaywall]);
 
-  return <Slot />;
+  return (
+    <>
+      <OfflineLayer />
+      <Slot />
+    </>
+  );
 }
 
 export default function RootLayout() {

@@ -510,7 +510,23 @@ export default function DayViewScreen() {
             onPress={() => router.push(`/trip/${id}/place/${nowItem.id}`)}
             activeOpacity={0.85}
           >
-            <View style={[styles.nowHero, { backgroundColor: getCategoryForItem(nowItem.category).color }]}>
+            <View style={[styles.nowHero, { backgroundColor: getCategoryForItem(nowItem.category).color + "30" }]}>
+              {/* Hero photo: item photo → static map → category color fallback */}
+              {nowItem.photo_uri ? (
+                <Image
+                  source={{ uri: nowItem.photo_uri }}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="cover"
+                  transition={300}
+                />
+              ) : nowItem.location_name && GMAP_KEY ? (
+                <Image
+                  source={{ uri: getStaticMapUrl(nowItem.location_name, 300) }}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="cover"
+                  transition={300}
+                />
+              ) : null}
               <View style={[styles.nowChip, { backgroundColor: colors.coral }]}>
                 <Animated.View style={[styles.nowDot, { backgroundColor: colors.pearl }]} />
                 <Text style={[styles.nowChipText, { color: colors.pearl }]}>now</Text>
