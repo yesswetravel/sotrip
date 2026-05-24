@@ -13,10 +13,13 @@ export const DEMO_MODE = false;
 
 export function daysBetween(start: string, end: string): string[] {
   const dates: string[] = [];
-  const current = new Date(start);
-  const last = new Date(end);
+  const current = new Date(start + "T00:00:00");
+  const last = new Date(end + "T00:00:00");
   while (current <= last) {
-    dates.push(current.toISOString().split("T")[0]);
+    const y = current.getFullYear();
+    const m = String(current.getMonth() + 1).padStart(2, "0");
+    const d = String(current.getDate()).padStart(2, "0");
+    dates.push(`${y}-${m}-${d}`);
     current.setDate(current.getDate() + 1);
   }
   return dates;
@@ -41,6 +44,50 @@ export async function fetchTrip(tripId: string): Promise<TripWithDaysAndItems> {
     .single();
   if (error) throw error;
   const trip = data as TripWithDaysAndItems;
+
+  // Auto-repair: create missing trip_day rows for dates in range
+  if (trip.start_date && trip.end_date) {
+    const expectedDates = daysBetween(trip.start_date, trip.end_date);
+    const existingDates = new Set(trip.trip_days.map((d) => d.date).filter(Boolean));
+    const missing = expectedDates.filter((d) => !existingDates.has(d));
+
+    if (missing.length > 0) {
+      const toInsert = missing.map((date) => ({
+        trip_id: tripId,
+        day_number: expectedDates.indexOf(date) + 1,
+        date,
+      }));
+      await supabase.from("trip_days").insert(toInsert);
+
+      // Re-number all days to match correct date order
+      const { data: allDays } = await supabase
+        .from("trip_days")
+        .select("id, date")
+        .eq("trip_id", tripId)
+        .order("date", { ascending: true });
+      if (allDays) {
+        for (let i = 0; i < allDays.length; i++) {
+          await supabase.from("trip_days").update({ day_number: i + 1 }).eq("id", allDays[i].id);
+        }
+      }
+
+      // Re-fetch with the new days
+      const { data: fresh, error: freshErr } = await supabase
+        .from("trips")
+        .select("*, trip_days(*, trip_items(*))")
+        .eq("id", tripId)
+        .single();
+      if (!freshErr && fresh) {
+        const freshTrip = fresh as TripWithDaysAndItems;
+        freshTrip.trip_days.sort((a, b) => a.day_number - b.day_number);
+        freshTrip.trip_days.forEach((day) => {
+          day.trip_items.sort((a, b) => a.sort_order - b.sort_order);
+        });
+        return freshTrip;
+      }
+    }
+  }
+
   trip.trip_days.sort((a, b) => a.day_number - b.day_number);
   trip.trip_days.forEach((day) => {
     day.trip_items.sort((a, b) => a.sort_order - b.sort_order);
